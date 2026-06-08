@@ -1,0 +1,27 @@
+name: Yiji
+options:
+  bundleIdPrefix: com.yiji
+packages:
+  YijiCore:
+    path: ./YijiCore
+targets:
+  YijiApp:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: YijiApp
+        excludes:
+          - Resources/Info.plist
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.yiji.app
+        INFOPLIST_FILE: YijiApp/Resources/Info.plist
+        DEVELOPMENT_TEAM: ""
+        SWIFT_VERSION: 6.0
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: "1"
+    dependencies:
+      - package: YijiCore
+    scheme:
+      testTargets: []

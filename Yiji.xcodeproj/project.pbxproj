@@ -1,0 +1,494 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		184DA782A2346AB710E8FB4B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE74B6354ED6D3461850CD5 /* SettingsView.swift */; };
+		1C830643861E223A614BEB7C /* SpeechTranscriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = B51FC9167409097E58FBBB2A /* SpeechTranscriber.swift */; };
+		28417EFC97D8DEECFFC44AAB /* YijiApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45C73C5C165EF7EF86D4E78B /* YijiApp.swift */; };
+		295F02AEE6CCD6C2784C5551 /* LocalNotificationScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 970EAA28B509C08E0551C5EF /* LocalNotificationScheduler.swift */; };
+		2A4F6A94D213881BDEA4EF78 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5397BD6FC8F4F84DF5269B7F /* SearchView.swift */; };
+		2E557FB543B996996737F768 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87E6A52DE10DA0F3DC05944F /* AppModel.swift */; };
+		4756E92A5263C4A994E5E5A7 /* RecordRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 541D4AD217DBEA96DD3DB0A2 /* RecordRowView.swift */; };
+		495D66A2945D9E230285D65E /* CaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DA15AE611AE40938E9346ED /* CaptureView.swift */; };
+		4E958F81767C717BF9E2AAA5 /* RootTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77CA13A090393EC6FA432A42 /* RootTabView.swift */; };
+		5443251CD38B414380172C1D /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CBCFA4D6DB99FA1FEA32B45 /* AppTheme.swift */; };
+		7673E8631DE0EA5C97A81A6C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 502E8D564C8ED246A9CC8FC4 /* Assets.xcassets */; };
+		84D16D797002375CC02564C9 /* RecordDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06982B2E73493E9D1A75DB60 /* RecordDetailView.swift */; };
+		AD94090516ADA29EBFD28F20 /* ReminderEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0209B8EBF57A23214D300167 /* ReminderEditorView.swift */; };
+		BF214AC162A2BBCDEE18846D /* FileBackedVaultStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D273F4EB9A2E7EE7405A5CD /* FileBackedVaultStore.swift */; };
+		C02506D3DF855D1ACB7511E9 /* YijiCore in Frameworks */ = {isa = PBXBuildFile; productRef = 15031826CFA9F5FBCA136DCB /* YijiCore */; };
+		D3C0F23C04C6BFA9D7CE0946 /* RemindersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C62A017F2C61F3D7F4CEF198 /* RemindersView.swift */; };
+		DF2BF85EFBB397FE0A7BEE84 /* PreviewSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = E05ED3A46E8682723638A5F2 /* PreviewSupport.swift */; };
+		F65D59C6AD4A9F75185E9242 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A137C959894E2B333C1843B0 /* HomeView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0209B8EBF57A23214D300167 /* ReminderEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderEditorView.swift; sourceTree = "<group>"; };
+		06982B2E73493E9D1A75DB60 /* RecordDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordDetailView.swift; sourceTree = "<group>"; };
+		1D273F4EB9A2E7EE7405A5CD /* FileBackedVaultStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileBackedVaultStore.swift; sourceTree = "<group>"; };
+		2DA15AE611AE40938E9346ED /* CaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureView.swift; sourceTree = "<group>"; };
+		45C73C5C165EF7EF86D4E78B /* YijiApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YijiApp.swift; sourceTree = "<group>"; };
+		4CBCFA4D6DB99FA1FEA32B45 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
+		502E8D564C8ED246A9CC8FC4 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		5397BD6FC8F4F84DF5269B7F /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
+		541D4AD217DBEA96DD3DB0A2 /* RecordRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordRowView.swift; sourceTree = "<group>"; };
+		65BBBDDC785ECCFB01B35C3E /* YijiCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = YijiCore; path = YijiCore; sourceTree = SOURCE_ROOT; };
+		77CA13A090393EC6FA432A42 /* RootTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootTabView.swift; sourceTree = "<group>"; };
+		87E6A52DE10DA0F3DC05944F /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		946735739ADE8830AB6AC329 /* YijiApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = YijiApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		970EAA28B509C08E0551C5EF /* LocalNotificationScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalNotificationScheduler.swift; sourceTree = "<group>"; };
+		A137C959894E2B333C1843B0 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		B51FC9167409097E58FBBB2A /* SpeechTranscriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechTranscriber.swift; sourceTree = "<group>"; };
+		C62A017F2C61F3D7F4CEF198 /* RemindersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemindersView.swift; sourceTree = "<group>"; };
+		CCE74B6354ED6D3461850CD5 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		E05ED3A46E8682723638A5F2 /* PreviewSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewSupport.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		D67ED104928F63E3B5E8B04F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C02506D3DF855D1ACB7511E9 /* YijiCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0D690FC0ACEAEE912941FA27 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				502E8D564C8ED246A9CC8FC4 /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		6075E751A52A3C0DE32B0130 /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				65BBBDDC785ECCFB01B35C3E /* YijiCore */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		63E88591CF6EAD625899D996 /* Reminders */ = {
+			isa = PBXGroup;
+			children = (
+				0209B8EBF57A23214D300167 /* ReminderEditorView.swift */,
+				C62A017F2C61F3D7F4CEF198 /* RemindersView.swift */,
+			);
+			path = Reminders;
+			sourceTree = "<group>";
+		};
+		6EA1B4F33EFDE915F545459F /* YijiApp */ = {
+			isa = PBXGroup;
+			children = (
+				DF919159335DF5E299F0A008 /* App */,
+				C7F1BEDDF1381004CF88C9D7 /* Features */,
+				CEDFB8E0E061F5C606FCA0FD /* Persistence */,
+				0D690FC0ACEAEE912941FA27 /* Resources */,
+				933588E539A5A51AD9D4FAE4 /* Services */,
+			);
+			path = YijiApp;
+			sourceTree = "<group>";
+		};
+		718698C531EB964EF66EE3D0 /* Records */ = {
+			isa = PBXGroup;
+			children = (
+				06982B2E73493E9D1A75DB60 /* RecordDetailView.swift */,
+				541D4AD217DBEA96DD3DB0A2 /* RecordRowView.swift */,
+			);
+			path = Records;
+			sourceTree = "<group>";
+		};
+		92833A360E971CB295063642 /* Home */ = {
+			isa = PBXGroup;
+			children = (
+				A137C959894E2B333C1843B0 /* HomeView.swift */,
+			);
+			path = Home;
+			sourceTree = "<group>";
+		};
+		933588E539A5A51AD9D4FAE4 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				970EAA28B509C08E0551C5EF /* LocalNotificationScheduler.swift */,
+				B51FC9167409097E58FBBB2A /* SpeechTranscriber.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		98A485684807419FB64CEE5E = {
+			isa = PBXGroup;
+			children = (
+				6075E751A52A3C0DE32B0130 /* Packages */,
+				6EA1B4F33EFDE915F545459F /* YijiApp */,
+				E58CF07A6466034AC00726DE /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A0DBD92C6BA862F68B4E3AAF /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				CCE74B6354ED6D3461850CD5 /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		AE00F4FAFD535AB8BBE384A9 /* Search */ = {
+			isa = PBXGroup;
+			children = (
+				5397BD6FC8F4F84DF5269B7F /* SearchView.swift */,
+			);
+			path = Search;
+			sourceTree = "<group>";
+		};
+		C7F1BEDDF1381004CF88C9D7 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				DBA492A92CAD5B58ED5D6EA2 /* Capture */,
+				92833A360E971CB295063642 /* Home */,
+				718698C531EB964EF66EE3D0 /* Records */,
+				63E88591CF6EAD625899D996 /* Reminders */,
+				AE00F4FAFD535AB8BBE384A9 /* Search */,
+				A0DBD92C6BA862F68B4E3AAF /* Settings */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		CEDFB8E0E061F5C606FCA0FD /* Persistence */ = {
+			isa = PBXGroup;
+			children = (
+				1D273F4EB9A2E7EE7405A5CD /* FileBackedVaultStore.swift */,
+			);
+			path = Persistence;
+			sourceTree = "<group>";
+		};
+		DBA492A92CAD5B58ED5D6EA2 /* Capture */ = {
+			isa = PBXGroup;
+			children = (
+				2DA15AE611AE40938E9346ED /* CaptureView.swift */,
+			);
+			path = Capture;
+			sourceTree = "<group>";
+		};
+		DF919159335DF5E299F0A008 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				87E6A52DE10DA0F3DC05944F /* AppModel.swift */,
+				4CBCFA4D6DB99FA1FEA32B45 /* AppTheme.swift */,
+				E05ED3A46E8682723638A5F2 /* PreviewSupport.swift */,
+				77CA13A090393EC6FA432A42 /* RootTabView.swift */,
+				45C73C5C165EF7EF86D4E78B /* YijiApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		E58CF07A6466034AC00726DE /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				946735739ADE8830AB6AC329 /* YijiApp.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		5CAC776C7280087C6C59565E /* YijiApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4D260A83718DA60C139B3A6F /* Build configuration list for PBXNativeTarget "YijiApp" */;
+			buildPhases = (
+				5E4D0E5F15136A0B88552D51 /* Sources */,
+				04D4EBE9F262D407099BFF9D /* Resources */,
+				D67ED104928F63E3B5E8B04F /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = YijiApp;
+			packageProductDependencies = (
+				15031826CFA9F5FBCA136DCB /* YijiCore */,
+			);
+			productName = YijiApp;
+			productReference = 946735739ADE8830AB6AC329 /* YijiApp.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		5DB176345D30AAD164EE7822 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					5CAC776C7280087C6C59565E = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 94A5D567BC512EE3888C3A7C /* Build configuration list for PBXProject "Yiji" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 98A485684807419FB64CEE5E;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				0230A1E758F311DBC602648F /* XCLocalSwiftPackageReference "YijiCore" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = E58CF07A6466034AC00726DE /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				5CAC776C7280087C6C59565E /* YijiApp */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		04D4EBE9F262D407099BFF9D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7673E8631DE0EA5C97A81A6C /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		5E4D0E5F15136A0B88552D51 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2E557FB543B996996737F768 /* AppModel.swift in Sources */,
+				5443251CD38B414380172C1D /* AppTheme.swift in Sources */,
+				495D66A2945D9E230285D65E /* CaptureView.swift in Sources */,
+				BF214AC162A2BBCDEE18846D /* FileBackedVaultStore.swift in Sources */,
+				F65D59C6AD4A9F75185E9242 /* HomeView.swift in Sources */,
+				295F02AEE6CCD6C2784C5551 /* LocalNotificationScheduler.swift in Sources */,
+				DF2BF85EFBB397FE0A7BEE84 /* PreviewSupport.swift in Sources */,
+				84D16D797002375CC02564C9 /* RecordDetailView.swift in Sources */,
+				4756E92A5263C4A994E5E5A7 /* RecordRowView.swift in Sources */,
+				AD94090516ADA29EBFD28F20 /* ReminderEditorView.swift in Sources */,
+				D3C0F23C04C6BFA9D7CE0946 /* RemindersView.swift in Sources */,
+				4E958F81767C717BF9E2AAA5 /* RootTabView.swift in Sources */,
+				2A4F6A94D213881BDEA4EF78 /* SearchView.swift in Sources */,
+				184DA782A2346AB710E8FB4B /* SettingsView.swift in Sources */,
+				1C830643861E223A614BEB7C /* SpeechTranscriber.swift in Sources */,
+				28417EFC97D8DEECFFC44AAB /* YijiApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		2E0224C9D6F0DADEE55C84E7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				INFOPLIST_FILE = YijiApp/Resources/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.yiji.app;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		4E56D28D7015298779AB4EC0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				INFOPLIST_FILE = YijiApp/Resources/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.yiji.app;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		CB8912CF60A7D9A9A708FC12 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		D96AFF52D8B45B6C7FF2E0AA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		4D260A83718DA60C139B3A6F /* Build configuration list for PBXNativeTarget "YijiApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4E56D28D7015298779AB4EC0 /* Debug */,
+				2E0224C9D6F0DADEE55C84E7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		94A5D567BC512EE3888C3A7C /* Build configuration list for PBXProject "Yiji" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CB8912CF60A7D9A9A708FC12 /* Debug */,
+				D96AFF52D8B45B6C7FF2E0AA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		0230A1E758F311DBC602648F /* XCLocalSwiftPackageReference "YijiCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = YijiCore;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		15031826CFA9F5FBCA136DCB /* YijiCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = YijiCore;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 5DB176345D30AAD164EE7822 /* Project object */;
+}
