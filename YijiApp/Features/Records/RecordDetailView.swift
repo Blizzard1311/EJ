@@ -2,7 +2,7 @@ import SwiftUI
 import YijiCore
 
 struct RecordDetailView: View {
-    @Environment(AppModel.self) private var appModel
+    @EnvironmentObject private var appModel: AppModel
     @Environment(\.dismiss) private var dismiss
 
     let recordID: UUID
@@ -27,16 +27,20 @@ struct RecordDetailView: View {
                         if let location = record.location {
                             detailRow(title: "位置", value: location)
                         }
-                        detailRow(title: "分类", value: record.category.displayName)
+                        detailRow(title: "分类", value: record.displayCategoryName)
                     }
 
                     groupedCard(title: "时间信息") {
                         detailRow(title: "记录时间", value: YijiDateFormatter.dateTimeFormatter.string(from: record.createdAt))
                         detailRow(title: "业务时间", value: YijiDateFormatter.dateTimeFormatter.string(from: record.recordDate))
+                        if let eventTimeSummary = record.eventTimeSummary {
+                            detailRow(title: "计划时间", value: eventTimeSummary)
+                        }
                     }
 
                     groupedCard(title: "补充信息") {
                         detailRow(title: "来源", value: sourceName(record.source))
+                        detailRow(title: "切片分类", value: record.sliceCategoryNames.joined(separator: " / "))
                         detailRow(title: "标签", value: record.tags.isEmpty ? "无" : record.tags.joined(separator: " / "))
                         Text(record.answerSummary)
                             .font(.subheadline)
@@ -120,7 +124,7 @@ struct RecordDetailView: View {
 
     private func heroCard(for record: Record) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(record.objectName ?? "生活记录")
+            Text(record.objectName ?? record.content)
                 .font(.title2.weight(.semibold))
 
             if let location = record.location {
@@ -129,7 +133,7 @@ struct RecordDetailView: View {
             }
 
             HStack(spacing: 8) {
-                chip(record.category.displayName, color: categoryColor(for: record))
+                chip(record.displayCategoryName, color: categoryColor(for: record))
                 chip(sourceName(record.source), color: .blue)
             }
         }

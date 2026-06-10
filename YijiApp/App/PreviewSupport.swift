@@ -12,7 +12,7 @@ enum PreviewSupport {
         @ViewBuilder content: () -> Content
     ) -> some View {
         let preview = content()
-            .environment(model)
+            .environmentObject(model)
             .previewDevice(PreviewDevice(rawValue: device))
 
         if let colorScheme {
@@ -77,6 +77,9 @@ enum PreviewSupport {
             "我把钥匙塞进黑包侧袋里",
             "明天下午三点提醒我交物业费",
             "周五上午十点提醒我提交报销",
+            "上周三见客户",
+            "晚上八点提醒我给妈妈打电话",
+            "下周准备报销材料",
             "记一下：给孩子报名材料要放进蓝色文件夹"
         ]
 

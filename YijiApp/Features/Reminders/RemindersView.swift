@@ -2,7 +2,7 @@ import SwiftUI
 import YijiCore
 
 struct RemindersView: View {
-    @Environment(AppModel.self) private var appModel
+    @EnvironmentObject private var appModel: AppModel
     @State private var editingReminder: Reminder?
 
     var body: some View {

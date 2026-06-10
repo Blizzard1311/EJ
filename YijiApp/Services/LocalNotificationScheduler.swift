@@ -1,11 +1,16 @@
 import Foundation
-import Observation
+import Combine
+import OSLog
 import UserNotifications
 import YijiCore
 
 @MainActor
-@Observable
-final class LocalNotificationScheduler {
+final class LocalNotificationScheduler: ObservableObject {
+    private let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier ?? "com.blizzard1311.yiji",
+        category: "LocalNotificationScheduler"
+    )
+
     enum AuthorizationStatus: String {
         case unknown
         case granted
@@ -37,8 +42,8 @@ final class LocalNotificationScheduler {
         }
     }
 
-    var authorizationStatus: AuthorizationStatus = .unknown
-    var scheduledIdentifiers: Set<String> = []
+    @Published var authorizationStatus: AuthorizationStatus = .unknown
+    @Published var scheduledIdentifiers: Set<String> = []
 
     private let center: UNUserNotificationCenter
     private let calendar = Calendar(identifier: .gregorian)
@@ -91,6 +96,9 @@ final class LocalNotificationScheduler {
         try await ensureAuthorization()
 
         if reminder.repeatRule == .none && reminder.remindAt <= Date() {
+            logger.error(
+                "schedule rejected as pastDue reminderID=\(reminder.id.uuidString, privacy: .public) remindAt=\(reminder.remindAt.formatted(date: .numeric, time: .shortened), privacy: .public)"
+            )
             throw SchedulerError.pastDue
         }
 

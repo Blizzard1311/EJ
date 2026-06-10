@@ -81,8 +81,10 @@ actor FileBackedVaultStore {
         return snapshot(from: vault)
     }
 
-    func replace(records: [Record], reminders: [Reminder], searchHistory: [String] = []) throws {
-        try writeVault(PersistedVault(records: records, reminders: reminders, searchHistory: searchHistory))
+    func replace(records: [Record], reminders: [Reminder], searchHistory: [String] = []) throws -> VaultSnapshot {
+        let vault = PersistedVault(records: records, reminders: reminders, searchHistory: searchHistory)
+        try writeVault(vault)
+        return snapshot(from: vault)
     }
 
     func updateSearchHistory(_ searchHistory: [String]) throws -> VaultSnapshot {

@@ -1,12 +1,12 @@
 import SwiftUI
 
 struct RootTabView: View {
-    @Environment(AppModel.self) private var appModel
+    @EnvironmentObject private var appModel: AppModel
 
     var body: some View {
-        TabView(selection: Bindable(appModel).selectedTab) {
+        TabView(selection: $appModel.selectedTab) {
             NavigationStack {
-                HomeView()
+                CaptureView()
             }
             .tag(AppTab.home)
             .tabItem {
@@ -14,19 +14,11 @@ struct RootTabView: View {
             }
 
             NavigationStack {
-                CaptureView()
+                HomeView()
             }
             .tag(AppTab.capture)
             .tabItem {
                 Label(AppTab.capture.title, systemImage: AppTab.capture.systemImage)
-            }
-
-            NavigationStack {
-                SearchView()
-            }
-            .tag(AppTab.search)
-            .tabItem {
-                Label(AppTab.search.title, systemImage: AppTab.search.systemImage)
             }
 
             NavigationStack {
@@ -46,17 +38,14 @@ struct RootTabView: View {
 enum AppTab: Hashable {
     case home
     case capture
-    case search
     case settings
 
     var title: String {
         switch self {
         case .home:
-            "首页"
+            "记"
         case .capture:
-            "录入"
-        case .search:
-            "搜索"
+            "录"
         case .settings:
             "我的"
         }
@@ -65,11 +54,9 @@ enum AppTab: Hashable {
     var systemImage: String {
         switch self {
         case .home:
-            "square.grid.2x2.fill"
+            "waveform.circle.fill"
         case .capture:
-            "mic.circle.fill"
-        case .search:
-            "magnifyingglass.circle.fill"
+            "square.stack.3d.up.fill"
         case .settings:
             "person.crop.circle.fill"
         }

@@ -2,7 +2,7 @@ import SwiftUI
 import YijiCore
 
 struct ReminderEditorView: View {
-    @Environment(AppModel.self) private var appModel
+    @EnvironmentObject private var appModel: AppModel
     @Environment(\.dismiss) private var dismiss
 
     @State private var draft: Reminder
@@ -350,10 +350,10 @@ struct ReminderEditorView: View {
 
 #Preview("编辑提醒") {
     ReminderEditorView(reminder: PreviewSupport.reminder()) { _ in true }
-        .environment(PreviewSupport.appModel())
+        .environmentObject(PreviewSupport.appModel())
 }
 
 #Preview("编辑提醒 - 通知未开启") {
     ReminderEditorView(reminder: PreviewSupport.overdueReminder()) { _ in true }
-        .environment(PreviewSupport.notificationDeniedAppModel())
+        .environmentObject(PreviewSupport.notificationDeniedAppModel())
 }

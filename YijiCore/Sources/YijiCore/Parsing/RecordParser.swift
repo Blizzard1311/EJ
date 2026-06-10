@@ -1,6 +1,12 @@
 import Foundation
 
 public struct RecordParser: Sendable {
+    private struct ParsedReminderIntent {
+        let title: String
+        let reminder: Reminder?
+        let warnings: [String]
+    }
+
     public init() {}
 
     public func parse(
@@ -12,22 +18,33 @@ public struct RecordParser: Sendable {
         let content = sanitize(rawContent)
         let timestamp = now
 
-        if let reminder = parseReminder(content: content, now: now, calendar: calendar) {
-            let tags = TagClassifier.tags(for: content, objectName: reminder.title)
+        if let parsedReminder = parseReminder(content: content, now: now, calendar: calendar) {
+            let tags = TagClassifier.tags(for: content, objectName: parsedReminder.title)
+            let eventTime = parsedReminder.reminder.map {
+                EventTimeRange(start: $0.remindAt, end: $0.remindAt, granularity: .exactTime)
+            }
             let record = Record(
                 content: content,
-                objectName: reminder.title,
+                objectName: parsedReminder.title,
                 location: nil,
-                recordDate: reminder.remindAt,
+                recordDate: parsedReminder.reminder?.remindAt ?? timestamp,
+                eventTime: eventTime,
                 category: .reminder,
                 tags: tags,
                 source: source,
                 createdAt: timestamp,
                 updatedAt: timestamp
             )
-            var linkedReminder = reminder
+            guard var linkedReminder = parsedReminder.reminder else {
+                return ParsedCapture(
+                    record: record,
+                    reminder: nil,
+                    warnings: parsedReminder.warnings
+                )
+            }
+
             linkedReminder.recordID = record.id
-            return ParsedCapture(record: record, reminder: linkedReminder)
+            return ParsedCapture(record: record, reminder: linkedReminder, warnings: parsedReminder.warnings)
         }
 
         if let storage = parseStorage(content: content) {
@@ -39,6 +56,22 @@ public struct RecordParser: Sendable {
                 recordDate: timestamp,
                 category: .storage,
                 tags: tags,
+                source: source,
+                createdAt: timestamp,
+                updatedAt: timestamp
+            )
+            return ParsedCapture(record: record, reminder: nil)
+        }
+
+        if let eventTime = TimeExpressionParser.parseEventTime(in: content, now: now, calendar: calendar) {
+            let record = Record(
+                content: content,
+                objectName: nil,
+                location: nil,
+                recordDate: eventTime.start,
+                eventTime: eventTime,
+                category: .note,
+                tags: TagClassifier.tags(for: content, objectName: nil),
                 source: source,
                 createdAt: timestamp,
                 updatedAt: timestamp
@@ -97,32 +130,33 @@ public struct RecordParser: Sendable {
         return nil
     }
 
-    private func parseReminder(content: String, now: Date, calendar: Calendar) -> Reminder? {
+    private func parseReminder(content: String, now: Date, calendar: Calendar) -> ParsedReminderIntent? {
         let reminderKeywords = ["提醒我", "记得提醒我", "到时候提醒我", "别忘了"]
         guard reminderKeywords.contains(where: content.contains) else {
             return nil
         }
 
+        let title = reminderTitle(from: content, fallback: content)
         let repeatRule = parseRepeatRule(content: content)
         guard let remindAt = parseDate(content: content, now: now, calendar: calendar) else {
-            return Reminder(
-                title: reminderTitle(from: content, fallback: content),
-                body: content,
-                remindAt: now,
-                repeatRule: repeatRule,
-                status: .failed,
-                createdAt: now
+            return ParsedReminderIntent(
+                title: title,
+                reminder: nil,
+                warnings: ["识别到提醒意图，但没有识别到提醒时间，请补充具体时间后再保存。"]
             )
         }
 
-        let title = reminderTitle(from: content, fallback: content)
-        return Reminder(
+        return ParsedReminderIntent(
             title: title,
-            body: content,
-            remindAt: remindAt,
-            repeatRule: repeatRule,
-            status: .pending,
-            createdAt: now
+            reminder: Reminder(
+                title: title,
+                body: content,
+                remindAt: remindAt,
+                repeatRule: repeatRule,
+                status: .pending,
+                createdAt: now
+            ),
+            warnings: []
         )
     }
 
@@ -170,19 +204,41 @@ public struct RecordParser: Sendable {
         }
 
         var dayOffset = 0
-        let hasRelativeDay = content.contains("今天")
+        let hasRelativeDay = content.contains("前天")
+            || content.contains("今天")
             || content.contains("今晚")
             || content.contains("今早")
             || content.contains("明早")
             || content.contains("明晚")
             || content.contains("明天")
+            || content.contains("大后天")
             || content.contains("后天")
         if content.contains("明天") || content.contains("明早") || content.contains("明晚") {
             dayOffset = 1
+        } else if content.contains("前天") {
+            dayOffset = -2
+        } else if content.contains("大后天") {
+            dayOffset = 3
         } else if content.contains("后天") {
             dayOffset = 2
         } else if !hasRelativeDay {
-            return nil
+            guard let time = parseTime(content: content) else {
+                return nil
+            }
+
+            var components = calendar.dateComponents([.year, .month, .day], from: now)
+            components.hour = time.hour
+            components.minute = time.minute
+            guard let rawCandidate = calendar.date(from: components) else {
+                return nil
+            }
+            let candidate = adjustedCandidateForMidnightRollover(rawCandidate, content: content, calendar: calendar)
+
+            if candidate > now {
+                return candidate
+            }
+
+            return calendar.date(byAdding: .day, value: 1, to: candidate)
         }
 
         let time = parseTime(content: content) ?? defaultTime(for: content)
@@ -194,7 +250,10 @@ public struct RecordParser: Sendable {
         var components = calendar.dateComponents([.year, .month, .day], from: date)
         components.hour = time.hour
         components.minute = time.minute
-        return calendar.date(from: components)
+        guard let rawCandidate = calendar.date(from: components) else {
+            return nil
+        }
+        return adjustedCandidateForMidnightRollover(rawCandidate, content: content, calendar: calendar)
     }
 
     private func parseExplicitMonthDay(content: String, now: Date, calendar: Calendar) -> Date? {
@@ -216,9 +275,10 @@ public struct RecordParser: Sendable {
         components.hour = time.hour
         components.minute = time.minute
 
-        guard let date = calendar.date(from: components) else {
+        guard let rawDate = calendar.date(from: components) else {
             return nil
         }
+        let date = adjustedCandidateForMidnightRollover(rawDate, content: content, calendar: calendar)
 
         if result[1].isEmpty && date < now {
             return calendar.date(byAdding: .year, value: 1, to: date)
@@ -238,9 +298,10 @@ public struct RecordParser: Sendable {
         components.hour = time.hour
         components.minute = time.minute
 
-        guard let date = calendar.date(from: components) else {
+        guard let rawDate = calendar.date(from: components) else {
             return nil
         }
+        let date = adjustedCandidateForMidnightRollover(rawDate, content: content, calendar: calendar)
 
         if date >= now {
             return date
@@ -250,7 +311,7 @@ public struct RecordParser: Sendable {
 
     private func parseReferencedWeekday(content: String, now: Date, calendar: Calendar) -> Date? {
         guard let result = firstMatch(
-            pattern: #"((?:下|本|这)?(?:周|星期|礼拜))([一二三四五六日天])"#,
+            pattern: #"((?:(?:上上|下下|上|下|本|这)?(?:周|星期|礼拜)))([一二三四五六日天])"#,
             in: content
         ), result.count >= 3 else {
             return nil
@@ -258,45 +319,75 @@ public struct RecordParser: Sendable {
 
         let prefix = result[1]
         let weekdayText = result[2]
-        let weekdayMap: [String: Int] = [
-            "日": 1,
-            "天": 1,
-            "一": 2,
-            "二": 3,
-            "三": 4,
-            "四": 5,
-            "五": 6,
-            "六": 7
+        let mondayOffsetMap: [String: Int] = [
+            "一": 0,
+            "二": 1,
+            "三": 2,
+            "四": 3,
+            "五": 4,
+            "六": 5,
+            "日": 6,
+            "天": 6
         ]
-        guard let targetWeekday = weekdayMap[weekdayText] else {
+        guard let weekdayOffset = mondayOffsetMap[weekdayText] else {
             return nil
         }
 
         let time = parseTime(content: content) ?? defaultTime(for: content)
-        let currentWeekday = calendar.component(.weekday, from: now)
-        var dayOffset = (targetWeekday - currentWeekday + 7) % 7
-
-        if prefix.contains("下") {
-            dayOffset += 7
-        }
-
-        let startOfToday = calendar.startOfDay(for: now)
-        guard let targetDate = calendar.date(byAdding: .day, value: dayOffset, to: startOfToday) else {
-            return nil
+        let targetDate: Date
+        if let weekOffset = weekOffset(for: prefix) {
+            let weekStart = startOfWeek(containing: now, offset: weekOffset, calendar: calendar)
+            targetDate = calendar.date(byAdding: .day, value: weekdayOffset, to: weekStart) ?? weekStart
+        } else {
+            let currentWeekday = calendar.component(.weekday, from: now)
+            let weekdayMap: [String: Int] = [
+                "日": 1,
+                "天": 1,
+                "一": 2,
+                "二": 3,
+                "三": 4,
+                "四": 5,
+                "五": 6,
+                "六": 7
+            ]
+            guard let targetWeekday = weekdayMap[weekdayText] else {
+                return nil
+            }
+            let dayOffset = (targetWeekday - currentWeekday + 7) % 7
+            let startOfToday = calendar.startOfDay(for: now)
+            targetDate = calendar.date(byAdding: .day, value: dayOffset, to: startOfToday) ?? startOfToday
         }
 
         var components = calendar.dateComponents([.year, .month, .day], from: targetDate)
         components.hour = time.hour
         components.minute = time.minute
-        guard var candidate = calendar.date(from: components) else {
+        guard let rawCandidate = calendar.date(from: components) else {
             return nil
         }
+        var candidate = adjustedCandidateForMidnightRollover(rawCandidate, content: content, calendar: calendar)
 
-        if !prefix.contains("下"), candidate < now {
+        if prefix.isEmpty && candidate < now {
             candidate = calendar.date(byAdding: .day, value: 7, to: candidate) ?? candidate
         }
 
         return candidate
+    }
+
+    private func weekOffset(for prefix: String) -> Int? {
+        switch prefix {
+        case "上上周", "上上星期", "上上礼拜":
+            return -2
+        case "上周", "上星期", "上礼拜":
+            return -1
+        case "本周", "本星期", "本礼拜", "这周", "这星期", "这礼拜":
+            return 0
+        case "下周", "下星期", "下礼拜":
+            return 1
+        case "下下周", "下下星期", "下下礼拜":
+            return 2
+        default:
+            return nil
+        }
     }
 
     private func parseDailyTime(content: String, now: Date, calendar: Calendar) -> Date? {
@@ -304,9 +395,10 @@ public struct RecordParser: Sendable {
         var components = calendar.dateComponents([.year, .month, .day], from: now)
         components.hour = time.hour
         components.minute = time.minute
-        guard let candidate = calendar.date(from: components) else {
+        guard let rawCandidate = calendar.date(from: components) else {
             return nil
         }
+        let candidate = adjustedCandidateForMidnightRollover(rawCandidate, content: content, calendar: calendar)
         if candidate > now {
             return candidate
         }
@@ -314,8 +406,23 @@ public struct RecordParser: Sendable {
     }
 
     private func parseTime(content: String) -> (hour: Int, minute: Int)? {
+        if let result = firstMatch(
+            pattern: #"(?:(凌晨|早上|上午|中午|下午|晚上))?\s*([零〇一二三四五六七八九十两\d]{1,3})\s*[:：]\s*([零〇一二三四五六七八九十两\d]{1,3})"#,
+            in: content
+        ), result.count >= 4 {
+            let meridiem = result[1]
+            guard var hour = parseChineseOrArabicNumber(result[2]),
+                  let minute = parseChineseOrArabicNumber(result[3]) else {
+                return nil
+            }
+
+            hour = adjustedHour(for: hour, meridiem: meridiem, content: content)
+
+            return (hour, minute)
+        }
+
         guard let result = firstMatch(
-            pattern: #"(?:(凌晨|早上|上午|中午|下午|晚上))?\s*([零〇一二三四五六七八九十两\d]{1,3})点(?:(半)|([零〇一二三四五六七八九十两\d]{1,3})分?)?"#,
+            pattern: #"(?:(凌晨|早上|上午|中午|下午|晚上))?\s*([零〇一二三四五六七八九十两\d]{1,3})(?:点钟|点|时)(?:(半|整)|([零〇一二三四五六七八九十两\d]{1,3})分?)?"#,
             in: content
         ), result.count >= 5 else {
             return nil
@@ -328,21 +435,66 @@ public struct RecordParser: Sendable {
         let minute: Int
         if result[3] == "半" {
             minute = 30
+        } else if result[3] == "整" {
+            minute = 0
         } else if let value = parseChineseOrArabicNumber(result[4]) {
             minute = value
         } else {
             minute = 0
         }
 
-        if ["下午", "晚上"].contains(meridiem), hour < 12 {
-            hour += 12
-        } else if meridiem == "中午", hour < 11 {
-            hour += 12
-        } else if meridiem.isEmpty, hour < 12, content.contains("今晚") || content.contains("明晚") {
-            hour += 12
-        }
+        hour = adjustedHour(for: hour, meridiem: meridiem, content: content)
 
         return (hour, minute)
+    }
+
+    private func adjustedHour(for hour: Int, meridiem: String, content: String) -> Int {
+        var adjustedHour = hour
+
+        if meridiem == "凌晨" && adjustedHour == 12 {
+            return 0
+        }
+
+        if meridiem == "中午" {
+            if adjustedHour == 12 {
+                return 12
+            }
+            if (1...6).contains(adjustedHour) {
+                return adjustedHour + 12
+            }
+            return adjustedHour
+        }
+
+        let hasNightContext = meridiem == "晚上"
+            || (meridiem.isEmpty && (content.contains("今晚") || content.contains("明晚")))
+        let hasEveningContext = meridiem == "下午" || hasNightContext
+
+        if hasNightContext && adjustedHour == 12 {
+            return 0
+        }
+
+        if hasEveningContext, adjustedHour < 12 {
+            adjustedHour += 12
+        }
+
+        return adjustedHour
+    }
+
+    private func adjustedCandidateForMidnightRollover(_ date: Date, content: String, calendar: Calendar) -> Date {
+        guard shouldRollMidnightToNextDay(content: content, date: date, calendar: calendar) else {
+            return date
+        }
+        return calendar.date(byAdding: .day, value: 1, to: date) ?? date
+    }
+
+    private func shouldRollMidnightToNextDay(content: String, date: Date, calendar: Calendar) -> Bool {
+        let hasNightMarker = content.contains("晚上") || content.contains("今晚") || content.contains("明晚")
+        guard hasNightMarker else {
+            return false
+        }
+
+        let hour = calendar.component(.hour, from: date)
+        return hour == 0
     }
 
     private func defaultTime(for content: String) -> (hour: Int, minute: Int) {
@@ -359,6 +511,18 @@ public struct RecordParser: Sendable {
             return (9, 0)
         }
         return (9, 0)
+    }
+
+    private func startOfWeek(containing date: Date, offset: Int, calendar: Calendar) -> Date {
+        var weekCalendar = calendar
+        weekCalendar.firstWeekday = 2
+        weekCalendar.minimumDaysInFirstWeek = 4
+        let weekday = weekCalendar.component(.weekday, from: date)
+        let distance = (weekday - weekCalendar.firstWeekday + 7) % 7
+        let thisWeekStart = weekCalendar.startOfDay(
+            for: weekCalendar.date(byAdding: .day, value: -distance, to: date) ?? date
+        )
+        return weekCalendar.date(byAdding: .day, value: offset * 7, to: thisWeekStart) ?? thisWeekStart
     }
 
     private func firstMatch(pattern: String, in content: String) -> [String]? {
@@ -408,6 +572,12 @@ public struct RecordParser: Sendable {
             return value
         }
 
+        if text.allSatisfy({ digits[$0] != nil }) {
+            return text.reduce(into: 0) { partialResult, character in
+                partialResult = partialResult * 10 + (digits[character] ?? 0)
+            }
+        }
+
         return nil
     }
 
@@ -418,7 +588,8 @@ public struct RecordParser: Sendable {
             #"^((?:下|本|这)?(?:周|星期|礼拜)[一二三四五六日天])"#,
             #"^(每(?:天|周|月|年)\S*)"#,
             #"^(?:(?:\d{4})年)?\d{1,2}月\d{1,2}[日号]?"#,
-            #"^(凌晨|早上|上午|中午|下午|晚上)?\s*[零〇一二三四五六七八九十两\d]{1,3}点(?:(?:半)|(?:[零〇一二三四五六七八九十两\d]{1,3})分?)?"#
+            #"^(凌晨|早上|上午|中午|下午|晚上)?\s*[零〇一二三四五六七八九十两\d]{1,3}\s*[:：]\s*[零〇一二三四五六七八九十两\d]{1,3}"#,
+            #"^(凌晨|早上|上午|中午|下午|晚上)?\s*[零〇一二三四五六七八九十两\d]{1,3}(?:点钟|点|时)(?:(?:半|整)|(?:[零〇一二三四五六七八九十两\d]{1,3})分?)?"#
         ]
 
         for pattern in leadingPatterns {

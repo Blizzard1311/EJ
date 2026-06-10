@@ -4,7 +4,7 @@ import UniformTypeIdentifiers
 import YijiCore
 
 struct SettingsView: View {
-    @Environment(AppModel.self) private var appModel
+    @EnvironmentObject private var appModel: AppModel
     @Environment(\.openURL) private var openURL
     @State private var showingImportPicker = false
     @State private var pendingImportURL: URL?

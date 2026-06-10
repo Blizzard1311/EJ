@@ -2,7 +2,8 @@ import SwiftUI
 import YijiCore
 
 struct SearchView: View {
-    @Environment(AppModel.self) private var appModel
+    @EnvironmentObject private var appModel: AppModel
+    @StateObject private var voiceSearch = SpeechTranscriber()
 
     @State private var selectedFilter: SearchFilter = .all
     @State private var deletingRecord: Record?
@@ -25,6 +26,12 @@ struct SearchView: View {
         .scrollContentBackground(.hidden)
         .background(screenBackground)
         .navigationTitle("搜索页")
+        .onAppear(perform: configureVoiceSearch)
+        .onDisappear {
+            if voiceSearch.isRecording {
+                voiceSearch.stopRecording()
+            }
+        }
         .confirmationDialog(
             "删除后将同时移除关联提醒。",
             isPresented: Binding(
@@ -71,20 +78,41 @@ struct SearchView: View {
                 HStack(spacing: 10) {
                     Image(systemName: "magnifyingglass")
                         .foregroundStyle(.secondary)
-                    TextField("搜索物品、位置、关键词", text: Bindable(appModel).searchText)
+                    TextField("搜索物品、位置、关键词", text: $appModel.searchText)
                         .textInputAutocapitalization(.never)
                         .submitLabel(.search)
                         .onSubmit {
                             appModel.registerSearchTerm(appModel.searchText)
                         }
 
+                    Button(action: toggleVoiceSearch) {
+                        Image(systemName: voiceSearch.isRecording ? "stop.circle.fill" : "mic.circle.fill")
+                            .font(.title3)
+                            .foregroundStyle(voiceSearch.isRecording ? .red : .blue)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(voiceSearch.isRecording ? "结束语音搜索" : "开始语音搜索")
+
                     if isSearching {
                         Button("清空") {
+                            if voiceSearch.isRecording {
+                                voiceSearch.stopRecording()
+                            }
                             appModel.searchText = ""
                             selectedFilter = .all
                         }
                         .font(.footnote)
                     }
+                }
+
+                if let voiceSearchHint {
+                    Label(voiceSearchHint, systemImage: voiceSearch.isRecording ? "waveform" : "mic")
+                        .font(.footnote)
+                        .foregroundStyle(voiceSearch.isRecording ? .red : .secondary)
+                } else {
+                    Text("支持自然语言搜索，也支持直接说“我的户口本在哪”。")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
 
                 filterPicker
@@ -385,6 +413,46 @@ struct SearchView: View {
             return "换个关键词试试，或者减少筛选条件。"
         }
         return "先去录入一句话，之后就能在这里快速找回。"
+    }
+
+    private var voiceSearchHint: String? {
+        if voiceSearch.isRecording {
+            return "正在听你说，结束后会自动开始搜索。"
+        }
+
+        guard let message = voiceSearch.errorMessage?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !message.isEmpty else {
+            return nil
+        }
+
+        if message.localizedCaseInsensitiveContains("权限已开启") {
+            return "权限已开启，再点一次麦克风开始语音搜索。"
+        }
+
+        return message
+    }
+
+    private func toggleVoiceSearch() {
+        if voiceSearch.isRecording {
+            voiceSearch.stopRecording()
+        } else {
+            voiceSearch.startRecording()
+        }
+    }
+
+    private func configureVoiceSearch() {
+        voiceSearch.onTranscript = { transcript in
+            appModel.searchText = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        voiceSearch.onFinalTranscript = { transcript in
+            let normalized = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !normalized.isEmpty else {
+                return
+            }
+            appModel.searchText = normalized
+            appModel.registerSearchTerm(normalized)
+        }
+        voiceSearch.refreshAuthorizationStatus()
     }
 }
 

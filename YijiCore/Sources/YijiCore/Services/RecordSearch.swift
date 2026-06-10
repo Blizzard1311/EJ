@@ -24,9 +24,10 @@ public enum RecordSearch {
         let content = normalize(record.content)
         let objectName = normalize(record.objectName ?? "")
         let location = normalize(record.location ?? "")
-        let category = normalize(record.category.displayName)
+        let category = normalize(record.displayCategoryName)
+        let sliceCategories = normalize(record.sliceCategoryNames.joined(separator: " "))
         let tags = normalize(record.tags.joined(separator: " "))
-        let searchable = [content, objectName, location, category, tags].joined(separator: " ")
+        let searchable = [content, objectName, location, category, sliceCategories, tags].joined(separator: " ")
 
         var score = 0
 
@@ -35,21 +36,12 @@ public enum RecordSearch {
         }
 
         for token in tokens {
-            if objectName.localizedCaseInsensitiveContains(token) {
-                score += 5
-            }
-            if location.localizedCaseInsensitiveContains(token) {
-                score += 4
-            }
-            if tags.localizedCaseInsensitiveContains(token) {
-                score += 3
-            }
-            if content.localizedCaseInsensitiveContains(token) {
-                score += 2
-            }
-            if category.localizedCaseInsensitiveContains(token) {
-                score += 1
-            }
+            score += weightedMatchScore(token: token, target: objectName, directScore: 5, inverseScore: 4)
+            score += weightedMatchScore(token: token, target: location, directScore: 4, inverseScore: 3)
+            score += weightedMatchScore(token: token, target: sliceCategories, directScore: 4, inverseScore: 3)
+            score += weightedMatchScore(token: token, target: tags, directScore: 3, inverseScore: 2)
+            score += weightedMatchScore(token: token, target: content, directScore: 2, inverseScore: 1)
+            score += weightedMatchScore(token: token, target: category, directScore: 1, inverseScore: 1)
         }
 
         return score
@@ -93,17 +85,49 @@ public enum RecordSearch {
             return lhs.1 > rhs.1
         }
     }
+
+    private static func weightedMatchScore(
+        token: String,
+        target: String,
+        directScore: Int,
+        inverseScore: Int
+    ) -> Int {
+        guard !token.isEmpty, !target.isEmpty else {
+            return 0
+        }
+
+        if target.localizedCaseInsensitiveContains(token) {
+            return directScore
+        }
+
+        guard token.count >= 2, token.localizedCaseInsensitiveContains(target) else {
+            return 0
+        }
+
+        return inverseScore
+    }
 }
 
 private let commonQueryPhrases = [
+    "请帮我找一下",
+    "帮我找一下",
+    "帮我查一下",
+    "在什么地方",
+    "在哪个位置",
+    "在哪个地方",
+    "在哪里",
+    "在哪儿",
+    "在哪呢",
     "帮我找",
     "我想找",
     "查一下",
     "查找",
     "搜索",
+    "告诉我",
     "看看",
+    "一下",
+    "我的",
     "哪里",
-    "在哪儿",
     "在哪",
     "放哪了",
     "放哪",

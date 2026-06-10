@@ -2,7 +2,7 @@ import SwiftUI
 
 @main
 struct YijiApp: App {
-    @State private var appModel = AppModel()
+    @StateObject private var appModel = AppModel()
 
     @MainActor
     init() {
@@ -12,7 +12,7 @@ struct YijiApp: App {
     var body: some Scene {
         WindowGroup {
             RootTabView()
-                .environment(appModel)
+                .environmentObject(appModel)
                 .tint(AppTheme.accent)
                 .task {
                     await appModel.load()

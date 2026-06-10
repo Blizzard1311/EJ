@@ -1,41 +1,53 @@
 import Foundation
-import Observation
+import Combine
+import OSLog
 import YijiCore
 
 @MainActor
-@Observable
-final class AppModel {
+final class AppModel: ObservableObject {
     private let freeRecordLimit = 30
+    private let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier ?? "com.blizzard1311.yiji",
+        category: "AppModel"
+    )
     private let repository: FileBackedVaultStore
     private let parser = RecordParser()
     private let calendar = Calendar(identifier: .gregorian)
-    @ObservationIgnored private var statusRevision = 0
-    @ObservationIgnored private var statusClearTask: Task<Void, Never>?
-    @ObservationIgnored private var focusRevision = 0
-    @ObservationIgnored private var focusClearTask: Task<Void, Never>?
+    private var statusRevision = 0
+    private var statusClearTask: Task<Void, Never>?
+    private var focusRevision = 0
+    private var focusClearTask: Task<Void, Never>?
+    private var cancellables: Set<AnyCancellable> = []
+    private var pendingVoiceSaveTask: Task<Void, Never>?
 
     let speech = SpeechTranscriber()
     let notifications = LocalNotificationScheduler()
 
-    var records: [Record] = []
-    var reminders: [Reminder] = []
-    var captureText = ""
-    var draftSource: CaptureSource = .text
-    var selectedTab: AppTab = .home
-    var searchText = ""
-    var searchHistory: [String] = []
-    var exportURL: URL?
-    var statusMessage: String?
-    var focusedRecordID: UUID?
-    var focusedRecordBadgeText: String?
+    @Published var records: [YijiCore.Record] = []
+    @Published var reminders: [Reminder] = []
+    @Published var captureText = ""
+    @Published var draftSource: CaptureSource = .text
+    @Published var selectedTab: AppTab = .home
+    @Published var searchText = ""
+    @Published var searchHistory: [String] = []
+    @Published var exportURL: URL?
+    @Published var statusMessage: String?
+    @Published var focusedRecordID: UUID?
+    @Published var focusedRecordBadgeText: String?
 
     init(repository: FileBackedVaultStore = FileBackedVaultStore()) {
         self.repository = repository
+        bindChildObjects()
 
         speech.onTranscript = { [weak self] transcript in
             guard let self else { return }
             self.draftSource = .voice
             self.captureText = transcript
+        }
+
+        speech.onFinalTranscript = { [weak self] transcript in
+            guard let self else { return }
+            self.handleFinalVoiceTranscript(transcript)
         }
     }
 
@@ -45,8 +57,13 @@ final class AppModel {
             records = snapshot.records
             reminders = snapshot.reminders
             searchHistory = snapshot.searchHistory
+            let cleanedLegacyReminderCount = await cleanupLegacyFailedReminderArtifacts()
             await reconcileExpiredReminders()
-            clearStatusMessage()
+            if cleanedLegacyReminderCount > 0 {
+                showTransientStatus("已清理 \(cleanedLegacyReminderCount) 条旧错误提醒和关联记录。", seconds: 4.5)
+            } else if statusMessage == nil {
+                clearStatusMessage()
+            }
         } catch {
             showPersistentStatus("读取本地数据失败：\(error.localizedDescription)")
         }
@@ -64,6 +81,10 @@ final class AppModel {
 
     func saveCapture() async {
         guard let parsed = preview(for: captureText) else { return }
+        if let warning = parsed.warnings.first {
+            showPersistentStatus(warning)
+            return
+        }
         guard canSaveAdditionalRecord else {
             showPersistentStatus("当前版本最多可记录 30 条。")
             return
@@ -89,13 +110,36 @@ final class AppModel {
         }
     }
 
-    func startVoiceCapture() async {
+    func startVoiceCapture() {
         draftSource = .voice
-        await speech.startRecording()
+        speech.startRecording()
     }
 
     func stopVoiceCapture() {
         speech.stopRecording()
+    }
+
+    private func handleFinalVoiceTranscript(_ transcript: String) {
+        let trimmed = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+
+        draftSource = .voice
+        captureText = trimmed
+
+        if SearchIntentClassifier.isSearchQuery(trimmed) {
+            pendingVoiceSaveTask?.cancel()
+            activateSearch(trimmed, navigateToRecords: true)
+            return
+        }
+
+        pendingVoiceSaveTask?.cancel()
+        pendingVoiceSaveTask = Task { [weak self] in
+            guard let self else { return }
+            await self.saveCapture()
+            await MainActor.run {
+                self.pendingVoiceSaveTask = nil
+            }
+        }
     }
 
     func requestNotificationAccess() async {
@@ -141,17 +185,23 @@ final class AppModel {
             records = snapshot.records
             reminders = snapshot.reminders
             searchHistory = snapshot.searchHistory
+            let cleanedLegacyReminderCount = await cleanupLegacyFailedReminderArtifacts()
             captureText = ""
             searchText = ""
             exportURL = nil
             await notifications.sync(reminders: reminders)
-            if let latestRecordID = snapshot.records.first?.id {
+            if let latestRecordID = records.first?.id {
                 focusRecord(latestRecordID, badgeText: "已导入")
             } else {
                 selectedTab = .home
                 clearFocusedRecord()
             }
-            showTransientStatus("备份已导入，当前记录、提醒和本地通知已同步更新。")
+            let message = cleanedLegacyReminderCount > 0
+                ? "备份已导入，并清理了 \(cleanedLegacyReminderCount) 条旧错误提醒。"
+                : "备份已导入，当前记录、提醒和本地通知已同步更新。"
+            if statusMessage == nil {
+                showTransientStatus(message)
+            }
         } catch {
             showPersistentStatus("导入备份失败：\(error.localizedDescription)")
         }
@@ -215,16 +265,16 @@ final class AppModel {
         }
     }
 
-    func record(for reminder: Reminder) -> Record? {
+    func record(for reminder: Reminder) -> YijiCore.Record? {
         guard let recordID = reminder.recordID else { return nil }
         return records.first(where: { $0.id == recordID })
     }
 
-    func reminder(for record: Record) -> Reminder? {
+    func reminder(for record: YijiCore.Record) -> Reminder? {
         reminders.first(where: { $0.recordID == record.id })
     }
 
-    var recentRecords: [Record] {
+    var recentRecords: [YijiCore.Record] {
         Array(records.prefix(5))
     }
 
@@ -232,8 +282,25 @@ final class AppModel {
         reminders.filter { $0.status == .pending }.prefix(5).map { $0 }
     }
 
-    var searchResults: [Record] {
+    var searchResults: [YijiCore.Record] {
         RecordSearch.query(searchText, in: records)
+    }
+
+    func activateSearch(_ term: String, navigateToRecords: Bool = false) {
+        let normalized = term.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalized.isEmpty else { return }
+
+        searchText = normalized
+        registerSearchTerm(normalized)
+        clearStatusMessage()
+
+        if navigateToRecords {
+            selectedTab = .capture
+        }
+    }
+
+    func clearActiveSearch() {
+        searchText = ""
     }
 
     func registerSearchTerm(_ term: String) {
@@ -290,8 +357,14 @@ final class AppModel {
         } catch {
             if let schedulerError = error as? LocalNotificationScheduler.SchedulerError,
                schedulerError == .pastDue {
+                logger.error(
+                    "scheduleNotification failed with pastDue reminderID=\(reminder.id.uuidString, privacy: .public) remindAt=\(reminder.remindAt.formatted(date: .numeric, time: .shortened), privacy: .public)"
+                )
                 await markReminderFailed(reminder, message: "提醒时间已过，已标记为失败。")
             } else {
+                logger.error(
+                    "scheduleNotification failed reminderID=\(reminder.id.uuidString, privacy: .public) description=\(error.localizedDescription, privacy: .public)"
+                )
                 showPersistentStatus("提醒已保存，但本地通知创建失败：\(error.localizedDescription)")
             }
         }
@@ -324,6 +397,48 @@ final class AppModel {
         }
     }
 
+    private func cleanupLegacyFailedReminderArtifacts() async -> Int {
+        let legacyReminders = reminders.filter(isLegacyFailedReminderArtifact)
+        guard !legacyReminders.isEmpty else { return 0 }
+
+        let legacyReminderIDs = Set(legacyReminders.map(\.id))
+        let linkedRecordIDs = Set(legacyReminders.compactMap(\.recordID))
+
+        do {
+            let snapshot = try await repository.replace(
+                records: records.filter { !linkedRecordIDs.contains($0.id) },
+                reminders: reminders.filter { !legacyReminderIDs.contains($0.id) },
+                searchHistory: searchHistory
+            )
+            reminders = snapshot.reminders
+            records = snapshot.records
+            return legacyReminders.count
+        } catch {
+            showPersistentStatus("清理旧错误提醒失败：\(error.localizedDescription)")
+            return 0
+        }
+    }
+
+    // Early voice reminder builds could save "now" as remindAt when time parsing failed.
+    private func isLegacyFailedReminderArtifact(_ reminder: Reminder) -> Bool {
+        guard reminder.status == .failed, !reminder.body.isEmpty else {
+            return false
+        }
+
+        let reparsed = parser.parse(
+            content: reminder.body,
+            source: .voice,
+            now: reminder.createdAt,
+            calendar: calendar
+        )
+        guard let reparsedReminder = reparsed.reminder else {
+            return false
+        }
+
+        let drift = abs(reparsedReminder.remindAt.timeIntervalSince(reminder.remindAt))
+        return drift >= 60
+    }
+
     private func markReminderFailed(_ reminder: Reminder, message: String) async {
         var failedReminder = reminder
         failedReminder.status = .failed
@@ -353,7 +468,6 @@ final class AppModel {
 
         focusClearTask?.cancel()
         focusClearTask = nil
-        selectedTab = .home
         focusedRecordID = recordID
         focusedRecordBadgeText = badgeText
 
@@ -409,5 +523,19 @@ final class AppModel {
     private func clearFocusedRecordIfCurrent(_ recordID: UUID, revision: Int) {
         guard focusedRecordID == recordID, focusRevision == revision else { return }
         clearFocusedRecord()
+    }
+
+    private func bindChildObjects() {
+        speech.objectWillChange
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
+
+        notifications.objectWillChange
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
     }
 }
