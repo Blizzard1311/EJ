@@ -2,45 +2,58 @@ import SwiftUI
 import YijiCore
 
 struct RecordRowView: View {
+    enum Style {
+        case detailed
+        case stream
+    }
+
     let record: Record
+    var style: Style = .detailed
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(recordTitle)
-                        .font(.caption.weight(.semibold))
+                        .font(titleFont)
                         .foregroundStyle(.primary)
+                        .lineLimit(style == .stream ? 2 : 1)
 
-                    Text(primaryDescription)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
+                    if let primaryDescription {
+                        Text(primaryDescription)
+                            .font(descriptionFont)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(style == .stream ? 2 : 2)
+                    }
                 }
                 Spacer(minLength: 10)
-                VStack(alignment: .trailing, spacing: 6) {
+                VStack(alignment: .trailing, spacing: style == .stream ? 4 : 6) {
                     categoryChip
 
-                    Text(YijiDateFormatter.dayFormatter.string(from: record.recordDate))
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                    if style == .detailed {
+                        Text(YijiDateFormatter.dayFormatter.string(from: record.recordDate))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
 
-            if let originalContentLine {
+            if style == .detailed, let originalContentLine {
                 Text(originalContentLine)
-                .font(.caption2)
+                    .font(.caption2)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
             }
 
             HStack(spacing: 6) {
-                sourceChip
-                if let eventTimeSummary = record.eventTimeSummary {
-                    infoChip(eventTimeSummary, icon: "calendar")
-                } else if let location = record.location {
-                    infoChip(location, icon: "mappin.and.ellipse")
+                if style == .detailed {
+                    sourceChip
                 }
+
+                if let secondaryMeta {
+                    infoChip(secondaryMeta.text, icon: secondaryMeta.icon)
+                }
+
                 if !record.sliceCategoryNames.isEmpty {
                     infoChip(record.sliceCategoryNames.joined(separator: " / "), icon: "line.3.horizontal.decrease.circle")
                 }
@@ -57,7 +70,34 @@ struct RecordRowView: View {
         return record.content
     }
 
-    private var primaryDescription: String {
+    private var titleFont: Font {
+        switch style {
+        case .detailed:
+            .caption.weight(.semibold)
+        case .stream:
+            .footnote.weight(.semibold)
+        }
+    }
+
+    private var descriptionFont: Font {
+        switch style {
+        case .detailed:
+            .caption2
+        case .stream:
+            .caption
+        }
+    }
+
+    private var primaryDescription: String? {
+        switch style {
+        case .detailed:
+            return detailedPrimaryDescription
+        case .stream:
+            return streamPrimaryDescription
+        }
+    }
+
+    private var detailedPrimaryDescription: String? {
         if let location = record.location, record.category == .storage {
             return "位置：\(location)"
         }
@@ -69,15 +109,45 @@ struct RecordRowView: View {
         return record.answerSummary
     }
 
-    private var originalContentLine: String? {
+    private var streamPrimaryDescription: String? {
+        if let location = record.location, record.category == .storage {
+            return "放在 \(location)"
+        }
+
+        if let objectName = record.objectName,
+           let trimmedContent,
+           trimmedContent != objectName {
+            return trimmedContent
+        }
+
+        return nil
+    }
+
+    private var trimmedContent: String? {
         let trimmed = record.content.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty,
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    private var originalContentLine: String? {
+        guard let trimmed = trimmedContent,
               trimmed != recordTitle,
-              trimmed != primaryDescription else {
+              trimmed != detailedPrimaryDescription else {
             return nil
         }
 
         return trimmed
+    }
+
+    private var secondaryMeta: (text: String, icon: String)? {
+        if let eventTimeSummary = record.eventTimeSummary {
+            return (eventTimeSummary, "calendar")
+        }
+
+        if style == .detailed, let location = record.location {
+            return (location, "mappin.and.ellipse")
+        }
+
+        return nil
     }
 
     private var categoryChip: some View {

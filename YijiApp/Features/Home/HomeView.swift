@@ -28,6 +28,7 @@ struct HomeView: View {
             .scrollDismissesKeyboard(.interactively)
             .background(screenBackground)
             .navigationTitle("录")
+            .navigationBarTitleDisplayMode(.large)
             .onAppear {
                 scrollToFocusedRecord(with: proxy)
             }
@@ -254,11 +255,11 @@ struct HomeView: View {
                 Section {
                     daySectionHeader(section.title)
 
-                    ForEach(section.records) { record in
+                    ForEach(Array(section.records.enumerated()), id: \.element.id) { index, record in
                         NavigationLink {
                             RecordDetailView(recordID: record.id)
                         } label: {
-                            recordCard(for: record)
+                            recordCard(for: record, showsDivider: index < section.records.count - 1)
                         }
                         .id(record.id)
                         .buttonStyle(.plain)
@@ -299,7 +300,7 @@ struct HomeView: View {
         }
     }
 
-    private func recordCard(for record: Record) -> some View {
+    private func recordCard(for record: Record, showsDivider: Bool) -> some View {
         let isFocused = appModel.focusedRecordID == record.id
 
         return VStack(alignment: .leading, spacing: 8) {
@@ -309,23 +310,25 @@ struct HomeView: View {
                     .foregroundStyle(.blue)
             }
 
-            RecordRowView(record: record)
+            RecordRowView(record: record, style: .stream)
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
         .background(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(isFocused ? Color(red: 0.93, green: 0.96, blue: 1.0).opacity(0.96) : Color.white.opacity(0.76))
+                .fill(isFocused ? Color(red: 0.93, green: 0.96, blue: 1.0).opacity(0.96) : Color.white.opacity(0.54))
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(isFocused ? Color.blue.opacity(0.22) : Color.black.opacity(0.04), lineWidth: 1)
-        )
+        .overlay(alignment: .bottom) {
+            if showsDivider {
+                Divider()
+                    .padding(.leading, 12)
+            }
+        }
     }
 
     private func queryResultCard(for record: Record) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            RecordRowView(record: record)
+            RecordRowView(record: record, style: .stream)
 
             if activeTimelineQuery == nil {
                 Text(record.answerSummary)
