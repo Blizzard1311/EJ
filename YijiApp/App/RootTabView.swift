@@ -47,7 +47,7 @@ enum AppTab: Hashable {
         case .capture:
             "录"
         case .settings:
-            "我的"
+            "设"
         }
     }
 
@@ -58,7 +58,7 @@ enum AppTab: Hashable {
         case .capture:
             "square.stack.3d.up.fill"
         case .settings:
-            "person.crop.circle.fill"
+            "gearshape.fill"
         }
     }
 }

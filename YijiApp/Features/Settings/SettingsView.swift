@@ -12,17 +12,15 @@ struct SettingsView: View {
 
     var body: some View {
         List {
-            profileSection
-            managementSection
-            backupSection
-            notificationSection
-            statusSection
-            aboutSection
+            localModeSection
+            remindersSection
+            localDataSection
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .background(screenBackground)
-        .navigationTitle("我的")
+        .navigationTitle("设")
+        .navigationBarTitleDisplayMode(.large)
         .fileImporter(
             isPresented: $showingImportPicker,
             allowedContentTypes: [.json],
@@ -69,176 +67,79 @@ struct SettingsView: View {
         .ignoresSafeArea()
     }
 
-    private var profileSection: some View {
+    private var localModeSection: some View {
         Section {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(spacing: 14) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.blue.opacity(0.14))
-                            .frame(width: 58, height: 58)
-                        Image(systemName: "person.crop.circle.fill")
-                            .font(.system(size: 30))
-                            .foregroundStyle(.blue)
-                    }
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("本地用户")
-                            .font(.headline)
-                        Text("当前版本先聚焦个人生活记录和本地找回。")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
+            settingsCardSection(title: "本地模式", subtitle: "当前版本不需要注册，数据只保存在这台设备") {
+                HStack(spacing: 10) {
+                    metricCard(title: "记录", value: "\(appModel.records.count)")
+                    metricCard(title: "提醒", value: "\(appModel.reminders.count)")
                 }
 
-                HStack {
-                    profileMetric(title: "记录", value: "\(appModel.records.count)")
-                    profileMetric(title: "提醒", value: "\(appModel.reminders.count)")
-                    profileMetric(title: "搜索历史", value: "\(appModel.searchHistory.count)")
+                HStack(spacing: 8) {
+                    statusPill("语音 · \(appModel.speech.authorizationStatus.displayName)")
+                    statusPill("通知 · \(appModel.notifications.authorizationStatus.displayName)")
                 }
             }
-            .padding(18)
-            .background(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(.white.opacity(0.92))
-            )
         }
         .listRowInsets(EdgeInsets(top: 16, leading: 16, bottom: 6, trailing: 16))
         .listRowBackground(Color.clear)
     }
 
-    private var managementSection: some View {
+    private var remindersSection: some View {
         Section {
-            settingsCardSection(title: "常用功能", subtitle: "把最常打开的入口放在前面") {
-                NavigationLink {
-                    profilePlaceholder("个人信息", systemImage: "person.crop.circle")
-                } label: {
-                    settingsRow(
-                        "个人信息",
-                        detail: "昵称、头像和后续登录入口",
-                        systemImage: "person.crop.circle"
-                    )
-                }
-                .buttonStyle(.plain)
-
+            settingsCardSection(title: "提醒与通知", subtitle: "查看提醒，并确认系统通知可正常送达") {
                 NavigationLink {
                     RemindersView()
                 } label: {
-                    settingsRow(
+                    actionRow(
                         "提醒管理",
-                        detail: "查看待提醒、已完成和失败提醒",
+                        detail: appModel.pendingReminders.isEmpty
+                            ? "当前没有待提醒事项"
+                            : "还有 \(appModel.pendingReminders.count) 条待提醒",
                         systemImage: "bell"
                     )
                 }
                 .buttonStyle(.plain)
 
-                NavigationLink {
-                    syncPlaceholder
-                } label: {
-                    settingsRow(
-                        "备份与同步",
-                        detail: "先本地保存，后续接 iCloud 或腾讯云",
-                        systemImage: "arrow.triangle.2.circlepath"
-                    )
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-        .listRowBackground(Color.clear)
-    }
-
-    private var backupSection: some View {
-        Section {
-            settingsCardSection(title: "本地数据", subtitle: "支持导出和恢复 JSON 备份") {
-                Button("生成备份文件") {
-                    Task {
-                        await appModel.prepareExportFile()
-                    }
-                }
-                .buttonStyle(.borderless)
-
-                Button("导入备份文件") {
-                    showingImportPicker = true
-                }
-                .buttonStyle(.borderless)
-
-                if let exportURL = appModel.exportURL {
-                    ShareLink(item: exportURL) {
-                        Label("分享备份文件", systemImage: "square.and.arrow.up")
-                            .foregroundStyle(.blue)
-                    }
-                }
-
-                Text("导入前会二次确认。恢复后会覆盖当前记录、提醒，并重新同步本地通知。")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-
-                Text("会导出当前所有记录、提醒和最近搜索历史为 JSON 文件，适合手动备份、迁移设备或恢复数据。")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-        .listRowBackground(Color.clear)
-    }
-
-    private var notificationSection: some View {
-        Section {
-            settingsCardSection(title: "通知设置", subtitle: "确认提醒是否能进入系统通知") {
                 switch appModel.notifications.authorizationStatus {
                 case .unknown:
-                    Button("开启通知权限") {
+                    actionButton("开启通知权限", systemImage: "bell.badge") {
                         Task {
                             await appModel.requestNotificationAccess()
                         }
                     }
-                    Text("开启后可以直接发送一条 10 秒后的测试通知，验证真机是否正常接收。")
-                        .font(.footnote)
+                    Text("开启后就能用系统通知接收提醒。")
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                 case .denied:
-                    Button("前往系统设置开启通知") {
+                    actionButton("前往系统设置开启通知", systemImage: "gearshape") {
                         guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
                         openURL(url)
                     }
-                    Text("当前提醒仍会保存到本地，但不会出现在系统通知中心。")
-                        .font(.footnote)
+                    Text("提醒仍会保存在本地，但不会出现在系统通知中心。")
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                 case .granted:
-                    Button("发送 10 秒后测试通知") {
+                    actionButton("发送 10 秒后测试通知", systemImage: "paperplane") {
                         Task {
                             await appModel.sendTestNotification()
                         }
                     }
-                    Button("刷新通知状态") {
+                    actionButton("刷新通知状态", systemImage: "arrow.clockwise") {
                         Task {
                             await appModel.notifications.refreshAuthorizationStatus()
                             await appModel.notifications.refreshScheduledIdentifiers()
                         }
                     }
-                    Text("如果测试通知能收到，后续待提醒事项也会按相同机制推送。")
-                        .font(.footnote)
+                    Text("如果测试通知能收到，后续提醒也会按相同机制送达。")
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-            }
-        }
-        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-        .listRowBackground(Color.clear)
-    }
-
-    private var statusSection: some View {
-        Section {
-            settingsCardSection(title: "当前状态", subtitle: "便于快速判断本地功能是否就绪") {
-                LabeledContent("语音权限", value: appModel.speech.authorizationStatus.displayName)
-                LabeledContent("通知权限", value: appModel.notifications.authorizationStatus.displayName)
-                LabeledContent("待提醒", value: "\(appModel.pendingReminders.count)")
-                LabeledContent("最近搜索", value: appModel.searchHistory.first ?? "暂无")
 
                 if let statusMessage = appModel.statusMessage {
                     Text(statusMessage)
-                        .font(.footnote)
+                        .font(.caption)
                         .foregroundStyle(.secondary)
-                        .padding(.top, 2)
                 }
             }
         }
@@ -246,11 +147,32 @@ struct SettingsView: View {
         .listRowBackground(Color.clear)
     }
 
-    private var aboutSection: some View {
+    private var localDataSection: some View {
         Section {
-            settingsCardSection(title: "关于易记", subtitle: "先把 MVP 做稳定，再继续补同步与账号") {
-                Text("一句话记录生活细节，未来帮你找回。")
-                Text("当前版本聚焦语音记录、本地搜索、提醒建模和手动备份。")
+            settingsCardSection(title: "本地数据", subtitle: "导出或恢复 JSON 备份") {
+                actionButton("生成备份文件", systemImage: "arrow.down.doc") {
+                    Task {
+                        await appModel.prepareExportFile()
+                    }
+                }
+
+                actionButton("导入备份文件", systemImage: "square.and.arrow.down") {
+                    showingImportPicker = true
+                }
+
+                if let exportURL = appModel.exportURL {
+                    ShareLink(item: exportURL) {
+                        actionRow(
+                            "分享备份文件",
+                            detail: exportURL.lastPathComponent,
+                            systemImage: "square.and.arrow.up"
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                Text("导入会覆盖当前记录、提醒和本地通知安排。")
+                    .font(.caption)
                     .foregroundStyle(.secondary)
             }
         }
@@ -258,30 +180,37 @@ struct SettingsView: View {
         .listRowBackground(Color.clear)
     }
 
-    private func profileMetric(title: String, value: String) -> some View {
+    private func metricCard(title: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(value)
-                .font(.headline)
+                .font(.title3.weight(.semibold))
             Text(title)
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color(red: 0.97, green: 0.98, blue: 1.0))
+        )
     }
 
-    private func settingsRow(_ title: String, detail: String, systemImage: String) -> some View {
+    private func actionRow(_ title: String, detail: String, systemImage: String) -> some View {
         HStack(spacing: 12) {
             Image(systemName: systemImage)
                 .frame(width: 24, height: 24)
                 .foregroundStyle(.blue)
-                .padding(8)
+                .padding(7)
                 .background(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
                         .fill(Color.blue.opacity(0.12))
                 )
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
+                    .font(.subheadline)
                 Text(detail)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -293,12 +222,35 @@ struct SettingsView: View {
         }
         .padding(14)
         .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .fill(Color(red: 0.97, green: 0.98, blue: 1.0))
         )
     }
 
-    private func settingsCardSection<Content: View>(title: String, subtitle: String, @ViewBuilder content: () -> Content) -> some View {
+    private func actionButton(_ title: String, systemImage: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            actionRow(title, detail: "点一下直接执行", systemImage: systemImage)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func statusPill(_ title: String) -> some View {
+        Text(title)
+            .font(.caption2.weight(.medium))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 5)
+            .background(
+                Capsule()
+                    .fill(Color.white.opacity(0.78))
+            )
+    }
+
+    private func settingsCardSection<Content: View>(
+        title: String,
+        subtitle: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
@@ -314,27 +266,6 @@ struct SettingsView: View {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .fill(.white.opacity(0.92))
         )
-    }
-
-    private func profilePlaceholder(_ title: String, systemImage: String) -> some View {
-        List {
-            Section {
-                Label(title, systemImage: systemImage)
-                Text("MVP 阶段先保留页面入口，后续再补登录、昵称和头像。")
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .navigationTitle(title)
-    }
-
-    private var syncPlaceholder: some View {
-        List {
-            Section("规划中") {
-                Text("当前版本先本地保存，后续再接 iCloud 或腾讯云同步。")
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .navigationTitle("备份与同步")
     }
 }
 
