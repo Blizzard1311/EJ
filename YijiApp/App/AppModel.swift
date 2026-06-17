@@ -18,7 +18,7 @@ final class AppModel: ObservableObject {
     private var focusRevision = 0
     private var focusClearTask: Task<Void, Never>?
     private var cancellables: Set<AnyCancellable> = []
-    private var pendingVoiceSaveTask: Task<Void, Never>?
+    private var hasUserEditedVoiceDraft = false
 
     let speech = SpeechTranscriber()
     let notifications = LocalNotificationScheduler()
@@ -34,6 +34,7 @@ final class AppModel: ObservableObject {
     @Published var statusMessage: String?
     @Published var focusedRecordID: UUID?
     @Published var focusedRecordBadgeText: String?
+    @Published private(set) var lastRecognizedVoiceText: String?
 
     init(repository: FileBackedVaultStore = FileBackedVaultStore()) {
         self.repository = repository
@@ -41,8 +42,7 @@ final class AppModel: ObservableObject {
 
         speech.onTranscript = { [weak self] transcript in
             guard let self else { return }
-            self.draftSource = .voice
-            self.captureText = transcript
+            self.applyVoiceTranscript(transcript)
         }
 
         speech.onFinalTranscript = { [weak self] transcript in
@@ -58,7 +58,6 @@ final class AppModel: ObservableObject {
             reminders = snapshot.reminders
             searchHistory = snapshot.searchHistory
             let cleanedLegacyReminderCount = await cleanupLegacyFailedReminderArtifacts()
-            await reconcileExpiredReminders()
             if cleanedLegacyReminderCount > 0 {
                 showTransientStatus("已清理 \(cleanedLegacyReminderCount) 条旧错误提醒和关联记录。", seconds: 4.5)
             } else if statusMessage == nil {
@@ -69,8 +68,7 @@ final class AppModel: ObservableObject {
         }
 
         speech.refreshAuthorizationStatus()
-        await notifications.refreshAuthorizationStatus()
-        await notifications.sync(reminders: reminders)
+        await refreshReminderStates()
     }
 
     func preview(for text: String) -> ParsedCapture? {
@@ -112,6 +110,9 @@ final class AppModel: ObservableObject {
 
     func startVoiceCapture() {
         draftSource = .voice
+        hasUserEditedVoiceDraft = false
+        lastRecognizedVoiceText = nil
+        clearStatusMessage()
         speech.startRecording()
     }
 
@@ -119,27 +120,62 @@ final class AppModel: ObservableObject {
         speech.stopRecording()
     }
 
+    func submitCaptureDraft() async {
+        let trimmed = captureText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+
+        draftSource = .voice
+
+        if SearchIntentClassifier.isSearchQuery(trimmed) {
+            activateSearch(trimmed, navigateToRecords: true)
+            captureText = ""
+            speech.resetTranscript()
+            return
+        }
+
+        await saveCapture()
+    }
+
+    func clearCaptureDraft() {
+        captureText = ""
+        draftSource = .text
+        hasUserEditedVoiceDraft = false
+        lastRecognizedVoiceText = nil
+        speech.resetTranscript()
+        clearStatusMessage()
+    }
+
+    func updateCaptureDraftText(_ text: String) {
+        captureText = text
+
+        guard draftSource == .voice, !speech.isRecording else { return }
+
+        let normalizedDraft = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalizedRecognized = lastRecognizedVoiceText?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        hasUserEditedVoiceDraft = normalizedDraft != normalizedRecognized
+    }
+
+    func refreshReminderStates() async {
+        await notifications.refreshAuthorizationStatus()
+        await reconcileReminderStatuses()
+        await notifications.sync(reminders: reminders)
+    }
+
     private func handleFinalVoiceTranscript(_ transcript: String) {
         let trimmed = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
+        applyVoiceTranscript(trimmed)
+    }
+
+    private func applyVoiceTranscript(_ transcript: String) {
+        let trimmed = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
         draftSource = .voice
+        lastRecognizedVoiceText = trimmed.isEmpty ? nil : trimmed
+
+        guard !hasUserEditedVoiceDraft || speech.isRecording else { return }
         captureText = trimmed
-
-        if SearchIntentClassifier.isSearchQuery(trimmed) {
-            pendingVoiceSaveTask?.cancel()
-            activateSearch(trimmed, navigateToRecords: true)
-            return
-        }
-
-        pendingVoiceSaveTask?.cancel()
-        pendingVoiceSaveTask = Task { [weak self] in
-            guard let self else { return }
-            await self.saveCapture()
-            await MainActor.run {
-                self.pendingVoiceSaveTask = nil
-            }
-        }
     }
 
     func requestNotificationAccess() async {
@@ -379,7 +415,7 @@ final class AppModel: ObservableObject {
         }
     }
 
-    private func reconcileExpiredReminders() async {
+    private func reconcileReminderStatuses() async {
         let expired = reminders.filter {
             $0.status == .pending && $0.repeatRule == .none && $0.remindAt <= Date()
         }
@@ -387,10 +423,10 @@ final class AppModel: ObservableObject {
         guard !expired.isEmpty else { return }
 
         for reminder in expired {
-            var failedReminder = reminder
-            failedReminder.status = .failed
+            var updatedReminder = reminder
+            updatedReminder.status = notifications.authorizationStatus == .granted ? .notified : .failed
 
-            if let snapshot = try? await repository.updateReminder(failedReminder) {
+            if let snapshot = try? await repository.updateReminder(updatedReminder) {
                 reminders = snapshot.reminders
                 records = snapshot.records
             }

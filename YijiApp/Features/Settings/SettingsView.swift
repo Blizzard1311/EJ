@@ -19,8 +19,6 @@ struct SettingsView: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .background(screenBackground)
-        .navigationTitle("设")
-        .navigationBarTitleDisplayMode(.large)
         .fileImporter(
             isPresented: $showingImportPicker,
             allowedContentTypes: [.json],

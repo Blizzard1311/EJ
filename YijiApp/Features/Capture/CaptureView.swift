@@ -6,12 +6,17 @@ struct CaptureView: View {
     @EnvironmentObject private var appModel: AppModel
     @Environment(\.openURL) private var openURL
     @State private var pinnedVoiceText = ""
+    @State private var isPressingMicrophone = false
 
     var body: some View {
         ZStack {
             screenBackground
 
             GeometryReader { proxy in
+                let topInset = proxy.safeAreaInsets.top
+                let bottomInset = proxy.safeAreaInsets.bottom
+                let availableHeight = max(proxy.size.height - topInset - bottomInset, 0)
+
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
                         Spacer(minLength: 72)
@@ -22,14 +27,13 @@ struct CaptureView: View {
                         footerHint
                     }
                     .frame(maxWidth: .infinity)
-                    .frame(minHeight: proxy.size.height - 12, alignment: .center)
+                    .frame(minHeight: availableHeight - 12, alignment: .center)
                     .padding(.horizontal, 28)
-                    .padding(.vertical, 24)
+                    .padding(.top, 24)
+                    .padding(.bottom, bottomInset + 24)
                 }
             }
         }
-        .navigationTitle("记")
-        .navigationBarTitleDisplayMode(.large)
         .onAppear {
             syncPinnedVoiceText(from: appModel.captureText)
         }
@@ -68,47 +72,11 @@ struct CaptureView: View {
 
     private var microphoneStage: some View {
         VStack(spacing: 18) {
-            Button(action: toggleMicrophone) {
-                ZStack {
-                    Circle()
-                        .fill(Color.white.opacity(0.80))
-                        .frame(width: 214, height: 214)
-                        .shadow(color: Color.black.opacity(0.04), radius: 28, y: 12)
-
-                    Circle()
-                        .stroke(
-                            appModel.speech.isRecording ? Color.red.opacity(0.24) : Color(red: 0.69, green: 0.79, blue: 0.94).opacity(0.38),
-                            lineWidth: 18
-                        )
-                        .frame(width: 168, height: 168)
-
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: appModel.speech.isRecording
-                                    ? [Color(red: 0.96, green: 0.40, blue: 0.37), Color(red: 0.79, green: 0.18, blue: 0.18)]
-                                    : [Color(red: 0.64, green: 0.75, blue: 0.93), Color(red: 0.56, green: 0.68, blue: 0.89)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 108, height: 108)
-                        .shadow(
-                            color: appModel.speech.isRecording ? Color.red.opacity(0.14) : Color(red: 0.69, green: 0.79, blue: 0.94).opacity(0.18),
-                            radius: 10,
-                            y: 6
-                        )
-
-                    Image(systemName: appModel.speech.isRecording ? "waveform.circle.fill" : "mic.fill")
-                        .font(.system(size: 32, weight: .semibold))
-                        .foregroundStyle(.white)
-                }
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(appModel.speech.isRecording ? "结束录音" : "开始录音")
+            microphoneButton
+                .accessibilityLabel(appModel.speech.isRecording ? "松开结束录音" : "按住开始录音")
 
             if !appModel.speech.isRecording {
-                Text("点一下开始")
+                Text(visibleVoiceText == nil ? "按住说话，松开结束" : "识别结果已生成，可继续修改")
                     .font(.title2.weight(.semibold))
                     .foregroundStyle(.primary)
             }
@@ -128,6 +96,54 @@ struct CaptureView: View {
             }
         }
         .frame(maxWidth: .infinity)
+    }
+
+    private var microphoneButton: some View {
+        ZStack {
+            Circle()
+                .fill(Color.white.opacity(0.80))
+                .frame(width: 214, height: 214)
+                .shadow(color: Color.black.opacity(0.04), radius: 28, y: 12)
+
+            Circle()
+                .stroke(
+                    appModel.speech.isRecording ? Color.red.opacity(0.24) : Color(red: 0.69, green: 0.79, blue: 0.94).opacity(0.38),
+                    lineWidth: 18
+                )
+                .frame(width: 168, height: 168)
+
+            Circle()
+                .fill(
+                    LinearGradient(
+                        colors: appModel.speech.isRecording
+                            ? [Color(red: 0.96, green: 0.40, blue: 0.37), Color(red: 0.79, green: 0.18, blue: 0.18)]
+                            : [Color(red: 0.64, green: 0.75, blue: 0.93), Color(red: 0.56, green: 0.68, blue: 0.89)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 108, height: 108)
+                .shadow(
+                    color: appModel.speech.isRecording ? Color.red.opacity(0.14) : Color(red: 0.69, green: 0.79, blue: 0.94).opacity(0.18),
+                    radius: 10,
+                    y: 6
+                )
+
+            Image(systemName: appModel.speech.isRecording ? "waveform.circle.fill" : "mic.fill")
+                .font(.system(size: 32, weight: .semibold))
+                .foregroundStyle(.white)
+        }
+        .scaleEffect(appModel.speech.isRecording || isPressingMicrophone ? 0.97 : 1)
+        .contentShape(Circle())
+        .gesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    beginPressToTalkIfNeeded()
+                }
+                .onEnded { _ in
+                    endPressToTalk()
+                }
+        )
     }
 
     private var footerHint: some View {
@@ -165,10 +181,7 @@ struct CaptureView: View {
             }
 
             if let visibleVoiceText {
-                Text(visibleVoiceText)
-                    .font(.body.weight(.medium))
-                    .foregroundStyle(.primary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                editableVoiceDraft(text: visibleVoiceText)
             } else if appModel.speech.isRecording {
                 Text("正在听，你说的话会先转成文字。")
                     .font(.body)
@@ -204,6 +217,35 @@ struct CaptureView: View {
                     .foregroundStyle(feedbackStatusColor)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
+
+            if canSubmitVoiceDraft {
+                Divider()
+
+                HStack(spacing: 10) {
+                    Button("清空") {
+                        clearVoiceDraft()
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+
+                    Spacer(minLength: 0)
+
+                    Button(searchIntentButtonTitle) {
+                        Task {
+                            await appModel.submitCaptureDraft()
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .font(.subheadline.weight(.semibold))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(
+                        Capsule()
+                            .fill(searchIntentButtonColor.opacity(0.14))
+                    )
+                    .foregroundStyle(searchIntentButtonColor)
+                }
+            }
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -217,6 +259,38 @@ struct CaptureView: View {
         appModel.speech.isRecording
             || visibleVoiceText != nil
             || feedbackStatusMessage != nil
+    }
+
+    @ViewBuilder
+    private func editableVoiceDraft(text: String) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("识别文字")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            TextField("语音识别结果会显示在这里", text: Binding(
+                get: { appModel.captureText },
+                set: { newValue in
+                    appModel.updateCaptureDraftText(newValue)
+                }
+            ), axis: .vertical)
+            .textFieldStyle(.plain)
+            .font(.body.weight(.medium))
+            .foregroundStyle(.primary)
+            .lineLimit(3...8)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color(red: 0.97, green: 0.98, blue: 1.0))
+            )
+
+            if text != appModel.captureText || appModel.lastRecognizedVoiceText != appModel.captureText {
+                Text("已保留原始识别结果，当前文字以你的修改为准。")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
     }
 
     private var visibleVoiceText: String? {
@@ -298,19 +372,41 @@ struct CaptureView: View {
         appModel.speech.errorMessage == nil ? .green : .red
     }
 
+    private var canSubmitVoiceDraft: Bool {
+        !appModel.speech.isRecording && visibleVoiceText != nil
+    }
+
+    private var searchIntentButtonTitle: String {
+        guard let visibleVoiceText else { return "保存" }
+        return SearchIntentClassifier.isSearchQuery(visibleVoiceText) ? "去搜索" : "保存"
+    }
+
+    private var searchIntentButtonColor: Color {
+        guard let visibleVoiceText else { return .blue }
+        return SearchIntentClassifier.isSearchQuery(visibleVoiceText) ? .orange : .blue
+    }
+
     private func syncPinnedVoiceText(from text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         pinnedVoiceText = trimmed
     }
 
-    private func toggleMicrophone() {
-        appModel.draftSource = .voice
-        if appModel.speech.isRecording {
-            appModel.stopVoiceCapture()
-        } else {
-            appModel.startVoiceCapture()
-        }
+    private func beginPressToTalkIfNeeded() {
+        guard !isPressingMicrophone else { return }
+        isPressingMicrophone = true
+        appModel.startVoiceCapture()
+    }
+
+    private func endPressToTalk() {
+        guard isPressingMicrophone || appModel.speech.isRecording else { return }
+        isPressingMicrophone = false
+        appModel.stopVoiceCapture()
+    }
+
+    private func clearVoiceDraft() {
+        pinnedVoiceText = ""
+        appModel.clearCaptureDraft()
     }
 }
 

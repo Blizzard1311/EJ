@@ -301,6 +301,8 @@ struct ReminderEditorView: View {
         switch status {
         case .pending:
             .orange
+        case .notified:
+            .blue
         case .done:
             .green
         case .cancelled:
@@ -312,6 +314,9 @@ struct ReminderEditorView: View {
 
     private var editorHint: (text: String, icon: String, color: Color, detail: String?) {
         if draft.status != .pending {
+            if draft.status == .notified {
+                return ("这条提醒已送达，不会再次进入系统通知", "checkmark.bell.fill", .blue, "如果还想再次提醒，可以把状态改回“待提醒”。")
+            }
             return ("当前状态不会进入系统通知", "bell.slash", .gray, "只有“待提醒”状态会尝试同步到 iPhone 系统通知。")
         }
 
@@ -344,7 +349,7 @@ struct ReminderEditorView: View {
         guard reminder.status == .pending else { return nil }
         guard reminder.repeatRule == .none else { return nil }
         guard reminder.remindAt <= Date() else { return nil }
-        return "一次性提醒时间已过，请调整到未来时间，或先改为已完成/已取消。"
+        return "一次性提醒时间已过，请调整到未来时间，或先改为已提醒/已完成/已取消。"
     }
 }
 

@@ -26,6 +26,9 @@ struct RemindersView: View {
         .scrollContentBackground(.hidden)
         .background(screenBackground)
         .navigationTitle("提醒管理")
+        .task {
+            await appModel.refreshReminderStates()
+        }
         .sheet(item: $editingReminder) { reminder in
             ReminderEditorView(reminder: reminder) { updated in
                 await appModel.updateReminder(updated)
@@ -52,8 +55,8 @@ struct RemindersView: View {
 
                 HStack(spacing: 10) {
                     summaryCard(title: "待提醒", value: "\(appModel.pendingReminders.count)", color: .orange)
+                    summaryCard(title: "已提醒", value: "\(appModel.reminders.filter { $0.status == .notified }.count)", color: .blue)
                     summaryCard(title: "已完成", value: "\(appModel.reminders.filter { $0.status == .done }.count)", color: .green)
-                    summaryCard(title: "已取消", value: "\(appModel.reminders.filter { $0.status == .cancelled }.count)", color: .gray)
                 }
             }
             .padding(18)
@@ -142,7 +145,7 @@ struct RemindersView: View {
                     .swipeActions(edge: .leading, allowsFullSwipe: false) {
                         switch reminder.status {
                         case .pending:
-                            Button("完成") {
+                            Button("标完成") {
                                 Task {
                                     await appModel.setReminderStatus(reminder, status: .done)
                                 }
@@ -155,6 +158,20 @@ struct RemindersView: View {
                                 }
                             }
                             .tint(.gray)
+                        case .notified:
+                            Button("标完成") {
+                                Task {
+                                    await appModel.setReminderStatus(reminder, status: .done)
+                                }
+                            }
+                            .tint(.green)
+
+                            Button("重启") {
+                                Task {
+                                    await appModel.setReminderStatus(reminder, status: .pending)
+                                }
+                            }
+                            .tint(.orange)
                         case .done, .cancelled, .failed:
                             Button("重启") {
                                 Task {
@@ -204,6 +221,8 @@ struct RemindersView: View {
         switch status {
         case .pending:
             .orange
+        case .notified:
+            .blue
         case .done:
             .green
         case .cancelled:
@@ -224,6 +243,10 @@ struct RemindersView: View {
     private func notificationDescriptor(for reminder: Reminder) -> (text: String, icon: String, color: Color) {
         if reminder.status == .failed {
             return ("提醒失败，未进入通知", "exclamationmark.triangle.fill", .red)
+        }
+
+        if reminder.status == .notified {
+            return ("提醒已送达，当前不再排入通知", "checkmark.bell.fill", .blue)
         }
 
         if reminder.status != .pending {

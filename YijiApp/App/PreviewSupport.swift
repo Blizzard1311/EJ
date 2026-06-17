@@ -101,6 +101,9 @@ enum PreviewSupport {
             return lhs.recordDate > rhs.recordDate
         }
         reminders.sort { $0.remindAt < $1.remindAt }
+        if let firstPendingIndex = reminders.firstIndex(where: { $0.status == .pending }) {
+            reminders[firstPendingIndex].status = .notified
+        }
 
         model.records = records
         model.reminders = reminders

@@ -4,38 +4,30 @@ import YijiCore
 struct HomeView: View {
     @EnvironmentObject private var appModel: AppModel
     @State private var deletingRecord: Record?
-    @State private var selectedTimeSlice: RecordTimeSlice = .all
-    @State private var selectedCategorySlice: RecordSliceCategory?
+    @State private var selectedDate = Calendar(identifier: .gregorian).startOfDay(for: Date())
+    @State private var visibleMonth = Calendar(identifier: .gregorian).startOfDay(for: Date())
+    @State private var calendarHeight: CGFloat = 432
 
     var body: some View {
-        ScrollViewReader { proxy in
-            List {
-                filtersSection
+        List {
+            if isSearchingRecords {
+                activeSearchSection
+                queryResultsSection
+            } else {
+                monthCalendarSection
 
-                if isSearchingRecords {
-                    activeSearchSection
-                    queryResultsSection
-                } else {
-                    if let statusMessage = appModel.statusMessage {
-                        statusSection(statusMessage)
-                    }
-
-                    recordsSection
+                if let statusMessage = appModel.statusMessage {
+                    statusSection(statusMessage)
                 }
-            }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .scrollDismissesKeyboard(.interactively)
-            .background(screenBackground)
-            .navigationTitle("录")
-            .navigationBarTitleDisplayMode(.large)
-            .onAppear {
-                scrollToFocusedRecord(with: proxy)
-            }
-            .onChange(of: appModel.focusedRecordID) { _ in
-                scrollToFocusedRecord(with: proxy)
+
+                daySummarySection
+                dayContentSection
             }
         }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .scrollDismissesKeyboard(.interactively)
+        .background(screenBackground)
         .confirmationDialog(
             "删除后将同时移除关联提醒。",
             isPresented: Binding(
@@ -59,6 +51,12 @@ struct HomeView: View {
                 deletingRecord = nil
             }
         }
+        .onAppear {
+            syncSelectedDateIfNeeded()
+        }
+        .onChange(of: appModel.focusedRecordID) { _ in
+            syncSelectedDateIfNeeded()
+        }
     }
 
     private var screenBackground: some View {
@@ -71,6 +69,49 @@ struct HomeView: View {
             endPoint: .bottomTrailing
         )
         .ignoresSafeArea()
+    }
+
+    private var monthCalendarSection: some View {
+        Section {
+            VStack(alignment: .leading, spacing: 9) {
+                CalendarMonthView(
+                    selectedDate: selectedDate,
+                    visibleMonth: visibleMonth,
+                    eventDates: recordDateSet,
+                    reminderDates: pendingReminderDateSet,
+                    notifiedDates: notifiedReminderDateSet,
+                    calendar: filterCalendar,
+                    onDateSelected: { date in
+                        selectedDate = filterCalendar.startOfDay(for: date)
+                    },
+                    onVisibleMonthChanged: { date in
+                        visibleMonth = filterCalendar.startOfDay(for: date)
+                    },
+                    onHeightChanged: { height in
+                        calendarHeight = height
+                    }
+                )
+                .frame(height: calendarHeight)
+
+                calendarLegend
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(.white.opacity(0.92))
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(Color.white.opacity(0.62), lineWidth: 1)
+            )
+        }
+        .listRowInsets(EdgeInsets(top: 16, leading: 16, bottom: 6, trailing: 16))
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+        .listSectionSeparator(.hidden, edges: .all)
     }
 
     private func statusSection(_ statusMessage: String) -> some View {
@@ -86,7 +127,147 @@ struct HomeView: View {
                         .fill(Color.white.opacity(0.74))
                 )
         }
-        .listRowInsets(EdgeInsets(top: 2, leading: 10, bottom: 2, trailing: 10))
+        .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 2, trailing: 16))
+        .listRowBackground(Color.clear)
+    }
+
+    private var daySummarySection: some View {
+        Section {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .top, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(dayHeaderTitle)
+                            .font(.headline.weight(.semibold))
+                        Text(dayHeaderSubtitle)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    Spacer(minLength: 10)
+
+                    countBadge(daySummaryCountText)
+                }
+
+                HStack(spacing: 10) {
+                    summaryPill(
+                        title: "记录",
+                        value: "\(selectedDateRecords.count)",
+                        tint: .blue,
+                        systemImage: "circle.fill"
+                    )
+                    summaryPill(
+                        title: "待提醒",
+                        value: "\(selectedDatePendingReminders.count)",
+                        tint: .orange,
+                        systemImage: "bell.fill"
+                    )
+                    summaryPill(
+                        title: "已提醒",
+                        value: "\(selectedDateNotifiedReminders.count)",
+                        tint: .green,
+                        systemImage: "checkmark.circle.fill"
+                    )
+                }
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(.white.opacity(0.92))
+            )
+        }
+        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+        .listRowBackground(Color.clear)
+    }
+
+    @ViewBuilder
+    private var dayContentSection: some View {
+        if selectedDateRecords.isEmpty && selectedDateReminders.isEmpty {
+            Section {
+                Text("这一天还没有内容。你可以回“记”里新增，或换一个日期看看。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(14)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .fill(Color.white.opacity(0.86))
+                    )
+            }
+            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 10, trailing: 16))
+            .listRowBackground(Color.clear)
+        } else {
+            if !selectedDatePendingReminders.isEmpty || !selectedDateNotifiedReminders.isEmpty || !selectedDateArchivedReminders.isEmpty {
+                reminderSection(title: "提醒", reminders: selectedDateReminders)
+            }
+
+            if !selectedDateRecords.isEmpty {
+                recordsSection
+            }
+        }
+    }
+
+    private func reminderSection(title: String, reminders: [Reminder]) -> some View {
+        Section {
+            VStack(alignment: .leading, spacing: 8) {
+                sectionHeader(
+                    title: title,
+                    subtitle: reminderSectionSubtitle,
+                    countText: "\(reminders.count) 条"
+                )
+
+                ForEach(Array(reminders.enumerated()), id: \.element.id) { index, reminder in
+                    if index > 0 {
+                        Divider()
+                    }
+
+                    reminderCard(for: reminder)
+                }
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(.white.opacity(0.92))
+            )
+        }
+        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+        .listRowBackground(Color.clear)
+    }
+
+    private var recordsSection: some View {
+        Section {
+            VStack(alignment: .leading, spacing: 8) {
+                sectionHeader(
+                    title: "记录",
+                    subtitle: recordsSectionSubtitle,
+                    countText: "\(selectedDateRecords.count) 条"
+                )
+
+                ForEach(Array(selectedDateRecords.enumerated()), id: \.element.id) { index, record in
+                    if index > 0 {
+                        Divider()
+                    }
+
+                    NavigationLink {
+                        RecordDetailView(recordID: record.id)
+                    } label: {
+                        recordCard(for: record)
+                    }
+                    .buttonStyle(.plain)
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button("删除", role: .destructive) {
+                            deletingRecord = record
+                        }
+                    }
+                }
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(.white.opacity(0.92))
+            )
+        }
+        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 10, trailing: 16))
         .listRowBackground(Color.clear)
     }
 
@@ -100,7 +281,7 @@ struct HomeView: View {
 
                     Spacer(minLength: 8)
 
-                    Button("清除") {
+                    Button("返回月历") {
                         clearSearch()
                     }
                     .buttonStyle(.plain)
@@ -112,13 +293,13 @@ struct HomeView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            .padding(10)
+            .padding(14)
             .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .fill(Color.white.opacity(0.86))
             )
         }
-        .listRowInsets(EdgeInsets(top: 4, leading: 10, bottom: 2, trailing: 10))
+        .listRowInsets(EdgeInsets(top: 16, leading: 16, bottom: 4, trailing: 16))
         .listRowBackground(Color.clear)
     }
 
@@ -147,9 +328,9 @@ struct HomeView: View {
                             .buttonStyle(.plain)
                         }
                     }
-                    .padding(10)
+                    .padding(14)
                     .background(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
                             .fill(Color.white.opacity(0.86))
                     )
                 }
@@ -159,9 +340,9 @@ struct HomeView: View {
                         RecordDetailView(recordID: record.id)
                     } label: {
                         queryResultCard(for: record)
-                            .padding(12)
+                            .padding(14)
                             .background(
-                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                RoundedRectangle(cornerRadius: 18, style: .continuous)
                                     .fill(Color.white.opacity(0.86))
                             )
                     }
@@ -174,106 +355,8 @@ struct HomeView: View {
                 }
             }
         }
-        .listRowInsets(EdgeInsets(top: 2, leading: 10, bottom: 8, trailing: 10))
+        .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 10, trailing: 16))
         .listRowBackground(Color.clear)
-    }
-
-    private var filtersSection: some View {
-        Section {
-            VStack(alignment: .leading, spacing: 8) {
-                filterGroup(title: "时间", showsReset: hasActiveFilters) {
-                    ForEach(RecordTimeSlice.allCases) { slice in
-                        filterChip(
-                            title: slice.title,
-                            isSelected: selectedTimeSlice == slice
-                        ) {
-                            selectedTimeSlice = slice
-                        }
-                    }
-                }
-
-                filterGroup(title: "分类") {
-                    filterChip(
-                        title: "全部",
-                        isSelected: selectedCategorySlice == nil
-                    ) {
-                        selectedCategorySlice = nil
-                    }
-
-                    ForEach(RecordSliceCategory.allCases, id: \.self) { category in
-                        filterChip(
-                            title: category.displayName,
-                            isSelected: selectedCategorySlice == category
-                        ) {
-                            selectedCategorySlice = category
-                        }
-                    }
-                }
-            }
-            .padding(10)
-            .background(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(Color.white.opacity(0.84))
-            )
-        }
-        .listRowInsets(EdgeInsets(top: 4, leading: 10, bottom: 2, trailing: 10))
-        .listRowBackground(Color.clear)
-    }
-
-    @ViewBuilder
-    private var recordsSection: some View {
-        if appModel.records.isEmpty {
-            Section {
-                Text("还没有记录，先回首页说一句话。")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(10)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(Color.white.opacity(0.86))
-                    )
-            }
-            .listRowInsets(EdgeInsets(top: 4, leading: 10, bottom: 8, trailing: 10))
-            .listRowBackground(Color.clear)
-        } else if filteredRecords.isEmpty {
-            Section {
-                Text("换一个时间或分类试试。")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(10)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(Color.white.opacity(0.86))
-                    )
-            }
-            .listRowInsets(EdgeInsets(top: 4, leading: 10, bottom: 8, trailing: 10))
-            .listRowBackground(Color.clear)
-        } else {
-            ForEach(recordSections) { section in
-                Section {
-                    daySectionHeader(section.title)
-
-                    ForEach(Array(section.records.enumerated()), id: \.element.id) { index, record in
-                        NavigationLink {
-                            RecordDetailView(recordID: record.id)
-                        } label: {
-                            recordCard(for: record, showsDivider: index < section.records.count - 1)
-                        }
-                        .id(record.id)
-                        .buttonStyle(.plain)
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                            Button("删除", role: .destructive) {
-                                deletingRecord = record
-                            }
-                        }
-                    }
-                }
-                .listRowInsets(EdgeInsets(top: 2, leading: 10, bottom: 4, trailing: 10))
-                .listRowBackground(Color.clear)
-            }
-        }
     }
 
     private var emptyQueryState: some View {
@@ -284,23 +367,117 @@ struct HomeView: View {
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
-        .padding(10)
+        .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .fill(Color.white.opacity(0.86))
         )
     }
 
-    private func scrollToFocusedRecord(with proxy: ScrollViewProxy) {
-        guard let focusedRecordID = appModel.focusedRecordID else { return }
+    private func summaryPill(title: String, value: String, tint: Color, systemImage: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Image(systemName: systemImage)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(tint)
+                    .frame(width: 20, height: 20)
+                    .background(
+                        Circle()
+                            .fill(tint.opacity(0.12))
+                    )
 
-        withAnimation(.easeInOut(duration: 0.35)) {
-            proxy.scrollTo(focusedRecordID, anchor: .top)
+                Spacer(minLength: 0)
+            }
+
+            Text(value)
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(.primary)
+
+            Text(title)
+                .font(.caption2.weight(.medium))
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(tint.opacity(0.08))
+        )
+    }
+
+    private var calendarLegend: some View {
+        HStack(spacing: 18) {
+            calendarLegendItem(title: "记录", color: .blue)
+            calendarLegendItem(title: "待提醒", color: .orange)
+            calendarLegendItem(title: "已提醒", color: .green)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 4)
+        .padding(.top, 0)
+        .padding(.bottom, 0)
+    }
+
+    private func calendarLegendItem(title: String, color: Color) -> some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(color)
+                .frame(width: 6, height: 6)
+
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 
-    private func recordCard(for record: Record, showsDivider: Bool) -> some View {
+    private func reminderCard(for reminder: Reminder) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 10) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(reminder.title)
+                        .font(.footnote.weight(.semibold))
+
+                    if !reminder.body.isEmpty {
+                        Text(reminder.body)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(3)
+                    }
+                }
+
+                Spacer(minLength: 10)
+
+                Text(reminder.status.displayName)
+                    .font(.caption2.weight(.medium))
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(
+                        Capsule()
+                            .fill(reminderStatusColor(reminder.status).opacity(0.14))
+                    )
+                    .foregroundStyle(reminderStatusColor(reminder.status))
+            }
+
+            HStack(spacing: 8) {
+                infoChip(YijiDateFormatter.timeFormatter.string(from: reminder.remindAt), icon: "clock")
+                infoChip(reminder.repeatRule.displayName, icon: "repeat")
+            }
+
+            if let record = appModel.record(for: reminder) {
+                NavigationLink {
+                    RecordDetailView(recordID: record.id)
+                } label: {
+                    Label("查看关联记录", systemImage: "doc.text")
+                        .font(.caption)
+                        .foregroundStyle(.blue)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private func recordCard(for record: Record) -> some View {
         let isFocused = appModel.focusedRecordID == record.id
 
         return VStack(alignment: .leading, spacing: 8) {
@@ -313,16 +490,27 @@ struct HomeView: View {
             RecordRowView(record: record, style: .stream)
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 9)
+        .padding(.vertical, 8)
         .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(isFocused ? Color(red: 0.93, green: 0.96, blue: 1.0).opacity(0.96) : Color.white.opacity(0.54))
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(isFocused ? Color(red: 0.93, green: 0.96, blue: 1.0).opacity(0.96) : Color.white.opacity(0.48))
         )
-        .overlay(alignment: .bottom) {
-            if showsDivider {
-                Divider()
-                    .padding(.leading, 12)
+    }
+
+    private func sectionHeader(title: String, subtitle: String, countText: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.headline.weight(.semibold))
+                Text(subtitle)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+
+            Spacer(minLength: 10)
+
+            countBadge(countText)
         }
     }
 
@@ -339,63 +527,67 @@ struct HomeView: View {
         }
     }
 
-    private func daySectionHeader(_ title: String) -> some View {
-        HStack {
-            Text(title)
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
-
-            Spacer(minLength: 0)
-        }
-        .padding(.top, 1)
-        .padding(.bottom, 1)
+    private func infoChip(_ text: String, icon: String) -> some View {
+        Label(text, systemImage: icon)
+            .font(.caption2)
+            .lineLimit(1)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                Capsule()
+                    .fill(Color(red: 0.97, green: 0.98, blue: 1.0))
+            )
+            .foregroundStyle(.secondary)
     }
 
-    private func filterGroup<Content: View>(
-        title: String,
-        showsReset: Bool = false,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(title)
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.secondary)
+    private func countBadge(_ text: String) -> some View {
+        Text(text)
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(
+                Capsule()
+                    .fill(Color.black.opacity(0.05))
+            )
+    }
 
-                Spacer(minLength: 8)
-
-                if showsReset {
-                    Button("清除") {
-                        resetFilters()
-                    }
-                    .buttonStyle(.plain)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                }
-            }
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 6) {
-                    content()
-                }
-                .padding(.vertical, 1)
-            }
+    private func reminderStatusColor(_ status: ReminderStatus) -> Color {
+        switch status {
+        case .pending:
+            .orange
+        case .notified:
+            .green
+        case .done:
+            .blue
+        case .cancelled:
+            .gray
+        case .failed:
+            .red
         }
     }
 
-    private func filterChip(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.caption2.weight(.medium))
-                .padding(.horizontal, 9)
-                .padding(.vertical, 5)
-                .background(
-                    Capsule()
-                        .fill(isSelected ? Color.blue.opacity(0.12) : Color.white.opacity(0.68))
-                )
-                .foregroundStyle(isSelected ? Color.blue : Color.primary)
+    private func syncSelectedDateIfNeeded() {
+        if let focusedRecordID = appModel.focusedRecordID,
+           let record = appModel.records.first(where: { $0.id == focusedRecordID }) {
+            let recordDay = filterCalendar.startOfDay(for: record.recordDate)
+            selectedDate = recordDay
+            visibleMonth = recordDay
+            return
         }
-        .buttonStyle(.plain)
+
+        guard selectedDateRecords.isEmpty,
+              selectedDateReminders.isEmpty,
+              let firstDate = allTimelineDates.sorted(by: >).first else {
+            return
+        }
+
+        selectedDate = firstDate
+        visibleMonth = firstDate
+    }
+
+    private var filterCalendar: Calendar {
+        Calendar(identifier: .gregorian)
     }
 
     private var trimmedSearchText: String {
@@ -442,147 +634,117 @@ struct HomeView: View {
         return "我找到了 \(queryResults.count) 条与“\(trimmedSearchText)”相关的记录，最近一条是: \(first.answerSummary)"
     }
 
-    private var timeFilteredRecords: [Record] {
-        appModel.records.filter { selectedTimeSlice.matches(record: $0, calendar: filterCalendar) }
-    }
-
-    private var filteredRecords: [Record] {
-        timeFilteredRecords.filter(matchesCategory)
-    }
-
-    private var hasActiveFilters: Bool {
-        selectedTimeSlice != .all || selectedCategorySlice != nil
-    }
-
-    private func matchesCategory(_ record: Record) -> Bool {
-        guard let selectedCategorySlice else {
-            return true
-        }
-        return record.sliceCategories.contains(selectedCategorySlice)
-    }
-
-    private var filterCalendar: Calendar {
-        Calendar(identifier: .gregorian)
-    }
-
-    private var recordSections: [RecordSection] {
-        let calendar = filterCalendar
-        let grouped = Dictionary(grouping: filteredRecords) {
-            calendar.startOfDay(for: $0.recordDate)
-        }
-
-        return grouped
-            .map { date, records in
-                RecordSection(
-                    title: sectionTitle(for: date, calendar: calendar),
-                    date: date,
-                    records: records.sorted { lhs, rhs in
-                        if lhs.recordDate == rhs.recordDate {
-                            return lhs.createdAt > rhs.createdAt
-                        }
-                        return lhs.recordDate > rhs.recordDate
-                    }
-                )
+    private var selectedDateRecords: [Record] {
+        appModel.records
+            .filter { filterCalendar.isDate($0.recordDate, inSameDayAs: selectedDate) }
+            .sorted { lhs, rhs in
+                if lhs.recordDate == rhs.recordDate {
+                    return lhs.createdAt > rhs.createdAt
+                }
+                return lhs.recordDate > rhs.recordDate
             }
-            .sorted { $0.date > $1.date }
     }
 
-    private func sectionTitle(for date: Date, calendar: Calendar) -> String {
-        if calendar.isDateInToday(date) {
+    private var selectedDateReminders: [Reminder] {
+        appModel.reminders
+            .filter { filterCalendar.isDate($0.remindAt, inSameDayAs: selectedDate) }
+            .sorted { $0.remindAt < $1.remindAt }
+    }
+
+    private var selectedDatePendingReminders: [Reminder] {
+        selectedDateReminders.filter { $0.status == .pending }
+    }
+
+    private var selectedDateNotifiedReminders: [Reminder] {
+        selectedDateReminders.filter { $0.status == .notified }
+    }
+
+    private var selectedDateArchivedReminders: [Reminder] {
+        selectedDateReminders.filter { $0.status != .pending && $0.status != .notified }
+    }
+
+    private var recordDateSet: Set<Date> {
+        Set(appModel.records.map { filterCalendar.startOfDay(for: $0.recordDate) })
+    }
+
+    private var pendingReminderDateSet: Set<Date> {
+        Set(
+            appModel.reminders
+                .filter { $0.status == .pending }
+                .map { filterCalendar.startOfDay(for: $0.remindAt) }
+        )
+    }
+
+    private var notifiedReminderDateSet: Set<Date> {
+        Set(
+            appModel.reminders
+                .filter { $0.status == .notified }
+                .map { filterCalendar.startOfDay(for: $0.remindAt) }
+        )
+    }
+
+    private var allTimelineDates: Set<Date> {
+        recordDateSet.union(pendingReminderDateSet).union(notifiedReminderDateSet)
+    }
+
+    private var dayHeaderTitle: String {
+        if filterCalendar.isDateInToday(selectedDate) {
             return "今天"
         }
-        if calendar.isDateInYesterday(date) {
+
+        if filterCalendar.isDateInYesterday(selectedDate) {
             return "昨天"
         }
-        return YijiDateFormatter.dayFormatter.string(from: date)
+
+        return YijiDateFormatter.dayFormatter.string(from: selectedDate)
+    }
+
+    private var dayHeaderSubtitle: String {
+        if selectedDateRecords.isEmpty && selectedDateReminders.isEmpty {
+            return "当前没有记录或提醒"
+        }
+
+        if !selectedDatePendingReminders.isEmpty {
+            return "先看当天待提醒，再回看记录"
+        }
+
+        if !selectedDateNotifiedReminders.isEmpty {
+            return "这一天有已提醒内容，可继续补充处理结果"
+        }
+
+        return "按日期回看这一天留下的内容"
+    }
+
+    private var daySummaryCountText: String {
+        "\(selectedDateRecords.count + selectedDateReminders.count) 条内容"
+    }
+
+    private var reminderSectionSubtitle: String {
+        if !selectedDatePendingReminders.isEmpty && !selectedDateNotifiedReminders.isEmpty {
+            return "待提醒和已提醒都会按时间显示"
+        }
+
+        if !selectedDatePendingReminders.isEmpty {
+            return "优先处理当天还未提醒的事项"
+        }
+
+        if !selectedDateNotifiedReminders.isEmpty {
+            return "已提醒事项可继续补充处理结果"
+        }
+
+        return "当天提醒会按时间顺序排列"
+    }
+
+    private var recordsSectionSubtitle: String {
+        if selectedDateRecords.count <= 1 {
+            return "这一天的记录会显示在这里"
+        }
+
+        return "按时间倒序回看这一天留下的内容"
     }
 
     private func clearSearch() {
         appModel.clearActiveSearch()
-    }
-
-    private func resetFilters() {
-        selectedTimeSlice = .all
-        selectedCategorySlice = nil
-    }
-}
-
-private struct RecordSection: Identifiable {
-    let title: String
-    let date: Date
-    let records: [Record]
-
-    var id: Date { date }
-}
-
-private enum RecordTimeSlice: String, CaseIterable, Identifiable {
-    case all
-    case today
-    case thisWeek
-    case thisMonth
-    case scheduled
-
-    var id: String { rawValue }
-
-    var title: String {
-        switch self {
-        case .all:
-            "全部"
-        case .today:
-            "今天"
-        case .thisWeek:
-            "本周"
-        case .thisMonth:
-            "本月"
-        case .scheduled:
-            "有安排"
-        }
-    }
-
-    func matches(record: Record, calendar: Calendar) -> Bool {
-        switch self {
-        case .all:
-            return true
-        case .scheduled:
-            return record.primaryTimeRange != nil
-        case .today, .thisWeek, .thisMonth:
-            return record.browseTimeRange.overlaps(referenceRange(calendar: calendar))
-        }
-    }
-
-    func matches(date: Date, calendar: Calendar) -> Bool {
-        switch self {
-        case .all:
-            return true
-        case .scheduled:
-            return true
-        case .today, .thisWeek, .thisMonth:
-            let pointRange = EventTimeRange(start: date, end: date, granularity: .exactTime)
-            return pointRange.overlaps(referenceRange(calendar: calendar))
-        }
-    }
-
-    private func referenceRange(calendar: Calendar) -> EventTimeRange {
-        let now = Date()
-
-        switch self {
-        case .all, .scheduled:
-            return EventTimeRange(start: .distantPast, end: .distantFuture, granularity: .year)
-        case .today:
-            let start = calendar.startOfDay(for: now)
-            let end = calendar.date(byAdding: .day, value: 1, to: start)?.addingTimeInterval(-1) ?? start
-            return EventTimeRange(start: start, end: end, granularity: .day)
-        case .thisWeek:
-            let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)
-            let start = calendar.date(from: components) ?? now
-            let end = calendar.date(byAdding: .day, value: 7, to: start)?.addingTimeInterval(-1) ?? start
-            return EventTimeRange(start: start, end: end, granularity: .week)
-        case .thisMonth:
-            let components = calendar.dateComponents([.year, .month], from: now)
-            let start = calendar.date(from: components) ?? now
-            let end = calendar.date(byAdding: .month, value: 1, to: start)?.addingTimeInterval(-1) ?? start
-            return EventTimeRange(start: start, end: end, granularity: .month)
-        }
     }
 }
 

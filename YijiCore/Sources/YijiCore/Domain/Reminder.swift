@@ -25,6 +25,7 @@ public enum ReminderRepeatRule: String, Codable, CaseIterable, Sendable {
 
 public enum ReminderStatus: String, Codable, CaseIterable, Sendable {
     case pending
+    case notified
     case done
     case cancelled
     case failed
@@ -33,6 +34,8 @@ public enum ReminderStatus: String, Codable, CaseIterable, Sendable {
         switch self {
         case .pending:
             "待提醒"
+        case .notified:
+            "已提醒"
         case .done:
             "已完成"
         case .cancelled:
