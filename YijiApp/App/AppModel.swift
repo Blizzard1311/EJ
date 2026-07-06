@@ -29,7 +29,12 @@ final class AppModel: ObservableObject {
     @Published var reminders: [Reminder] = []
     @Published var captureText = ""
     @Published var draftSource: CaptureSource = .text
-    @Published var selectedTab: AppTab = .home
+    @Published var selectedTab: AppTab = {
+        if ProcessInfo.processInfo.environment["YIJI_START_TAB"] == "homeView" {
+            return .capture
+        }
+        return .home
+    }()
     @Published var searchText = ""
     @Published var searchHistory: [String] = []
     @Published var exportURL: URL?

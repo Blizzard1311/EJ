@@ -7,6 +7,7 @@ struct CalendarMonthView: UIViewRepresentable {
     let eventDates: Set<Date>
     let reminderDates: Set<Date>
     let notifiedDates: Set<Date>
+    let weatherByDate: [Date: CalendarDayWeather]
     let calendar: Calendar
     let onDateSelected: (Date) -> Void
     let onVisibleMonthChanged: (Date) -> Void
@@ -53,7 +54,10 @@ struct CalendarMonthView: UIViewRepresentable {
             calendarView.setVisibleDateComponents(visibleComponents, animated: true)
         }
 
-        let decoratedDays = eventDates.union(reminderDates).union(notifiedDates)
+        let decoratedDays = eventDates
+            .union(reminderDates)
+            .union(notifiedDates)
+            .union(Set(weatherByDate.keys))
         let daysToReload = decoratedDays.union(context.coordinator.decoratedDays)
         context.coordinator.decoratedDays = decoratedDays
         if !daysToReload.isEmpty {
@@ -97,19 +101,20 @@ struct CalendarMonthView: UIViewRepresentable {
             let hasRecord = parent.eventDates.contains(day)
             let hasPendingReminder = parent.reminderDates.contains(day)
             let hasNotifiedReminder = parent.notifiedDates.contains(day)
+            let weather = parent.weatherByDate[day]
+            let colors = decorationColors(
+                hasRecord: hasRecord,
+                hasPendingReminder: hasPendingReminder,
+                hasNotifiedReminder: hasNotifiedReminder
+            )
 
-            guard hasRecord || hasPendingReminder || hasNotifiedReminder else {
+            guard weather != nil || !colors.isEmpty else {
                 return nil
             }
 
-            return .image(
-                decorationImage(
-                    hasRecord: hasRecord,
-                    hasPendingReminder: hasPendingReminder,
-                    hasNotifiedReminder: hasNotifiedReminder
-                ),
-                size: .medium
-            )
+            return .customView {
+                self.decorationView(weather: weather, colors: colors)
+            }
         }
 
         func calendarView(_ calendarView: UICalendarView, didChangeVisibleDateComponentsFrom previousDateComponents: DateComponents) {
@@ -119,23 +124,41 @@ struct CalendarMonthView: UIViewRepresentable {
             parent.onVisibleMonthChanged(date)
         }
 
-        private func decorationImage(
-            hasRecord: Bool,
-            hasPendingReminder: Bool,
-            hasNotifiedReminder: Bool
-        ) -> UIImage? {
-            let colors = decorationColors(
-                hasRecord: hasRecord,
-                hasPendingReminder: hasPendingReminder,
-                hasNotifiedReminder: hasNotifiedReminder
-            )
+        private func decorationView(weather: CalendarDayWeather?, colors: [UIColor]) -> UIView {
+            let stack = UIStackView()
+            stack.axis = .vertical
+            stack.alignment = .center
+            stack.spacing = weather != nil && !colors.isEmpty ? 1 : 0
 
+            if let weather {
+                let imageView = UIImageView(image: UIImage(systemName: weather.symbolName))
+                imageView.tintColor = weather.accentColor
+                imageView.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 10, weight: .semibold)
+                imageView.contentMode = .scaleAspectFit
+                imageView.translatesAutoresizingMaskIntoConstraints = false
+                NSLayoutConstraint.activate([
+                    imageView.widthAnchor.constraint(equalToConstant: 12),
+                    imageView.heightAnchor.constraint(equalToConstant: 11)
+                ])
+                stack.addArrangedSubview(imageView)
+            }
+
+            if let dotsImage = dotDecorationImage(colors: colors) {
+                let dotsView = UIImageView(image: dotsImage)
+                dotsView.contentMode = .center
+                stack.addArrangedSubview(dotsView)
+            }
+
+            return stack
+        }
+
+        private func dotDecorationImage(colors: [UIColor]) -> UIImage? {
             guard !colors.isEmpty else {
                 return nil
             }
 
-            let dotDiameter: CGFloat = 6
-            let spacing: CGFloat = 3
+            let dotDiameter: CGFloat = 4
+            let spacing: CGFloat = 2
             let width = CGFloat(colors.count) * dotDiameter + CGFloat(max(colors.count - 1, 0)) * spacing
             let renderer = UIGraphicsImageRenderer(size: CGSize(width: width, height: dotDiameter))
 

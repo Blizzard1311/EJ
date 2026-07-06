@@ -13,6 +13,7 @@
 		295F02AEE6CCD6C2784C5551 /* LocalNotificationScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 970EAA28B509C08E0551C5EF /* LocalNotificationScheduler.swift */; };
 		2A4F6A94D213881BDEA4EF78 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5397BD6FC8F4F84DF5269B7F /* SearchView.swift */; };
 		2E557FB543B996996737F768 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87E6A52DE10DA0F3DC05944F /* AppModel.swift */; };
+		340A91E10A8A3F500E5E355D /* CalendarWeatherModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 340A91E00A8A3F500E5E355D /* CalendarWeatherModel.swift */; };
 		3B9348217AB896011470879E /* CalendarMonthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5197A753E79221627D0658D /* CalendarMonthView.swift */; };
 		4756E92A5263C4A994E5E5A7 /* RecordRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 541D4AD217DBEA96DD3DB0A2 /* RecordRowView.swift */; };
 		495D66A2945D9E230285D65E /* CaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DA15AE611AE40938E9346ED /* CaptureView.swift */; };
@@ -26,6 +27,7 @@
 		D3C0F23C04C6BFA9D7CE0946 /* RemindersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C62A017F2C61F3D7F4CEF198 /* RemindersView.swift */; };
 		DF2BF85EFBB397FE0A7BEE84 /* PreviewSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = E05ED3A46E8682723638A5F2 /* PreviewSupport.swift */; };
 		F65D59C6AD4A9F75185E9242 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A137C959894E2B333C1843B0 /* HomeView.swift */; };
+		F90000000000000000000001 /* WeatherKitProbeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F90000000000000000000011 /* WeatherKitProbeApp.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -33,15 +35,17 @@
 		06982B2E73493E9D1A75DB60 /* RecordDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordDetailView.swift; sourceTree = "<group>"; };
 		1D273F4EB9A2E7EE7405A5CD /* FileBackedVaultStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileBackedVaultStore.swift; sourceTree = "<group>"; };
 		2DA15AE611AE40938E9346ED /* CaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureView.swift; sourceTree = "<group>"; };
+		340A91E00A8A3F500E5E355D /* CalendarWeatherModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarWeatherModel.swift; sourceTree = "<group>"; };
 		45C73C5C165EF7EF86D4E78B /* YijiApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YijiApp.swift; sourceTree = "<group>"; };
 		4CBCFA4D6DB99FA1FEA32B45 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
 		502E8D564C8ED246A9CC8FC4 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		5397BD6FC8F4F84DF5269B7F /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
 		541D4AD217DBEA96DD3DB0A2 /* RecordRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordRowView.swift; sourceTree = "<group>"; };
-		65BBBDDC785ECCFB01B35C3E /* YijiCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = YijiCore; path = YijiCore; sourceTree = SOURCE_ROOT; };
+		65BBBDDC785ECCFB01B35C3E /* YijiCore */ = {isa = PBXFileReference; lastKnownFileType = folder; path = YijiCore; sourceTree = SOURCE_ROOT; };
 		77CA13A090393EC6FA432A42 /* RootTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootTabView.swift; sourceTree = "<group>"; };
+		7A3D2C3E8A4A64E7007A4C10 /* YijiApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = YijiApp.entitlements; sourceTree = "<group>"; };
 		87E6A52DE10DA0F3DC05944F /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
-		946735739ADE8830AB6AC329 /* YijiApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = YijiApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		946735739ADE8830AB6AC329 /* YijiApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = YijiApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		970EAA28B509C08E0551C5EF /* LocalNotificationScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalNotificationScheduler.swift; sourceTree = "<group>"; };
 		A137C959894E2B333C1843B0 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		B51FC9167409097E58FBBB2A /* SpeechTranscriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechTranscriber.swift; sourceTree = "<group>"; };
@@ -49,6 +53,10 @@
 		C62A017F2C61F3D7F4CEF198 /* RemindersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemindersView.swift; sourceTree = "<group>"; };
 		CCE74B6354ED6D3461850CD5 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		E05ED3A46E8682723638A5F2 /* PreviewSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewSupport.swift; sourceTree = "<group>"; };
+		F90000000000000000000011 /* WeatherKitProbeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherKitProbeApp.swift; sourceTree = "<group>"; };
+		F90000000000000000000012 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		F90000000000000000000013 /* WeatherKitProbe.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WeatherKitProbe.entitlements; sourceTree = "<group>"; };
+		F90000000000000000000014 /* WeatherKitProbe.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WeatherKitProbe.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,6 +65,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				C02506D3DF855D1ACB7511E9 /* YijiCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F90000000000000000000020 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -96,6 +111,7 @@
 				CEDFB8E0E061F5C606FCA0FD /* Persistence */,
 				0D690FC0ACEAEE912941FA27 /* Resources */,
 				933588E539A5A51AD9D4FAE4 /* Services */,
+				7A3D2C3E8A4A64E7007A4C10 /* YijiApp.entitlements */,
 			);
 			path = YijiApp;
 			sourceTree = "<group>";
@@ -112,6 +128,7 @@
 		92833A360E971CB295063642 /* Home */ = {
 			isa = PBXGroup;
 			children = (
+				340A91E00A8A3F500E5E355D /* CalendarWeatherModel.swift */,
 				C5197A753E79221627D0658D /* CalendarMonthView.swift */,
 				A137C959894E2B333C1843B0 /* HomeView.swift */,
 			);
@@ -132,6 +149,7 @@
 			children = (
 				6075E751A52A3C0DE32B0130 /* Packages */,
 				6EA1B4F33EFDE915F545459F /* YijiApp */,
+				F90000000000000000000030 /* WeatherKitProbe */,
 				E58CF07A6466034AC00726DE /* Products */,
 			);
 			sourceTree = "<group>";
@@ -197,8 +215,19 @@
 			isa = PBXGroup;
 			children = (
 				946735739ADE8830AB6AC329 /* YijiApp.app */,
+				F90000000000000000000014 /* WeatherKitProbe.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		F90000000000000000000030 /* WeatherKitProbe */ = {
+			isa = PBXGroup;
+			children = (
+				F90000000000000000000012 /* Info.plist */,
+				F90000000000000000000013 /* WeatherKitProbe.entitlements */,
+				F90000000000000000000011 /* WeatherKitProbeApp.swift */,
+			);
+			path = WeatherKitProbe;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -224,6 +253,25 @@
 			productReference = 946735739ADE8830AB6AC329 /* YijiApp.app */;
 			productType = "com.apple.product-type.application";
 		};
+		F90000000000000000000040 /* WeatherKitProbe */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F90000000000000000000052 /* Build configuration list for PBXNativeTarget "WeatherKitProbe" */;
+			buildPhases = (
+				F90000000000000000000022 /* Sources */,
+				F90000000000000000000021 /* Resources */,
+				F90000000000000000000020 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = WeatherKitProbe;
+			packageProductDependencies = (
+			);
+			productName = WeatherKitProbe;
+			productReference = F90000000000000000000014 /* WeatherKitProbe.app */;
+			productType = "com.apple.product-type.application";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -231,13 +279,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 1430;
-				TargetAttributes = {
-					5CAC776C7280087C6C59565E = {
-						DevelopmentTeam = AWQP33QVBW;
-						ProvisioningStyle = Automatic;
-					};
-				};
+				LastUpgradeCheck = 2630;
 			};
 			buildConfigurationList = 94A5D567BC512EE3888C3A7C /* Build configuration list for PBXProject "Yiji" */;
 			developmentRegion = en;
@@ -257,6 +299,7 @@
 			projectRoot = "";
 			targets = (
 				5CAC776C7280087C6C59565E /* YijiApp */,
+				F90000000000000000000040 /* WeatherKitProbe */,
 			);
 		};
 /* End PBXProject section */
@@ -270,6 +313,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F90000000000000000000021 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -279,6 +329,7 @@
 			files = (
 				2E557FB543B996996737F768 /* AppModel.swift in Sources */,
 				5443251CD38B414380172C1D /* AppTheme.swift in Sources */,
+				340A91E10A8A3F500E5E355D /* CalendarWeatherModel.swift in Sources */,
 				3B9348217AB896011470879E /* CalendarMonthView.swift in Sources */,
 				495D66A2945D9E230285D65E /* CaptureView.swift in Sources */,
 				BF214AC162A2BBCDEE18846D /* FileBackedVaultStore.swift in Sources */,
@@ -297,6 +348,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F90000000000000000000022 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F90000000000000000000001 /* WeatherKitProbeApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
@@ -304,7 +363,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_ENTITLEMENTS = YijiApp/YijiApp.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = AWQP33QVBW;
@@ -316,6 +376,7 @@
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.blizzard1311.yiji;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 1;
@@ -326,7 +387,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_ENTITLEMENTS = YijiApp/YijiApp.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = AWQP33QVBW;
@@ -338,6 +400,7 @@
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.blizzard1311.yiji;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 1;
@@ -379,8 +442,10 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = AWQP33QVBW;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -400,6 +465,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -441,8 +507,10 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = AWQP33QVBW;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -455,9 +523,58 @@
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		F90000000000000000000050 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = WeatherKitProbe/WeatherKitProbe.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = AWQP33QVBW;
+				INFOPLIST_FILE = WeatherKitProbe/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.blizzard1311.weatherkitprobe;
+				PRODUCT_NAME = WeatherKitProbe;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		F90000000000000000000051 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = WeatherKitProbe/WeatherKitProbe.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = AWQP33QVBW;
+				INFOPLIST_FILE = WeatherKitProbe/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.blizzard1311.weatherkitprobe;
+				PRODUCT_NAME = WeatherKitProbe;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -478,6 +595,15 @@
 			buildConfigurations = (
 				CB8912CF60A7D9A9A708FC12 /* Debug */,
 				D96AFF52D8B45B6C7FF2E0AA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F90000000000000000000052 /* Build configuration list for PBXNativeTarget "WeatherKitProbe" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F90000000000000000000050 /* Debug */,
+				F90000000000000000000051 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

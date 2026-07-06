@@ -184,12 +184,20 @@ struct HomeView: View {
 
     private let monthCalendarHeight: CGFloat = 500
     @EnvironmentObject private var appModel: AppModel
+    @Environment(\.openURL) private var openURL
+    @Environment(\.scenePhase) private var scenePhase
     @State private var deletingRecord: Record?
     @State private var selectedDate = Calendar(identifier: .gregorian).startOfDay(for: Date())
     @State private var visibleMonth = Calendar(identifier: .gregorian).startOfDay(for: Date())
-    @State private var activeScene: BrowseScene = .storage
+    @State private var activeScene: BrowseScene = {
+        if ProcessInfo.processInfo.environment["YIJI_START_SCENE"] == "calendar" {
+            return .calendar
+        }
+        return .storage
+    }()
     @State private var showingStorageContainerPicker = false
     @State private var selectedStorageGroupID: String?
+    @StateObject private var calendarWeatherModel = CalendarWeatherModel()
 
     var body: some View {
         List {
@@ -255,9 +263,22 @@ struct HomeView: View {
         }
         .onAppear {
             syncSelectedDateIfNeeded()
+            if activeScene == .calendar {
+                calendarWeatherModel.activate()
+            }
         }
         .onChange(of: appModel.focusedRecordID) { _ in
             syncSelectedDateIfNeeded()
+        }
+        .onChange(of: activeScene) { newValue in
+            if newValue == .calendar {
+                calendarWeatherModel.activate()
+            }
+        }
+        .onChange(of: scenePhase) { newValue in
+            if newValue == .active, activeScene == .calendar {
+                calendarWeatherModel.activate()
+            }
         }
         .sheet(isPresented: $showingStorageContainerPicker) {
             StorageContainerPickerView()
@@ -308,6 +329,7 @@ struct HomeView: View {
                     eventDates: recordDateSet,
                     reminderDates: pendingReminderDateSet,
                     notifiedDates: notifiedReminderDateSet,
+                    weatherByDate: calendarWeatherModel.weatherByDate,
                     calendar: filterCalendar,
                     onDateSelected: { date in
                         selectedDate = filterCalendar.startOfDay(for: date)
@@ -319,6 +341,12 @@ struct HomeView: View {
                 .frame(height: monthCalendarHeight)
 
                 calendarLegend
+
+                if let selectedDateWeather {
+                    selectedDateWeatherCard(selectedDateWeather)
+                }
+
+                calendarWeatherStatusRow
             }
             .padding(.horizontal, 16)
             .padding(.top, 8)
@@ -619,10 +647,22 @@ struct HomeView: View {
     }
 
     private var calendarLegend: some View {
-        HStack(spacing: 18) {
-            calendarLegendItem(title: "记录", color: .blue)
-            calendarLegendItem(title: "待提醒", color: .orange)
-            calendarLegendItem(title: "已提醒", color: .green)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 18) {
+                calendarLegendItem(title: "记录", color: .blue)
+                calendarLegendItem(title: "待提醒", color: .orange)
+                calendarLegendItem(title: "已提醒", color: .green)
+            }
+
+            HStack(spacing: 6) {
+                Image(systemName: "cloud.sun.fill")
+                    .font(.caption)
+                    .foregroundStyle(.teal)
+
+                Text("天气")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 4)
@@ -640,6 +680,74 @@ struct HomeView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
+    }
+
+    private func selectedDateWeatherCard(_ weather: CalendarDayWeather) -> some View {
+        let accentColor = Color(uiColor: weather.accentColor)
+
+        return HStack(spacing: 10) {
+            Image(systemName: weather.symbolName)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(accentColor)
+                .frame(width: 24, height: 24)
+                .background(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(accentColor.opacity(0.10))
+                )
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(weather.summaryLine)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.primary)
+
+                Text(weather.temperatureLine)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 8)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(accentColor.opacity(0.08))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(accentColor.opacity(0.14), lineWidth: 1)
+        )
+    }
+
+    private var calendarWeatherStatusRow: some View {
+        HStack(spacing: 8) {
+            Image(systemName: calendarWeatherModel.statusIconName)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Text(calendarWeatherModel.statusText)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+
+            Spacer(minLength: 8)
+
+            if calendarWeatherModel.shouldOfferSettings {
+                Button("去设置") {
+                    openLocationSettings()
+                }
+                .buttonStyle(.plain)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.blue)
+            } else if let actionTitle = calendarWeatherModel.actionTitle {
+                Button(actionTitle) {
+                    calendarWeatherModel.refresh()
+                }
+                .buttonStyle(.plain)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.blue)
+            }
+        }
+        .padding(.horizontal, 4)
     }
 
     private func storageContainerCard(for group: StorageContainerGroup) -> some View {
@@ -1381,6 +1489,17 @@ struct HomeView: View {
 
     private func clearSearch() {
         appModel.clearActiveSearch()
+    }
+
+    private func openLocationSettings() {
+        guard let settingsURL = URL(string: UIApplication.openSettingsURLString) else {
+            return
+        }
+        openURL(settingsURL)
+    }
+
+    private var selectedDateWeather: CalendarDayWeather? {
+        calendarWeatherModel.dayWeather(for: selectedDate)
     }
 }
 

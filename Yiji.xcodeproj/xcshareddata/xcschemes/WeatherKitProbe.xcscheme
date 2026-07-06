@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "5CAC776C7280087C6C59565E"
-               BuildableName = "YijiApp.app"
-               BlueprintName = "YijiApp"
+               BlueprintIdentifier = "F90000000000000000000040"
+               BuildableName = "WeatherKitProbe.app"
+               BlueprintName = "WeatherKitProbe"
                ReferencedContainer = "container:Yiji.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -30,9 +30,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "5CAC776C7280087C6C59565E"
-            BuildableName = "YijiApp.app"
-            BlueprintName = "YijiApp"
+            BlueprintIdentifier = "F90000000000000000000040"
+            BuildableName = "WeatherKitProbe.app"
+            BlueprintName = "WeatherKitProbe"
             ReferencedContainer = "container:Yiji.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -53,9 +53,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "5CAC776C7280087C6C59565E"
-            BuildableName = "YijiApp.app"
-            BlueprintName = "YijiApp"
+            BlueprintIdentifier = "F90000000000000000000040"
+            BuildableName = "WeatherKitProbe.app"
+            BlueprintName = "WeatherKitProbe"
             ReferencedContainer = "container:Yiji.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -70,9 +70,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "5CAC776C7280087C6C59565E"
-            BuildableName = "YijiApp.app"
-            BlueprintName = "YijiApp"
+            BlueprintIdentifier = "F90000000000000000000040"
+            BuildableName = "WeatherKitProbe.app"
+            BlueprintName = "WeatherKitProbe"
             ReferencedContainer = "container:Yiji.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
