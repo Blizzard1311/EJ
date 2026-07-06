@@ -21,7 +21,7 @@ struct ReminderEditorView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     heroCard
 
-                    editorCard(title: "提醒内容", subtitle: "把标题写得直接一点，提醒到来时更容易理解") {
+                    editorCard(title: "提醒内容", subtitle: "标题和备注") {
                         VStack(spacing: 12) {
                             fieldGroup(title: "标题") {
                                 TextField("例如：交房租、给妈妈打电话", text: $draft.title)
@@ -34,7 +34,7 @@ struct ReminderEditorView: View {
                         }
                     }
 
-                    editorCard(title: "提醒时间", subtitle: "会按这里的时间和重复规则同步到系统通知") {
+                    editorCard(title: "提醒时间", subtitle: "时间、重复和状态") {
                         VStack(alignment: .leading, spacing: 14) {
                             fieldGroup(title: "时间") {
                                 DatePicker(
@@ -64,7 +64,7 @@ struct ReminderEditorView: View {
                         }
                     }
 
-                    editorCard(title: "保存后状态", subtitle: "提前知道这条提醒会如何进入系统") {
+                    editorCard(title: "通知", subtitle: "保存结果") {
                         VStack(alignment: .leading, spacing: 10) {
                             HStack(spacing: 10) {
                                 Image(systemName: editorHint.icon)
@@ -127,7 +127,7 @@ struct ReminderEditorView: View {
 
     private var heroCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("把提醒整理清楚，保存后就能继续交给系统通知。")
+            Text(draft.title.isEmpty ? "编辑提醒" : draft.title)
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(.primary)
 
@@ -315,22 +315,22 @@ struct ReminderEditorView: View {
     private var editorHint: (text: String, icon: String, color: Color, detail: String?) {
         if draft.status != .pending {
             if draft.status == .notified {
-                return ("这条提醒已送达，不会再次进入系统通知", "checkmark.bell.fill", .blue, "如果还想再次提醒，可以把状态改回“待提醒”。")
+                return ("已送达", "checkmark.bell.fill", .blue, "改回“待提醒”可重新安排。")
             }
-            return ("当前状态不会进入系统通知", "bell.slash", .gray, "只有“待提醒”状态会尝试同步到 iPhone 系统通知。")
+            return ("未安排通知", "bell.slash", .gray, nil)
         }
 
         if draft.repeatRule == .none && draft.remindAt <= Date() {
-            return ("这是一条过期提醒", "exclamationmark.triangle.fill", .red, "保存后会因为时间已过而无法创建一次性通知，并会被标记为失败。")
+            return ("时间已过", "exclamationmark.triangle.fill", .red, "请改到未来时间。")
         }
 
         switch appModel.notifications.authorizationStatus {
         case .granted:
-            return ("保存后会同步到系统通知", "bell.badge.fill", .green, "只要系统通知未关闭，这条提醒会按设定时间送达。")
+            return ("通知已开启", "bell.badge.fill", .green, nil)
         case .denied:
-            return ("只能保存到本地，无法发送通知", "bell.slash.fill", .red, "需要去系统设置重新开启通知权限。")
+            return ("通知未开启", "bell.slash.fill", .red, "可在系统设置中开启。")
         case .unknown:
-            return ("保存到本地后会尝试请求通知权限", "bell.badge", .orange, "如果未授权，提醒仍会保留在应用内。")
+            return ("待开启通知", "bell.badge", .orange, nil)
         }
     }
 

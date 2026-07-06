@@ -10,7 +10,6 @@ struct CalendarMonthView: UIViewRepresentable {
     let calendar: Calendar
     let onDateSelected: (Date) -> Void
     let onVisibleMonthChanged: (Date) -> Void
-    let onHeightChanged: (CGFloat) -> Void
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -65,10 +64,6 @@ struct CalendarMonthView: UIViewRepresentable {
         }
 
         uiView.applyCalendarChrome()
-        calendarView.setNeedsLayout()
-        calendarView.layoutIfNeeded()
-        uiView.layoutIfNeeded()
-        updateMeasuredHeight(for: uiView, coordinator: context.coordinator)
     }
 
     private func dateComponents(for date: Date) -> DateComponents {
@@ -77,37 +72,9 @@ struct CalendarMonthView: UIViewRepresentable {
         return components
     }
 
-    private func updateMeasuredHeight(for container: CalendarContainerView, coordinator: Coordinator) {
-        let calendarView = container.calendarView
-        let targetWidth = max(calendarView.bounds.width, container.bounds.width)
-
-        let intrinsicHeight = calendarView.intrinsicContentSize.height
-        let fittingHeight = calendarView.systemLayoutSizeFitting(
-            CGSize(width: targetWidth, height: UIView.layoutFittingCompressedSize.height),
-            withHorizontalFittingPriority: .required,
-            verticalFittingPriority: .fittingSizeLevel
-        ).height
-
-        let measuredHeight = max(intrinsicHeight, fittingHeight) + 8
-        guard measuredHeight.isFinite, measuredHeight > 0 else {
-            return
-        }
-
-        let roundedHeight = ceil(measuredHeight)
-        guard abs(coordinator.lastReportedHeight - roundedHeight) > 1 else {
-            return
-        }
-
-        coordinator.lastReportedHeight = roundedHeight
-        DispatchQueue.main.async {
-            onHeightChanged(roundedHeight)
-        }
-    }
-
     final class Coordinator: NSObject, UICalendarViewDelegate, UICalendarSelectionSingleDateDelegate {
         var parent: CalendarMonthView
         var decoratedDays: Set<Date> = []
-        var lastReportedHeight: CGFloat = 0
 
         init(_ parent: CalendarMonthView) {
             self.parent = parent
@@ -208,7 +175,9 @@ struct CalendarMonthView: UIViewRepresentable {
 }
 
 final class CalendarContainerView: UIView {
+    static let minimumCalendarHeight: CGFloat = 500
     let calendarView = UICalendarView()
+    private var minimumHeightConstraint: NSLayoutConstraint?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -218,6 +187,18 @@ final class CalendarContainerView: UIView {
     @available(*, unavailable)
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+
+    override var intrinsicContentSize: CGSize {
+        CGSize(width: UIView.noIntrinsicMetric, height: Self.minimumCalendarHeight)
+    }
+
+    override func systemLayoutSizeFitting(
+        _ targetSize: CGSize,
+        withHorizontalFittingPriority horizontalFittingPriority: UILayoutPriority,
+        verticalFittingPriority: UILayoutPriority
+    ) -> CGSize {
+        CGSize(width: targetSize.width, height: Self.minimumCalendarHeight)
     }
 
     func applyCalendarChrome() {
@@ -238,11 +219,16 @@ final class CalendarContainerView: UIView {
         calendarView.setContentCompressionResistancePriority(.required, for: .vertical)
         addSubview(calendarView)
 
+        minimumHeightConstraint = calendarView.heightAnchor.constraint(greaterThanOrEqualToConstant: Self.minimumCalendarHeight)
+        minimumHeightConstraint?.priority = .required
+        guard let minimumHeightConstraint else { return }
+
         NSLayoutConstraint.activate([
             calendarView.leadingAnchor.constraint(equalTo: leadingAnchor),
             calendarView.trailingAnchor.constraint(equalTo: trailingAnchor),
             calendarView.topAnchor.constraint(equalTo: topAnchor),
-            calendarView.bottomAnchor.constraint(equalTo: bottomAnchor)
+            calendarView.bottomAnchor.constraint(equalTo: bottomAnchor),
+            minimumHeightConstraint
         ])
     }
 }

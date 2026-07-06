@@ -167,7 +167,7 @@ struct SearchView: View {
     private var resultSummarySection: some View {
         Section {
             VStack(alignment: .leading, spacing: 12) {
-                sectionTitle("查询回答", subtitle: "系统会优先展示最接近的一条记录")
+                sectionTitle("查询回答", subtitle: "最相关记录")
 
                 Text(answerText)
                     .font(.body)
@@ -256,7 +256,7 @@ struct SearchView: View {
 
     private var resultsSection: some View {
         Section {
-            sectionTitle(resultsTitle, subtitle: isSearching ? "保留最相关的记录，支持继续进入详情" : "你的全部本地记录")
+            sectionTitle(resultsTitle, subtitle: isSearching ? "最相关记录" : "全部本地记录")
 
             if filteredResults.isEmpty {
                 emptyState
@@ -381,7 +381,7 @@ struct SearchView: View {
     private var answerText: String {
         let keyword = appModel.searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !keyword.isEmpty else {
-            return "输入关键词后，这里会返回模板化回答。"
+            return "输入关键词后显示结果。"
         }
 
         if let first = filteredResults.first {

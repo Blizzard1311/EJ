@@ -53,6 +53,12 @@ public struct RecordParser: Sendable {
                 content: content,
                 objectName: storage.objectName,
                 location: storage.location,
+                storageContainer: StorageContainerClassifier.classify(
+                    content: content,
+                    objectName: storage.objectName,
+                    location: storage.location,
+                    tags: tags
+                ),
                 recordDate: timestamp,
                 category: .storage,
                 tags: tags,

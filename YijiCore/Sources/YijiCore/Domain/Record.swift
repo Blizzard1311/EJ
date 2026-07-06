@@ -31,6 +31,7 @@ public struct Record: Identifiable, Hashable, Codable, Sendable {
     public var content: String
     public var objectName: String?
     public var location: String?
+    public var storageContainer: StorageContainer?
     public var recordDate: Date
     public var eventTime: EventTimeRange?
     public var category: RecordCategory
@@ -44,6 +45,7 @@ public struct Record: Identifiable, Hashable, Codable, Sendable {
         content: String,
         objectName: String? = nil,
         location: String? = nil,
+        storageContainer: StorageContainer? = nil,
         recordDate: Date,
         eventTime: EventTimeRange? = nil,
         category: RecordCategory,
@@ -56,6 +58,7 @@ public struct Record: Identifiable, Hashable, Codable, Sendable {
         self.content = content
         self.objectName = objectName
         self.location = location
+        self.storageContainer = storageContainer
         self.recordDate = recordDate
         self.eventTime = eventTime
         self.category = category
@@ -72,6 +75,14 @@ public extension Record {
             return "时间安排"
         }
         return category.displayName
+    }
+
+    var resolvedStorageContainer: StorageContainer? {
+        guard category == .storage else {
+            return nil
+        }
+
+        return storageContainer ?? StorageContainerClassifier.classify(for: self)
     }
 
     var sliceCategories: [RecordSliceCategory] {

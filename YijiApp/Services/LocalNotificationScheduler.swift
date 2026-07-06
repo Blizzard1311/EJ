@@ -118,27 +118,6 @@ final class LocalNotificationScheduler: ObservableObject {
         scheduledIdentifiers.insert(identifier(for: reminder.id))
     }
 
-    func scheduleTestNotification(after delay: TimeInterval = 10) async throws {
-        try await ensureAuthorization()
-
-        let content = UNMutableNotificationContent()
-        content.title = "易记测试通知"
-        content.body = "如果你看到了这条通知，说明本地提醒已经可以正常送达。"
-        content.sound = .default
-
-        let request = UNNotificationRequest(
-            identifier: testIdentifier,
-            content: content,
-            trigger: UNTimeIntervalNotificationTrigger(timeInterval: max(1, delay), repeats: false)
-        )
-
-        center.removePendingNotificationRequests(withIdentifiers: [testIdentifier])
-        center.removeDeliveredNotifications(withIdentifiers: [testIdentifier])
-
-        try await center.add(request)
-        scheduledIdentifiers.insert(testIdentifier)
-    }
-
     func cancel(reminderID: UUID) {
         let requestID = identifier(for: reminderID)
         center.removePendingNotificationRequests(withIdentifiers: [requestID])
@@ -195,13 +174,13 @@ final class LocalNotificationScheduler: ObservableObject {
         "yiji.reminder.\(reminderID.uuidString)"
     }
 
-    private var testIdentifier: String {
+    private var legacyDiagnosticsIdentifier: String {
         "yiji.test-notification"
     }
 
     private func clearManagedNotifications() {
         let managedIdentifiers = scheduledIdentifiers.filter {
-            $0.hasPrefix("yiji.reminder.") || $0 == testIdentifier
+            $0.hasPrefix("yiji.reminder.") || $0 == legacyDiagnosticsIdentifier
         }
 
         guard !managedIdentifiers.isEmpty else { return }

@@ -54,6 +54,10 @@ struct RecordRowView: View {
                     infoChip(secondaryMeta.text, icon: secondaryMeta.icon)
                 }
 
+                if let storageContainer = record.resolvedStorageContainer {
+                    infoChip(storageContainer.displayName, icon: storageContainerIcon(storageContainer))
+                }
+
                 if !record.sliceCategoryNames.isEmpty {
                     infoChip(record.sliceCategoryNames.joined(separator: " / "), icon: "line.3.horizontal.decrease.circle")
                 }
@@ -198,6 +202,27 @@ struct RecordRowView: View {
             "text.cursor"
         case .imported:
             "square.and.arrow.down"
+        }
+    }
+
+    private func storageContainerIcon(_ container: StorageContainer) -> String {
+        switch container {
+        case .medicineKit:
+            "cross.case"
+        case .documentPouch:
+            "doc.text"
+        case .jewelryBox:
+            "sparkles"
+        case .digitalBox:
+            "cable.connector"
+        case .wardrobe:
+            "hanger"
+        case .storageBox:
+            "archivebox"
+        case .drawer:
+            "tray.2"
+        case .bag:
+            "bag"
         }
     }
 

@@ -341,6 +341,10 @@ struct CaptureView: View {
             rows.append(("时间", eventTime.displayText()))
         }
 
+        if let storageContainer = parsed.record.resolvedStorageContainer {
+            rows.append(("收纳", storageContainer.displayName))
+        }
+
         if !parsed.record.sliceCategoryNames.isEmpty {
             rows.append(("分类", parsed.record.sliceCategoryNames.joined(separator: " / ")))
         }

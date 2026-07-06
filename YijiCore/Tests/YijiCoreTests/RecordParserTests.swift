@@ -19,6 +19,7 @@ struct RecordParserTests {
         #expect(parsed.record.category == .storage)
         #expect(parsed.record.objectName == "户口本")
         #expect(parsed.record.location == "红抽屉最上面")
+        #expect(parsed.record.resolvedStorageContainer == .drawer)
         #expect(parsed.reminder == nil)
     }
 
@@ -34,6 +35,33 @@ struct RecordParserTests {
         #expect(parsed.record.category == .storage)
         #expect(parsed.record.objectName == "钥匙")
         #expect(parsed.record.location == "黑包侧袋里")
+        #expect(parsed.record.resolvedStorageContainer == .bag)
+    }
+
+    @Test
+    func infersSceneContainerFromExplicitStorageLocation() {
+        let parsed = parser.parse(
+            content: "备用充电器在数码盒里",
+            source: .text,
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(parsed.record.category == .storage)
+        #expect(parsed.record.resolvedStorageContainer == .digitalBox)
+    }
+
+    @Test
+    func infersSceneContainerFromObjectWhenLocationIsGeneric() {
+        let parsed = parser.parse(
+            content: "体温计放在卧室角落",
+            source: .text,
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(parsed.record.category == .storage)
+        #expect(parsed.record.resolvedStorageContainer == .medicineKit)
     }
 
     @Test

@@ -5,6 +5,8 @@ import YijiCore
 
 @MainActor
 final class AppModel: ObservableObject {
+    private static let lastBackupDateKey = "yiji.lastBackupDate"
+    private static let visibleStorageContainersKey = "yiji.visibleStorageContainers"
     private let freeRecordLimit = 30
     private let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier ?? "com.blizzard1311.yiji",
@@ -34,10 +36,14 @@ final class AppModel: ObservableObject {
     @Published var statusMessage: String?
     @Published var focusedRecordID: UUID?
     @Published var focusedRecordBadgeText: String?
+    @Published private(set) var visibleStorageContainers: [StorageContainer]
+    @Published private(set) var lastBackupDate: Date?
     @Published private(set) var lastRecognizedVoiceText: String?
 
     init(repository: FileBackedVaultStore = FileBackedVaultStore()) {
         self.repository = repository
+        self.visibleStorageContainers = Self.loadVisibleStorageContainers()
+        self.lastBackupDate = UserDefaults.standard.object(forKey: Self.lastBackupDateKey) as? Date
         bindChildObjects()
 
         speech.onTranscript = { [weak self] transcript in
@@ -59,7 +65,7 @@ final class AppModel: ObservableObject {
             searchHistory = snapshot.searchHistory
             let cleanedLegacyReminderCount = await cleanupLegacyFailedReminderArtifacts()
             if cleanedLegacyReminderCount > 0 {
-                showTransientStatus("已清理 \(cleanedLegacyReminderCount) 条旧错误提醒和关联记录。", seconds: 4.5)
+                showTransientStatus("已整理历史提醒。", seconds: 4.5)
             } else if statusMessage == nil {
                 clearStatusMessage()
             }
@@ -84,7 +90,7 @@ final class AppModel: ObservableObject {
             return
         }
         guard canSaveAdditionalRecord else {
-            showPersistentStatus("当前版本最多可记录 30 条。")
+            showPersistentStatus("记录数已达上限。")
             return
         }
         do {
@@ -188,19 +194,10 @@ final class AppModel: ObservableObject {
         }
     }
 
-    func sendTestNotification() async {
-        do {
-            try await notifications.scheduleTestNotification()
-            await notifications.refreshScheduledIdentifiers()
-            showTransientStatus("测试通知已创建，预计 10 秒后送达。")
-        } catch {
-            showPersistentStatus("测试通知发送失败：\(error.localizedDescription)")
-        }
-    }
-
     func prepareExportFile() async {
         do {
             exportURL = try await repository.exportBackupFile()
+            persistLastBackupDate(Date())
             showTransientStatus("本地备份文件已生成，可以直接分享或保存。")
         } catch {
             exportURL = nil
@@ -233,7 +230,7 @@ final class AppModel: ObservableObject {
                 clearFocusedRecord()
             }
             let message = cleanedLegacyReminderCount > 0
-                ? "备份已导入，并清理了 \(cleanedLegacyReminderCount) 条旧错误提醒。"
+                ? "备份已导入，历史提醒已整理。"
                 : "备份已导入，当前记录、提醒和本地通知已同步更新。"
             if statusMessage == nil {
                 showTransientStatus(message)
@@ -369,6 +366,52 @@ final class AppModel: ObservableObject {
         reminders.filter { $0.status != .pending }
     }
 
+    var remainingRecordSlots: Int {
+        max(0, freeRecordLimit - records.count)
+    }
+
+    var recordCapacityText: String {
+        "已记录 \(records.count) / \(freeRecordLimit) 条"
+    }
+
+    var nextPendingReminder: Reminder? {
+        pendingReminders.min { lhs, rhs in
+            if lhs.remindAt == rhs.remindAt {
+                return lhs.createdAt < rhs.createdAt
+            }
+            return lhs.remindAt < rhs.remindAt
+        }
+    }
+
+    func refreshNotificationStatus() async {
+        await notifications.refreshAuthorizationStatus()
+        await notifications.refreshScheduledIdentifiers()
+    }
+
+    func isStorageContainerVisible(_ container: StorageContainer) -> Bool {
+        visibleStorageContainers.contains(container)
+    }
+
+    func toggleVisibleStorageContainer(_ container: StorageContainer) {
+        var visible = Set(visibleStorageContainers)
+
+        if visible.contains(container) {
+            guard visible.count > 1 else {
+                showTransientStatus("至少保留 1 个固定显示的收纳场景。")
+                return
+            }
+            visible.remove(container)
+        } else {
+            visible.insert(container)
+        }
+
+        applyVisibleStorageContainers(Array(visible))
+    }
+
+    func resetVisibleStorageContainers() {
+        applyVisibleStorageContainers(Self.defaultVisibleStorageContainers)
+    }
+
     func showPersistentStatus(_ message: String) {
         presentStatus(message, autoClearAfterNanoseconds: nil)
     }
@@ -498,6 +541,21 @@ final class AppModel: ObservableObject {
         }
     }
 
+    private func applyVisibleStorageContainers(_ containers: [StorageContainer]) {
+        let normalized = Self.normalizeVisibleStorageContainers(containers)
+        visibleStorageContainers = normalized
+        persistVisibleStorageContainers(normalized)
+    }
+
+    private func persistVisibleStorageContainers(_ containers: [StorageContainer]) {
+        UserDefaults.standard.set(containers.map(\.rawValue), forKey: Self.visibleStorageContainersKey)
+    }
+
+    private func persistLastBackupDate(_ date: Date) {
+        lastBackupDate = date
+        UserDefaults.standard.set(date, forKey: Self.lastBackupDateKey)
+    }
+
     private func focusRecord(_ recordID: UUID, badgeText: String) {
         focusRevision += 1
         let revision = focusRevision
@@ -573,5 +631,30 @@ final class AppModel: ObservableObject {
                 self?.objectWillChange.send()
             }
             .store(in: &cancellables)
+    }
+
+    private static var defaultVisibleStorageContainers: [StorageContainer] {
+        [
+            .documentPouch,
+            .medicineKit,
+            .digitalBox,
+            .wardrobe,
+            .bag
+        ]
+    }
+
+    private static func loadVisibleStorageContainers() -> [StorageContainer] {
+        guard let rawValues = UserDefaults.standard.array(forKey: visibleStorageContainersKey) as? [String] else {
+            return defaultVisibleStorageContainers
+        }
+
+        let containers = rawValues.compactMap(StorageContainer.init(rawValue:))
+        return normalizeVisibleStorageContainers(containers)
+    }
+
+    private static func normalizeVisibleStorageContainers(_ containers: [StorageContainer]) -> [StorageContainer] {
+        let unique = Set(containers)
+        let ordered = StorageContainer.allCases.filter(unique.contains)
+        return ordered.isEmpty ? defaultVisibleStorageContainers : ordered
     }
 }

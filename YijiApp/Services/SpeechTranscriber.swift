@@ -65,7 +65,7 @@ final class SpeechTranscriber: ObservableObject {
 
         if isRunningInSimulator {
             authorizationStatus = .denied
-            errorMessage = "模拟器不支持稳定的语音听写录入，请改用真机测试语音，或先直接输入文字。"
+            errorMessage = "当前环境无法使用语音录入，请直接输入文字。"
             isRecording = false
             return
         }
@@ -135,7 +135,7 @@ final class SpeechTranscriber: ObservableObject {
 
         let inputNode = audioEngine.inputNode
         guard let recordingFormat = validRecordingFormat(for: inputNode) else {
-            errorMessage = "当前设备没有可用的麦克风输入。模拟器上语音听写可能不可用，请改用真机或直接输入文字。"
+            errorMessage = "当前设备没有可用的麦克风输入，请直接输入文字。"
             logger.error("no valid recording format available from input node")
             do {
                 try audioSession.setActive(false, options: .notifyOthersOnDeactivation)

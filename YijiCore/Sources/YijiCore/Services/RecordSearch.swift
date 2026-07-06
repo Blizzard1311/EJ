@@ -25,9 +25,10 @@ public enum RecordSearch {
         let objectName = normalize(record.objectName ?? "")
         let location = normalize(record.location ?? "")
         let category = normalize(record.displayCategoryName)
+        let storageContainer = normalize(record.resolvedStorageContainer?.displayName ?? "")
         let sliceCategories = normalize(record.sliceCategoryNames.joined(separator: " "))
         let tags = normalize(record.tags.joined(separator: " "))
-        let searchable = [content, objectName, location, category, sliceCategories, tags].joined(separator: " ")
+        let searchable = [content, objectName, location, category, storageContainer, sliceCategories, tags].joined(separator: " ")
 
         var score = 0
 
@@ -38,6 +39,7 @@ public enum RecordSearch {
         for token in tokens {
             score += weightedMatchScore(token: token, target: objectName, directScore: 5, inverseScore: 4)
             score += weightedMatchScore(token: token, target: location, directScore: 4, inverseScore: 3)
+            score += weightedMatchScore(token: token, target: storageContainer, directScore: 4, inverseScore: 3)
             score += weightedMatchScore(token: token, target: sliceCategories, directScore: 4, inverseScore: 3)
             score += weightedMatchScore(token: token, target: tags, directScore: 3, inverseScore: 2)
             score += weightedMatchScore(token: token, target: content, directScore: 2, inverseScore: 1)

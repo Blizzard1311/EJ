@@ -51,7 +51,7 @@ struct RemindersView: View {
     private var summarySection: some View {
         Section {
             VStack(alignment: .leading, spacing: 14) {
-                sectionTitle("提醒看板", subtitle: "处理即将发生的事，也能回看已完成状态")
+                sectionTitle("提醒", subtitle: "待办、已提醒、已完成")
 
                 HStack(spacing: 10) {
                     summaryCard(title: "待提醒", value: "\(appModel.pendingReminders.count)", color: .orange)
@@ -89,7 +89,7 @@ struct RemindersView: View {
     private func remindersSection(title: String, reminders: [Reminder]) -> some View {
         if !reminders.isEmpty {
             Section {
-                sectionTitle(title, subtitle: title == "待提醒" ? "保持待办和系统通知同步" : "完成、取消或失败的提醒会归档在这里")
+                sectionTitle(title, subtitle: title == "待提醒" ? "按时间排列" : "完成、取消和失败")
 
                 ForEach(reminders) { reminder in
                     VStack(alignment: .leading, spacing: 10) {
@@ -242,27 +242,27 @@ struct RemindersView: View {
 
     private func notificationDescriptor(for reminder: Reminder) -> (text: String, icon: String, color: Color) {
         if reminder.status == .failed {
-            return ("提醒失败，未进入通知", "exclamationmark.triangle.fill", .red)
+            return ("提醒失败", "exclamationmark.triangle.fill", .red)
         }
 
         if reminder.status == .notified {
-            return ("提醒已送达，当前不再排入通知", "checkmark.bell.fill", .blue)
+            return ("已送达", "checkmark.bell.fill", .blue)
         }
 
         if reminder.status != .pending {
-            return ("当前未排入通知", "bell.slash", .gray)
+            return ("未启用通知", "bell.slash", .gray)
         }
 
         switch appModel.notifications.authorizationStatus {
         case .granted:
             if appModel.notifications.isScheduled(reminderID: reminder.id) {
-                return ("已排入系统通知", "bell.badge.fill", .green)
+                return ("通知已开启", "bell.badge.fill", .green)
             }
-            return ("待同步到系统通知", "clock.badge", .orange)
+            return ("等待同步", "clock.badge", .orange)
         case .denied:
-            return ("仅保存，未获通知权限", "bell.slash.fill", .red)
+            return ("通知未开启", "bell.slash.fill", .red)
         case .unknown:
-            return ("仅保存，尚未开启通知", "bell.badge", .orange)
+            return ("待开启通知", "bell.badge", .orange)
         }
     }
 

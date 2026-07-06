@@ -72,8 +72,11 @@ enum PreviewSupport {
         let calendar = Calendar(identifier: .gregorian)
         let now = SampleData.makeDate(year: 2026, month: 6, day: 7, hour: 10, minute: 0)
         let examples = [
-            "我把户口本放在红抽屉最上面",
-            "身份证在床头柜第二层",
+            "感冒药和体温计放在医药箱上层",
+            "项链放进首饰盒左边小格",
+            "备用充电器在数码盒里",
+            "我把户口本放在证件袋里",
+            "夏天外套放进衣柜右边",
             "我把钥匙塞进黑包侧袋里",
             "明天下午三点提醒我交物业费",
             "周五上午十点提醒我提交报销",

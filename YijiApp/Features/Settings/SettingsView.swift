@@ -9,6 +9,7 @@ struct SettingsView: View {
     @State private var showingImportPicker = false
     @State private var pendingImportURL: URL?
     @State private var showingImportConfirmation = false
+    private let backupDateFormatter = YijiDateFormatter.dateTimeFormatter
 
     var body: some View {
         List {
@@ -19,6 +20,9 @@ struct SettingsView: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .background(screenBackground)
+        .task {
+            await appModel.refreshNotificationStatus()
+        }
         .fileImporter(
             isPresented: $showingImportPicker,
             allowedContentTypes: [.json],
@@ -67,11 +71,22 @@ struct SettingsView: View {
 
     private var localModeSection: some View {
         Section {
-            settingsCardSection(title: "本地模式", subtitle: "当前版本不需要注册，数据只保存在这台设备") {
+            settingsCardSection(title: "本机数据", subtitle: "记录、提醒和权限") {
                 HStack(spacing: 10) {
                     metricCard(title: "记录", value: "\(appModel.records.count)")
                     metricCard(title: "提醒", value: "\(appModel.reminders.count)")
                 }
+
+                HStack(spacing: 10) {
+                    metricCard(title: "剩余可记录", value: "\(appModel.remainingRecordSlots)")
+                    metricCard(title: "待提醒", value: "\(appModel.pendingReminders.count)")
+                }
+
+                infoStrip(
+                    title: "记录",
+                    detail: appModel.recordCapacityText,
+                    systemImage: "internaldrive"
+                )
 
                 HStack(spacing: 8) {
                     statusPill("语音 · \(appModel.speech.authorizationStatus.displayName)")
@@ -85,14 +100,14 @@ struct SettingsView: View {
 
     private var remindersSection: some View {
         Section {
-            settingsCardSection(title: "提醒与通知", subtitle: "查看提醒，并确认系统通知可正常送达") {
+            settingsCardSection(title: "提醒", subtitle: "待办和通知") {
                 NavigationLink {
                     RemindersView()
                 } label: {
                     actionRow(
                         "提醒管理",
                         detail: appModel.pendingReminders.isEmpty
-                            ? "当前没有待提醒事项"
+                            ? "暂无待提醒"
                             : "还有 \(appModel.pendingReminders.count) 条待提醒",
                         systemImage: "bell"
                     )
@@ -106,32 +121,31 @@ struct SettingsView: View {
                             await appModel.requestNotificationAccess()
                         }
                     }
-                    Text("开启后就能用系统通知接收提醒。")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                 case .denied:
                     actionButton("前往系统设置开启通知", systemImage: "gearshape") {
                         guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
                         openURL(url)
                     }
-                    Text("提醒仍会保存在本地，但不会出现在系统通知中心。")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                 case .granted:
-                    actionButton("发送 10 秒后测试通知", systemImage: "paperplane") {
-                        Task {
-                            await appModel.sendTestNotification()
-                        }
-                    }
-                    actionButton("刷新通知状态", systemImage: "arrow.clockwise") {
-                        Task {
-                            await appModel.notifications.refreshAuthorizationStatus()
-                            await appModel.notifications.refreshScheduledIdentifiers()
-                        }
-                    }
-                    Text("如果测试通知能收到，后续提醒也会按相同机制送达。")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    infoStrip(
+                        title: "通知",
+                        detail: "已开启",
+                        systemImage: "bell.badge.fill"
+                    )
+                }
+
+                if let nextReminder = appModel.nextPendingReminder {
+                    infoStrip(
+                        title: "下一条待提醒",
+                        detail: "\(backupDateFormatter.string(from: nextReminder.remindAt)) · \(nextReminder.title)",
+                        systemImage: "clock.badge"
+                    )
+                } else {
+                    infoStrip(
+                        title: "下一条待提醒",
+                        detail: "暂无待提醒",
+                        systemImage: "clock.badge.checkmark"
+                    )
                 }
 
                 if let statusMessage = appModel.statusMessage {
@@ -147,7 +161,13 @@ struct SettingsView: View {
 
     private var localDataSection: some View {
         Section {
-            settingsCardSection(title: "本地数据", subtitle: "导出或恢复 JSON 备份") {
+            settingsCardSection(title: "备份", subtitle: "导出或恢复本地数据") {
+                infoStrip(
+                    title: "上次备份",
+                    detail: appModel.lastBackupDate.map { backupDateFormatter.string(from: $0) } ?? "还没有导出过备份",
+                    systemImage: "externaldrive.badge.timemachine"
+                )
+
                 actionButton("生成备份文件", systemImage: "arrow.down.doc") {
                     Task {
                         await appModel.prepareExportFile()
@@ -163,15 +183,12 @@ struct SettingsView: View {
                         actionRow(
                             "分享备份文件",
                             detail: exportURL.lastPathComponent,
-                            systemImage: "square.and.arrow.up"
+                            systemImage: "square.and.arrow.up",
+                            showsChevron: false
                         )
                     }
                     .buttonStyle(.plain)
                 }
-
-                Text("导入会覆盖当前记录、提醒和本地通知安排。")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
         }
         .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 18, trailing: 16))
@@ -195,7 +212,7 @@ struct SettingsView: View {
         )
     }
 
-    private func actionRow(_ title: String, detail: String, systemImage: String) -> some View {
+    private func actionRow(_ title: String, detail: String, systemImage: String, showsChevron: Bool = true) -> some View {
         HStack(spacing: 12) {
             Image(systemName: systemImage)
                 .frame(width: 24, height: 24)
@@ -209,14 +226,18 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
                     .font(.subheadline)
-                Text(detail)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                if !detail.isEmpty {
+                    Text(detail)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
             Spacer()
-            Image(systemName: "chevron.right")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.tertiary)
+            if showsChevron {
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
         }
         .padding(14)
         .background(
@@ -227,7 +248,7 @@ struct SettingsView: View {
 
     private func actionButton(_ title: String, systemImage: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            actionRow(title, detail: "点一下直接执行", systemImage: systemImage)
+            actionRow(title, detail: "", systemImage: systemImage, showsChevron: false)
         }
         .buttonStyle(.plain)
     }
@@ -242,6 +263,31 @@ struct SettingsView: View {
                 Capsule()
                     .fill(Color.white.opacity(0.78))
             )
+    }
+
+    private func infoStrip(title: String, detail: String, systemImage: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: systemImage)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.blue)
+                .frame(width: 28, height: 28)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text(detail)
+                    .font(.subheadline)
+                    .foregroundStyle(.primary)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color(red: 0.97, green: 0.98, blue: 1.0))
+        )
     }
 
     private func settingsCardSection<Content: View>(
