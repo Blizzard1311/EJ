@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import CoreLocation
 import UniformTypeIdentifiers
 import YijiCore
 
@@ -9,18 +10,20 @@ struct SettingsView: View {
     @State private var showingImportPicker = false
     @State private var pendingImportURL: URL?
     @State private var showingImportConfirmation = false
+    private let locationManager = CLLocationManager()
     private let backupDateFormatter = YijiDateFormatter.dateTimeFormatter
 
     var body: some View {
         List {
             localModeSection
-            remindersSection
+            privacySection
             localDataSection
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .background(screenBackground)
         .task {
+            appModel.speech.refreshAuthorizationStatus()
             await appModel.refreshNotificationStatus()
         }
         .fileImporter(
@@ -71,81 +74,57 @@ struct SettingsView: View {
 
     private var localModeSection: some View {
         Section {
-            settingsCardSection(title: "本机数据", subtitle: "记录、提醒和权限") {
+            settingsCardSection(title: "本机数据") {
                 HStack(spacing: 10) {
                     metricCard(title: "记录", value: "\(appModel.records.count)")
                     metricCard(title: "提醒", value: "\(appModel.reminders.count)")
                 }
 
-                HStack(spacing: 10) {
-                    metricCard(title: "剩余可记录", value: "\(appModel.remainingRecordSlots)")
-                    metricCard(title: "待提醒", value: "\(appModel.pendingReminders.count)")
-                }
-
                 infoStrip(
-                    title: "记录",
-                    detail: appModel.recordCapacityText,
+                    title: "数据存储",
+                    detail: "记录和提醒会先保存在本机，并在可用时同步到 iCloud",
                     systemImage: "internaldrive"
                 )
-
-                HStack(spacing: 8) {
-                    statusPill("语音 · \(appModel.speech.authorizationStatus.displayName)")
-                    statusPill("通知 · \(appModel.notifications.authorizationStatus.displayName)")
-                }
             }
         }
         .listRowInsets(EdgeInsets(top: 16, leading: 16, bottom: 6, trailing: 16))
         .listRowBackground(Color.clear)
     }
 
-    private var remindersSection: some View {
+    private var privacySection: some View {
         Section {
-            settingsCardSection(title: "提醒", subtitle: "待办和通知") {
-                NavigationLink {
-                    RemindersView()
-                } label: {
-                    actionRow(
-                        "提醒管理",
-                        detail: appModel.pendingReminders.isEmpty
-                            ? "暂无待提醒"
-                            : "还有 \(appModel.pendingReminders.count) 条待提醒",
-                        systemImage: "bell"
-                    )
-                }
-                .buttonStyle(.plain)
+            settingsCardSection(title: "权限与隐私") {
+                infoStrip(
+                    title: "语音与麦克风",
+                    detail: "用于语音录入 · \(appModel.speech.authorizationStatus.displayName)",
+                    systemImage: "mic"
+                )
 
-                switch appModel.notifications.authorizationStatus {
-                case .unknown:
+                infoStrip(
+                    title: "通知",
+                    detail: "用于到期提醒 · \(appModel.notifications.authorizationStatus.displayName)",
+                    systemImage: "bell.badge"
+                )
+
+                infoStrip(
+                    title: "定位",
+                    detail: "用于月历天气 · \(locationAuthorizationDisplayName)",
+                    systemImage: "location"
+                )
+
+                if appModel.notifications.authorizationStatus == .unknown {
                     actionButton("开启通知权限", systemImage: "bell.badge") {
                         Task {
                             await appModel.requestNotificationAccess()
                         }
                     }
-                case .denied:
-                    actionButton("前往系统设置开启通知", systemImage: "gearshape") {
+                }
+
+                if shouldShowOpenSettingsAction {
+                    actionButton("前往系统设置", systemImage: "gearshape") {
                         guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
                         openURL(url)
                     }
-                case .granted:
-                    infoStrip(
-                        title: "通知",
-                        detail: "已开启",
-                        systemImage: "bell.badge.fill"
-                    )
-                }
-
-                if let nextReminder = appModel.nextPendingReminder {
-                    infoStrip(
-                        title: "下一条待提醒",
-                        detail: "\(backupDateFormatter.string(from: nextReminder.remindAt)) · \(nextReminder.title)",
-                        systemImage: "clock.badge"
-                    )
-                } else {
-                    infoStrip(
-                        title: "下一条待提醒",
-                        detail: "暂无待提醒",
-                        systemImage: "clock.badge.checkmark"
-                    )
                 }
 
                 if let statusMessage = appModel.statusMessage {
@@ -161,10 +140,16 @@ struct SettingsView: View {
 
     private var localDataSection: some View {
         Section {
-            settingsCardSection(title: "备份", subtitle: "导出或恢复本地数据") {
+            settingsCardSection(title: "备份与恢复") {
+                infoStrip(
+                    title: "iCloud 同步",
+                    detail: appModel.cloudSyncStatusDetail,
+                    systemImage: "icloud"
+                )
+
                 infoStrip(
                     title: "上次备份",
-                    detail: appModel.lastBackupDate.map { backupDateFormatter.string(from: $0) } ?? "还没有导出过备份",
+                    detail: appModel.lastBackupDate.map { backupDateFormatter.string(from: $0) } ?? "暂无备份",
                     systemImage: "externaldrive.badge.timemachine"
                 )
 
@@ -177,6 +162,12 @@ struct SettingsView: View {
                 actionButton("导入备份文件", systemImage: "square.and.arrow.down") {
                     showingImportPicker = true
                 }
+
+                infoStrip(
+                    title: "卸载前保护",
+                    detail: "如果准备删除 App，仍建议先导出备份文件到“文件”或 iCloud Drive",
+                    systemImage: "externaldrive.badge.icloud"
+                )
 
                 if let exportURL = appModel.exportURL {
                     ShareLink(item: exportURL) {
@@ -253,16 +244,24 @@ struct SettingsView: View {
         .buttonStyle(.plain)
     }
 
-    private func statusPill(_ title: String) -> some View {
-        Text(title)
-            .font(.caption2.weight(.medium))
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 9)
-            .padding(.vertical, 5)
-            .background(
-                Capsule()
-                    .fill(Color.white.opacity(0.78))
-            )
+    private var locationAuthorizationDisplayName: String {
+        switch locationManager.authorizationStatus {
+        case .authorizedAlways, .authorizedWhenInUse:
+            return "已授权"
+        case .denied, .restricted:
+            return "未授权"
+        case .notDetermined:
+            return "未请求"
+        @unknown default:
+            return "未请求"
+        }
+    }
+
+    private var shouldShowOpenSettingsAction: Bool {
+        appModel.speech.authorizationStatus == .denied ||
+        appModel.notifications.authorizationStatus == .denied ||
+        locationManager.authorizationStatus == .denied ||
+        locationManager.authorizationStatus == .restricted
     }
 
     private func infoStrip(title: String, detail: String, systemImage: String) -> some View {
@@ -292,16 +291,18 @@ struct SettingsView: View {
 
     private func settingsCardSection<Content: View>(
         title: String,
-        subtitle: String,
+        subtitle: String = "",
         @ViewBuilder content: () -> Content
     ) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.headline.weight(.semibold))
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                if !subtitle.isEmpty {
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
             content()
         }

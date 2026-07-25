@@ -78,11 +78,26 @@ public extension Record {
     }
 
     var resolvedStorageContainer: StorageContainer? {
+        resolvedStorageContainers.first
+    }
+
+    var resolvedStorageContainers: [StorageContainer] {
         guard category == .storage else {
-            return nil
+            return []
         }
 
-        return storageContainer ?? StorageContainerClassifier.classify(for: self)
+        var containers: [StorageContainer] = []
+
+        if let storageContainer {
+            containers.append(storageContainer)
+        }
+
+        for container in StorageContainerClassifier.classifyAll(for: self)
+        where !containers.contains(container) {
+            containers.append(container)
+        }
+
+        return containers
     }
 
     var sliceCategories: [RecordSliceCategory] {

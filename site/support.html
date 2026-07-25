@@ -14,7 +14,7 @@
       <h1>易记支持页面</h1>
       <p>
         易记是一款本地优先的生活记录工具，帮助你快速记录物品位置、提醒事项和临时笔记。
-        当前首发版本以个人本地使用为主，不提供账号体系、云同步或群组协作。
+        当前首发版本以个人使用为主，不提供账号体系或群组协作；当 iCloud 可用时，记录会同步到你自己的私有 iCloud 数据库。
       </p>
       <div class="hero-meta">
         <span class="pill">更新日期：2026-06-09</span>
@@ -53,13 +53,14 @@
         <li>普通笔记记录</li>
         <li>本地搜索</li>
         <li>本地提醒通知</li>
+        <li>iCloud 私有同步</li>
         <li>本地备份导出与导入</li>
       </ul>
 
       <h2>当前版本限制</h2>
       <ul>
         <li>当前版本最多保存 30 条记录</li>
-        <li>暂不支持账号、云同步、group 和付费升级</li>
+        <li>暂不支持账号、group 和付费升级</li>
         <li>启动页最终品牌素材会在后续版本替换</li>
       </ul>
 
@@ -86,12 +87,13 @@
       <h3>4. 备份文件如何使用？</h3>
       <ul>
         <li>在“我的”页面点击“生成备份文件”导出当前本地数据</li>
+        <li>如需卸载 App 或手动转移数据，建议把备份文件保存到“文件”App 或 iCloud Drive</li>
         <li>点击“导入备份文件”恢复之前导出的 JSON 文件</li>
       </ul>
-      <p>请注意：导入会覆盖当前本地记录和提醒，导入后应用会重新同步本地通知。</p>
+      <p>请注意：导入会覆盖当前本地记录和提醒，导入后应用会重新同步本地通知。若两台设备登录同一 Apple 账号并开启 iCloud，同步会自动进行，但手动备份仍然是删除 App 前最稳妥的保护方式。</p>
 
       <h3>5. 我的数据会上传到开发者服务器吗？</h3>
-      <p>当前首发版本不提供账号和云同步，数据以本地保存为主。语音识别能力依赖 iOS 系统能力，相关系统级处理可能受 Apple 隐私政策约束。</p>
+      <p>当前版本不提供账号系统，也不把你的记录正文、提醒内容或搜索历史上传到开发者自建服务器。若你在设备上启用了 iCloud，相关记录会同步到你自己的私有 iCloud 数据库。语音识别能力依赖 iOS 系统能力，相关系统级处理可能受 Apple 隐私政策约束。</p>
 
       <h2>联系我们</h2>
       <p>支持邮箱：<strong>待替换为真实邮箱</strong></p>
@@ -117,13 +119,14 @@
         <li>General note records</li>
         <li>Local search</li>
         <li>Local reminder notifications</li>
+        <li>Private iCloud sync</li>
         <li>Local backup export and import</li>
       </ul>
 
       <h2>Current Limitations</h2>
       <ul>
         <li>Up to 30 saved records</li>
-        <li>No account system, cloud sync, group sharing, or paid upgrade yet</li>
+        <li>No account system, group sharing, or paid upgrade yet</li>
         <li>Final launch screen branding assets will be updated later</li>
       </ul>
 
@@ -150,12 +153,13 @@
       <h3>4. How do backups work?</h3>
       <ul>
         <li>Tap “Generate Backup File” to export local data</li>
+        <li>Save or share the backup through the iOS Files flow, including iCloud Drive if you want to protect data before deleting the app or move it manually to another device</li>
         <li>Tap “Import Backup File” to restore a previously exported JSON backup</li>
       </ul>
-      <p>Importing replaces current local records and reminders, and local notifications are re-synced after import.</p>
+      <p>Importing replaces current local records and reminders, and local notifications are re-synced after import. If two devices use the same Apple ID with iCloud enabled, sync should happen automatically, but manual backups remain the safest protection before deleting the app.</p>
 
       <h3>5. Does the app upload my data to a developer server?</h3>
-      <p>The current release does not include accounts or cloud sync, and data is primarily stored locally on your device. Voice recognition depends on iOS system capabilities, and related system-level processing may be subject to Apple's privacy policies.</p>
+      <p>The current release does not include account registration and does not send your record content, reminder content, or search history to a developer-operated server. If iCloud is enabled on your device, that data may sync to your private iCloud database. Voice recognition depends on iOS system capabilities, and related system-level processing may be subject to Apple's privacy policies.</p>
 
       <h2>Contact</h2>
       <p>Support email: <strong>replace before release</strong></p>

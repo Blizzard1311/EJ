@@ -15,6 +15,7 @@
 		2E557FB543B996996737F768 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87E6A52DE10DA0F3DC05944F /* AppModel.swift */; };
 		340A91E10A8A3F500E5E355D /* CalendarWeatherModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 340A91E00A8A3F500E5E355D /* CalendarWeatherModel.swift */; };
 		3B9348217AB896011470879E /* CalendarMonthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5197A753E79221627D0658D /* CalendarMonthView.swift */; };
+		3D4A91B27A3105F1D2D1A9C0 /* CloudKitVaultSyncCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D4A91B17A3105F1D2D1A9C0 /* CloudKitVaultSyncCoordinator.swift */; };
 		4756E92A5263C4A994E5E5A7 /* RecordRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 541D4AD217DBEA96DD3DB0A2 /* RecordRowView.swift */; };
 		495D66A2945D9E230285D65E /* CaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DA15AE611AE40938E9346ED /* CaptureView.swift */; };
 		4E958F81767C717BF9E2AAA5 /* RootTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77CA13A090393EC6FA432A42 /* RootTabView.swift */; };
@@ -36,6 +37,7 @@
 		1D273F4EB9A2E7EE7405A5CD /* FileBackedVaultStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileBackedVaultStore.swift; sourceTree = "<group>"; };
 		2DA15AE611AE40938E9346ED /* CaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureView.swift; sourceTree = "<group>"; };
 		340A91E00A8A3F500E5E355D /* CalendarWeatherModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarWeatherModel.swift; sourceTree = "<group>"; };
+		3D4A91B17A3105F1D2D1A9C0 /* CloudKitVaultSyncCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitVaultSyncCoordinator.swift; sourceTree = "<group>"; };
 		45C73C5C165EF7EF86D4E78B /* YijiApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YijiApp.swift; sourceTree = "<group>"; };
 		4CBCFA4D6DB99FA1FEA32B45 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
 		502E8D564C8ED246A9CC8FC4 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -186,6 +188,7 @@
 		CEDFB8E0E061F5C606FCA0FD /* Persistence */ = {
 			isa = PBXGroup;
 			children = (
+				3D4A91B17A3105F1D2D1A9C0 /* CloudKitVaultSyncCoordinator.swift */,
 				1D273F4EB9A2E7EE7405A5CD /* FileBackedVaultStore.swift */,
 			);
 			path = Persistence;
@@ -331,6 +334,7 @@
 				5443251CD38B414380172C1D /* AppTheme.swift in Sources */,
 				340A91E10A8A3F500E5E355D /* CalendarWeatherModel.swift in Sources */,
 				3B9348217AB896011470879E /* CalendarMonthView.swift in Sources */,
+				3D4A91B27A3105F1D2D1A9C0 /* CloudKitVaultSyncCoordinator.swift in Sources */,
 				495D66A2945D9E230285D65E /* CaptureView.swift in Sources */,
 				BF214AC162A2BBCDEE18846D /* FileBackedVaultStore.swift in Sources */,
 				F65D59C6AD4A9F75185E9242 /* HomeView.swift in Sources */,

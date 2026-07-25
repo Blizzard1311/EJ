@@ -14,7 +14,7 @@
       <h1>易记隐私政策</h1>
       <p>
         本页面适用于易记当前首发阶段的本地优先 iOS 版本。
-        当前版本不提供账号系统，也不以开发者自建服务器为中心处理用户数据。
+        当前版本不提供账号系统，也不以开发者自建服务器为中心处理用户数据；当 iCloud 可用时，记录会同步到用户自己的私有 iCloud 数据库。
       </p>
       <div class="hero-meta">
         <span class="pill">生效日期：2026-06-09</span>
@@ -47,7 +47,7 @@
         <li>最近搜索历史</li>
         <li>你手动导出的本地备份文件内容</li>
       </ul>
-      <p>这些信息默认保存在你的设备本地，用于实现记录、搜索、提醒和备份恢复功能。</p>
+      <p>这些信息默认保存在你的设备本地；当你在设备上启用了 iCloud 时，相关记录、提醒和搜索历史也可能同步到你自己的私有 iCloud 数据库，用于实现跨设备恢复与同步。</p>
 
       <h2>3. 语音与麦克风权限</h2>
       <p>当你使用语音录入功能时，易记会请求麦克风权限和语音识别权限。</p>
@@ -68,7 +68,7 @@
       <h2>6. 数据共享</h2>
       <ul>
         <li>不提供账号系统</li>
-        <li>不提供云同步</li>
+        <li>支持同步到用户自己的私有 iCloud 数据库</li>
         <li>不提供群组共享</li>
         <li>不提供广告 SDK</li>
         <li>不提供第三方营销跟踪</li>
@@ -76,14 +76,15 @@
       </ul>
 
       <h2>7. 数据保留与删除</h2>
-      <p>你的记录、提醒和搜索历史默认保留在你的设备本地，直到你在应用内手动删除、用导入备份覆盖当前数据，或卸载应用。</p>
+      <p>你的记录、提醒和搜索历史默认保留在你的设备本地，直到你在应用内手动删除、用导入备份覆盖当前数据，或删除应用。</p>
+      <p>如果你在设备上启用了 iCloud，同步后的副本也可能继续保留在你的私有 iCloud 账户中，并在你重新安装后重新下载到设备。</p>
       <p>如果你导出了备份文件，该备份文件的保存、删除和转移由你自己控制。</p>
 
       <h2>8. 儿童隐私</h2>
       <p>当前版本不面向儿童进行定向画像、广告投放或社交运营。如果你是监护人，并认为未成年人在未经允许的情况下使用了本应用，请通过支持渠道联系开发者。</p>
 
       <h2>9. 政策更新</h2>
-      <p>如果易记未来引入账号、云同步、家庭 group、服务器接口或第三方服务，本隐私政策将同步更新。</p>
+      <p>如果易记未来进一步引入账号、家庭 group、开发者服务器接口或第三方服务，本隐私政策将同步更新。</p>
 
       <h2>10. 联系方式</h2>
       <p>支持邮箱：<strong>待替换为真实邮箱</strong></p>
@@ -104,7 +105,7 @@
         <li>Recent search history</li>
         <li>Backup data that you choose to export manually</li>
       </ul>
-      <p>This information is used only to provide local record storage, search, reminders, and backup restore features.</p>
+      <p>This information is used to provide local record storage, search, reminders, backup restore, and, when iCloud is enabled on your device, synchronization through your private iCloud database.</p>
 
       <h2>3. Microphone and Speech Recognition Permissions</h2>
       <p>When you use voice input, Yiji may request microphone permission and speech recognition permission.</p>
@@ -116,13 +117,13 @@
       <p>The current version uses local notifications and does not rely on developer server push delivery.</p>
 
       <h2>5. File Access and Local Backups</h2>
-      <p>If you import a backup, Yiji accesses only the JSON file that you explicitly choose through the system file picker. If you export a backup, Yiji creates a backup file through the standard iOS share and save flow.</p>
+      <p>If you import a backup, Yiji accesses only the JSON file that you explicitly choose through the system file picker. If you export a backup, Yiji creates a backup file through the standard iOS share and save flow, which may include saving the file to Files or iCloud Drive if you choose.</p>
       <p>Yiji does not browse or read unrelated files on your device without your direct action.</p>
 
       <h2>6. Data Sharing</h2>
       <ul>
         <li>No account registration</li>
-        <li>No cloud sync</li>
+        <li>Optional sync to the user's private iCloud database</li>
         <li>No group sharing</li>
         <li>No advertising SDKs</li>
         <li>No third-party marketing trackers</li>
@@ -131,13 +132,14 @@
 
       <h2>7. Data Retention and Deletion</h2>
       <p>Your data remains on your device until you delete it manually inside the app, overwrite it by importing a backup, or remove the app from your device.</p>
+      <p>If iCloud is enabled on your device, a synced copy may also remain in your private iCloud account and may download again after reinstalling the app.</p>
       <p>If you export a backup file, storage and deletion of that file are under your control.</p>
 
       <h2>8. Children's Privacy</h2>
       <p>The current version is not designed for profiling children, targeted advertising, or social interaction. If you are a parent or guardian and believe a minor used the app inappropriately, please contact the developer through the support channel.</p>
 
       <h2>9. Policy Updates</h2>
-      <p>If Yiji later introduces accounts, cloud sync, family groups, server-side services, or third-party integrations, this Privacy Policy will be updated accordingly.</p>
+      <p>If Yiji later introduces accounts, family groups, developer-operated server-side services, or third-party integrations, this Privacy Policy will be updated accordingly.</p>
 
       <h2>10. Contact</h2>
       <p>Support email: <strong>replace before release</strong></p>

@@ -7,8 +7,8 @@
 - Bundle ID：`com.blizzard1311.yiji`
 - 当前版本：`1.0`
 - 当前构建号：`1`
-- 首发范围：美区本地版 MVP
-- 首发阶段不包含：注册、登录、云同步、group、付费
+- 首发范围：美区本地优先 MVP
+- 首发阶段不包含：注册、登录、group、付费
 
 ## 建议分类
 
@@ -49,6 +49,7 @@
 - 自动识别位置记录、提醒事项和普通笔记
 - 最近记录回看与搜索
 - 本地提醒创建与系统通知送达
+- iCloud 可用时的私有同步
 - 本地备份导出与导入恢复
 
 适合记录这类内容：
@@ -60,7 +61,7 @@
 当前版本为本地优先设计：
 
 - 不需要账号
-- 不依赖云同步
+- iCloud 可用时会同步到用户自己的私有数据库
 - 数据以本地使用为主
 
 ### 英文版
@@ -73,7 +74,8 @@ Current MVP features:
 - Automatic parsing for storage notes, reminders, and general notes
 - Search and recent history lookup
 - Local reminders with iPhone system notifications
-- Local backup export and import
+- Private iCloud sync when available
+- Local backup export and import, with optional transfer through Files or iCloud Drive
 
 Examples:
 
@@ -84,7 +86,7 @@ Examples:
 This first release is designed as a local-first experience:
 
 - No account required
-- No cloud sync
+- Syncs through the user's private iCloud database when available
 - Built primarily for personal use
 
 ## Promotional Text 候选
@@ -96,12 +98,12 @@ This first release is designed as a local-first experience:
 当前真实行为可对外描述为：
 
 - 无账号系统
-- 无云端同步
+- 无开发者自建云端账号系统
 - 无广告跟踪
 - 无第三方营销 SDK
 - 语音识别依赖 iOS 系统能力
 - 提醒通过本地通知送达
-- 数据以本地存储为主
+- 数据以本地存储为主，并在 iCloud 可用时同步到用户自己的私有数据库
 
 ## Export Compliance
 
@@ -147,6 +149,7 @@ This first release is designed as a local-first experience:
 ## 当前上线前最小收口顺序
 
 1. 真机再做一轮带记录的完整回归
-2. 产出 5 组截图
-3. 补隐私政策与支持页链接
-4. 用当前 Archive 上传 TestFlight
+2. 在 CloudKit Console 确认 schema 已部署到 Production
+3. 产出 5 组截图
+4. 补隐私政策与支持页链接
+5. 用当前 Archive 上传 TestFlight

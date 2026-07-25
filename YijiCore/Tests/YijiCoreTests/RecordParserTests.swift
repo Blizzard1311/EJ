@@ -473,6 +473,100 @@ struct RecordParserTests {
     }
 
     @Test
+    func classifiesStoredPassportByObjectCategoryAndPhysicalLocation() {
+        let parsed = parser.parse(
+            content: "我的护照放在抽屉里",
+            source: .text,
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(parsed.record.category == .storage)
+        #expect(parsed.record.tags.contains("证件"))
+        #expect(parsed.record.resolvedStorageContainer == .drawer)
+        #expect(parsed.record.resolvedStorageContainers.contains(.documentPouch))
+        #expect(parsed.record.resolvedStorageContainers.contains(.drawer))
+    }
+
+    @Test
+    func classifiesIDCardByDocumentTypeAndDrawerLocation() {
+        let parsed = parser.parse(
+            content: "身份证放在书房抽屉里",
+            source: .text,
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(parsed.record.resolvedStorageContainers.contains(.documentPouch))
+        #expect(parsed.record.resolvedStorageContainers.contains(.drawer))
+    }
+
+    @Test
+    func classifiesWorkBadgeByDocumentTypeAndBagLocation() {
+        let parsed = parser.parse(
+            content: "工作证放在通勤包内袋",
+            source: .text,
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(parsed.record.resolvedStorageContainers.contains(.documentPouch))
+        #expect(parsed.record.resolvedStorageContainers.contains(.bag))
+    }
+
+    @Test
+    func classifiesMedicineByObjectTypeAndDrawerLocation() {
+        let parsed = parser.parse(
+            content: "布洛芬放在床头柜抽屉",
+            source: .text,
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(parsed.record.resolvedStorageContainers.contains(.medicineKit))
+        #expect(parsed.record.resolvedStorageContainers.contains(.drawer))
+    }
+
+    @Test
+    func classifiesJewelryByObjectTypeAndStorageBoxLocation() {
+        let parsed = parser.parse(
+            content: "戒指放在旅行收纳盒",
+            source: .text,
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(parsed.record.resolvedStorageContainers.contains(.jewelryBox))
+        #expect(parsed.record.resolvedStorageContainers.contains(.storageBox))
+    }
+
+    @Test
+    func classifiesDigitalAccessoryByObjectTypeAndDrawerLocation() {
+        let parsed = parser.parse(
+            content: "充电器放在书房抽屉",
+            source: .text,
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(parsed.record.resolvedStorageContainers.contains(.digitalBox))
+        #expect(parsed.record.resolvedStorageContainers.contains(.drawer))
+    }
+
+    @Test
+    func classifiesClothingByObjectTypeAndStorageBoxLocation() {
+        let parsed = parser.parse(
+            content: "围巾放在床下收纳盒",
+            source: .text,
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(parsed.record.resolvedStorageContainers.contains(.wardrobe))
+        #expect(parsed.record.resolvedStorageContainers.contains(.storageBox))
+    }
+
+    @Test
     func parsesRelativeDayPlans() {
         let dayBeforeYesterday = parser.parse(
             content: "前天处理退款",

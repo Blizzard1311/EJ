@@ -20,11 +20,9 @@ struct CaptureView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
                         Spacer(minLength: 72)
-                        headerHint
                         Spacer(minLength: 64)
                         microphoneStage
                         Spacer(minLength: 72)
-                        footerHint
                     }
                     .frame(maxWidth: .infinity)
                     .frame(minHeight: availableHeight - 12, alignment: .center)
@@ -62,23 +60,27 @@ struct CaptureView: View {
         .ignoresSafeArea()
     }
 
-    private var headerHint: some View {
-        Text("记录、提醒、提问，都从这一句开始")
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
-            .multilineTextAlignment(.center)
-            .frame(maxWidth: .infinity)
-    }
-
     private var microphoneStage: some View {
         VStack(spacing: 18) {
             microphoneButton
                 .accessibilityLabel(appModel.speech.isRecording ? "松开结束录音" : "按住开始录音")
 
             if !appModel.speech.isRecording {
-                Text(visibleVoiceText == nil ? "按住说话，松开结束" : "识别结果已生成，可继续修改")
+                Text(visibleVoiceText == nil ? "按住说话" : "编辑后保存")
                     .font(.title2.weight(.semibold))
                     .foregroundStyle(.primary)
+            }
+
+            if let restingStatusMessage {
+                Label(restingStatusMessage, systemImage: "checkmark.circle.fill")
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(.green)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(
+                        Capsule()
+                            .fill(Color.green.opacity(0.12))
+                    )
             }
 
             if shouldShowVoiceFeedback {
@@ -146,26 +148,6 @@ struct CaptureView: View {
         )
     }
 
-    private var footerHint: some View {
-        VStack(spacing: 8) {
-            Text("例如：")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            Text("我的护照在哪 / 今晚十点提醒我交电费 / 下周有哪些商务安排")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .lineSpacing(2)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color.white.opacity(0.84))
-        )
-    }
-
     private var voiceFeedbackPanel: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
@@ -173,7 +155,7 @@ struct CaptureView: View {
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(appModel.speech.isRecording ? .red : .blue)
 
-                Text(appModel.speech.isRecording ? "实时识别" : "解析结果")
+                Text(appModel.speech.isRecording ? "录音中" : "文字")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
 
@@ -183,7 +165,7 @@ struct CaptureView: View {
             if let visibleVoiceText {
                 editableVoiceDraft(text: visibleVoiceText)
             } else if appModel.speech.isRecording {
-                Text("正在听，你说的话会先转成文字。")
+                Text("正在录音")
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -264,11 +246,11 @@ struct CaptureView: View {
     @ViewBuilder
     private func editableVoiceDraft(text: String) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("识别文字")
+            Text("文字")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            TextField("语音识别结果会显示在这里", text: Binding(
+            TextField("输入内容", text: Binding(
                 get: { appModel.captureText },
                 set: { newValue in
                     appModel.updateCaptureDraftText(newValue)
@@ -285,11 +267,6 @@ struct CaptureView: View {
                     .fill(Color(red: 0.97, green: 0.98, blue: 1.0))
             )
 
-            if text != appModel.captureText || appModel.lastRecognizedVoiceText != appModel.captureText {
-                Text("已保留原始识别结果，当前文字以你的修改为准。")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
         }
     }
 
@@ -315,8 +292,7 @@ struct CaptureView: View {
 
         if SearchIntentClassifier.isSearchQuery(visibleVoiceText) {
             return [
-                ("理解为", "提问"),
-                ("下一步", "会到“录”里显示相关结果")
+                ("类型", "搜索")
             ]
         }
 
@@ -325,7 +301,7 @@ struct CaptureView: View {
         }
 
         var rows: [(label: String, value: String)] = [
-            ("理解为", parsed.record.displayCategoryName)
+            ("类型", parsed.record.displayCategoryName)
         ]
 
         if let warning = parsed.warnings.first {
@@ -368,6 +344,18 @@ struct CaptureView: View {
         return statusMessage
     }
 
+    private var restingStatusMessage: String? {
+        guard !appModel.speech.isRecording,
+              visibleVoiceText == nil,
+              appModel.speech.errorMessage == nil,
+              let statusMessage = appModel.statusMessage?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !statusMessage.isEmpty else {
+            return nil
+        }
+
+        return statusMessage
+    }
+
     private var feedbackStatusIcon: String {
         appModel.speech.errorMessage == nil ? "checkmark.circle" : "exclamationmark.circle"
     }
@@ -391,9 +379,7 @@ struct CaptureView: View {
     }
 
     private func syncPinnedVoiceText(from text: String) {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        pinnedVoiceText = trimmed
+        pinnedVoiceText = text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private func beginPressToTalkIfNeeded() {

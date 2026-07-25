@@ -3,11 +3,51 @@ import Combine
 import OSLog
 import YijiCore
 
+struct StorageContainerDefinition: Identifiable, Codable, Hashable, Sendable {
+    var id: String
+    var name: String
+    var builtInRawValue: String?
+
+    init(id: String, name: String, builtInRawValue: String? = nil) {
+        self.id = id
+        self.name = name
+        self.builtInRawValue = builtInRawValue
+    }
+
+    init(builtIn container: StorageContainer, name: String? = nil) {
+        self.id = container.rawValue
+        self.name = name ?? container.displayName
+        self.builtInRawValue = container.rawValue
+    }
+
+    init(customName: String) {
+        self.id = "custom-\(UUID().uuidString.lowercased())"
+        self.name = customName
+        self.builtInRawValue = nil
+    }
+
+    var builtInContainer: StorageContainer? {
+        builtInRawValue.flatMap(StorageContainer.init(rawValue:))
+    }
+
+    var displayName: String {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty {
+            return trimmed
+        }
+        return builtInContainer?.displayName ?? "未命名容器"
+    }
+
+    var isCustom: Bool {
+        builtInContainer == nil
+    }
+}
+
 @MainActor
 final class AppModel: ObservableObject {
     private static let lastBackupDateKey = "yiji.lastBackupDate"
     private static let visibleStorageContainersKey = "yiji.visibleStorageContainers"
-    private let freeRecordLimit = 30
+    private static let storageContainerDefinitionsKey = "yiji.storageContainerDefinitions"
     private let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier ?? "com.blizzard1311.yiji",
         category: "AppModel"
@@ -15,6 +55,7 @@ final class AppModel: ObservableObject {
     private let repository: FileBackedVaultStore
     private let parser = RecordParser()
     private let calendar = Calendar(identifier: .gregorian)
+    private let cloudSyncDateFormatter = YijiDateFormatter.dateTimeFormatter
     private var statusRevision = 0
     private var statusClearTask: Task<Void, Never>?
     private var focusRevision = 0
@@ -30,10 +71,14 @@ final class AppModel: ObservableObject {
     @Published var captureText = ""
     @Published var draftSource: CaptureSource = .text
     @Published var selectedTab: AppTab = {
-        if ProcessInfo.processInfo.environment["YIJI_START_TAB"] == "homeView" {
+        switch ProcessInfo.processInfo.environment["YIJI_START_TAB"] {
+        case "homeView":
             return .capture
+        case "calendar":
+            return .calendar
+        default:
+            return .home
         }
-        return .home
     }()
     @Published var searchText = ""
     @Published var searchHistory: [String] = []
@@ -41,13 +86,14 @@ final class AppModel: ObservableObject {
     @Published var statusMessage: String?
     @Published var focusedRecordID: UUID?
     @Published var focusedRecordBadgeText: String?
-    @Published private(set) var visibleStorageContainers: [StorageContainer]
+    @Published private(set) var storageContainerDefinitions: [StorageContainerDefinition]
     @Published private(set) var lastBackupDate: Date?
     @Published private(set) var lastRecognizedVoiceText: String?
+    @Published private(set) var cloudSyncStatusDetail = "正在检查 iCloud 同步状态"
 
     init(repository: FileBackedVaultStore = FileBackedVaultStore()) {
         self.repository = repository
-        self.visibleStorageContainers = Self.loadVisibleStorageContainers()
+        self.storageContainerDefinitions = Self.loadStorageContainerDefinitions()
         self.lastBackupDate = UserDefaults.standard.object(forKey: Self.lastBackupDateKey) as? Date
         bindChildObjects()
 
@@ -80,6 +126,21 @@ final class AppModel: ObservableObject {
 
         speech.refreshAuthorizationStatus()
         await refreshReminderStates()
+        await refreshCloudSyncStatus()
+    }
+
+    func refreshCloudSnapshot() async {
+        do {
+            let snapshot = try await repository.refreshFromCloud()
+            records = snapshot.records
+            reminders = snapshot.reminders
+            searchHistory = snapshot.searchHistory
+            await notifications.sync(reminders: reminders)
+        } catch {
+            showPersistentStatus("刷新 iCloud 数据失败：\(error.localizedDescription)")
+        }
+
+        await refreshCloudSyncStatus()
     }
 
     func preview(for text: String) -> ParsedCapture? {
@@ -94,26 +155,24 @@ final class AppModel: ObservableObject {
             showPersistentStatus(warning)
             return
         }
-        guard canSaveAdditionalRecord else {
-            showPersistentStatus("记录数已达上限。")
-            return
-        }
         do {
             let snapshot = try await repository.save(parsed)
             records = snapshot.records
             reminders = snapshot.reminders
             captureText = ""
+            lastRecognizedVoiceText = nil
             focusRecord(parsed.record.id, badgeText: "刚保存")
             if draftSource == .voice {
                 speech.resetTranscript()
             }
             if parsed.reminder != nil {
                 if let reminder = parsed.reminder {
-                    await scheduleNotification(for: reminder, successMessage: "提醒内容已保存，并已同步到本地通知。")
+                    await scheduleNotification(for: reminder, successMessage: "已记录")
                 }
             } else {
-                showTransientStatus("记录已保存到本地。")
+                showTransientStatus("已记录")
             }
+            await refreshCloudSyncStatus()
         } catch {
             showPersistentStatus("保存失败：\(error.localizedDescription)")
         }
@@ -140,6 +199,7 @@ final class AppModel: ObservableObject {
         if SearchIntentClassifier.isSearchQuery(trimmed) {
             activateSearch(trimmed, navigateToRecords: true)
             captureText = ""
+            lastRecognizedVoiceText = nil
             speech.resetTranscript()
             return
         }
@@ -193,7 +253,7 @@ final class AppModel: ObservableObject {
         do {
             try await notifications.ensureAuthorization()
             await notifications.sync(reminders: reminders)
-            showTransientStatus("通知权限已开启。后续提醒会同步到系统通知。")
+            showTransientStatus("通知权限已开启。")
         } catch {
             showPersistentStatus("通知权限未开启：\(error.localizedDescription)")
         }
@@ -243,6 +303,8 @@ final class AppModel: ObservableObject {
         } catch {
             showPersistentStatus("导入备份失败：\(error.localizedDescription)")
         }
+
+        await refreshCloudSyncStatus()
     }
 
     func updateReminder(_ reminder: Reminder) async -> Bool {
@@ -251,6 +313,7 @@ final class AppModel: ObservableObject {
             reminders = snapshot.reminders
             records = snapshot.records
             await syncNotification(for: reminder, successMessage: "提醒已更新。")
+            await refreshCloudSyncStatus()
             return true
         } catch {
             showPersistentStatus("更新提醒失败：\(error.localizedDescription)")
@@ -271,6 +334,7 @@ final class AppModel: ObservableObject {
             records = snapshot.records
             notifications.cancel(reminderID: id)
             showTransientStatus("提醒已删除。")
+            await refreshCloudSyncStatus()
         } catch {
             showPersistentStatus("删除提醒失败：\(error.localizedDescription)")
         }
@@ -298,6 +362,7 @@ final class AppModel: ObservableObject {
                     ? "记录已删除。"
                     : "记录和关联提醒已删除。"
             )
+            await refreshCloudSyncStatus()
         } catch {
             showPersistentStatus("删除记录失败：\(error.localizedDescription)")
         }
@@ -371,14 +436,6 @@ final class AppModel: ObservableObject {
         reminders.filter { $0.status != .pending }
     }
 
-    var remainingRecordSlots: Int {
-        max(0, freeRecordLimit - records.count)
-    }
-
-    var recordCapacityText: String {
-        "已记录 \(records.count) / \(freeRecordLimit) 条"
-    }
-
     var nextPendingReminder: Reminder? {
         pendingReminders.min { lhs, rhs in
             if lhs.remindAt == rhs.remindAt {
@@ -393,28 +450,89 @@ final class AppModel: ObservableObject {
         await notifications.refreshScheduledIdentifiers()
     }
 
-    func isStorageContainerVisible(_ container: StorageContainer) -> Bool {
-        visibleStorageContainers.contains(container)
+    var availableBuiltInStorageContainers: [StorageContainer] {
+        let configuredBuiltIns = Set(storageContainerDefinitions.compactMap(\.builtInContainer))
+        return StorageContainer.allCases.filter { !configuredBuiltIns.contains($0) }
     }
 
-    func toggleVisibleStorageContainer(_ container: StorageContainer) {
-        var visible = Set(visibleStorageContainers)
-
-        if visible.contains(container) {
-            guard visible.count > 1 else {
-                showTransientStatus("至少保留 1 个固定显示的收纳场景。")
-                return
-            }
-            visible.remove(container)
-        } else {
-            visible.insert(container)
+    func addBuiltInStorageContainer(_ container: StorageContainer) {
+        guard !storageContainerDefinitions.contains(where: { $0.builtInContainer == container }) else {
+            return
         }
 
-        applyVisibleStorageContainers(Array(visible))
+        var updated = storageContainerDefinitions
+        updated.append(StorageContainerDefinition(builtIn: container))
+        applyStorageContainerDefinitions(updated)
     }
 
-    func resetVisibleStorageContainers() {
-        applyVisibleStorageContainers(Self.defaultVisibleStorageContainers)
+    func addCustomStorageContainer(named name: String) {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            showTransientStatus("请输入容器名称。")
+            return
+        }
+
+        guard !storageContainerDefinitions.contains(where: { $0.displayName == trimmed }) else {
+            showTransientStatus("容器名称已存在。")
+            return
+        }
+
+        var updated = storageContainerDefinitions
+        updated.append(StorageContainerDefinition(customName: trimmed))
+        applyStorageContainerDefinitions(updated)
+    }
+
+    func updateStorageContainerName(_ name: String, for definitionID: String) {
+        guard let index = storageContainerDefinitions.firstIndex(where: { $0.id == definitionID }) else {
+            return
+        }
+
+        storageContainerDefinitions[index].name = name
+        persistStorageContainerDefinitions(storageContainerDefinitions)
+        objectWillChange.send()
+    }
+
+    func removeStorageContainerDefinition(_ definitionID: String) {
+        storageContainerDefinitions.removeAll { $0.id == definitionID }
+        persistStorageContainerDefinitions(storageContainerDefinitions)
+    }
+
+    func resetStorageContainerDefinitions() {
+        applyStorageContainerDefinitions(Self.defaultStorageContainerDefinitions)
+    }
+
+    func storageContainerDefinition(for container: StorageContainer) -> StorageContainerDefinition? {
+        storageContainerDefinitions.first { $0.builtInContainer == container }
+    }
+
+    func matchingCustomStorageContainerDefinition(for record: YijiCore.Record) -> StorageContainerDefinition? {
+        let customDefinitions = storageContainerDefinitions
+            .filter(\.isCustom)
+            .sorted { $0.displayName.count > $1.displayName.count }
+
+        guard !customDefinitions.isEmpty else {
+            return nil
+        }
+
+        let haystack = [
+            record.objectName,
+            record.location,
+            Optional(record.content)
+        ]
+        .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
+        .joined(separator: " ")
+
+        guard !haystack.isEmpty else {
+            return nil
+        }
+
+        return customDefinitions.first { definition in
+            let keyword = definition.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            guard !keyword.isEmpty else {
+                return false
+            }
+            return haystack.contains(keyword)
+        }
     }
 
     func showPersistentStatus(_ message: String) {
@@ -428,10 +546,6 @@ final class AppModel: ObservableObject {
 
     func clearStatusMessage() {
         presentStatus(nil, autoClearAfterNanoseconds: nil)
-    }
-
-    private var canSaveAdditionalRecord: Bool {
-        records.count < freeRecordLimit
     }
 
     private func scheduleNotification(for reminder: Reminder, successMessage: String) async {
@@ -477,6 +591,7 @@ final class AppModel: ObservableObject {
             if let snapshot = try? await repository.updateReminder(updatedReminder) {
                 reminders = snapshot.reminders
                 records = snapshot.records
+                await refreshCloudSyncStatus()
             }
         }
     }
@@ -496,6 +611,7 @@ final class AppModel: ObservableObject {
             )
             reminders = snapshot.reminders
             records = snapshot.records
+            await refreshCloudSyncStatus()
             return legacyReminders.count
         } catch {
             showPersistentStatus("清理旧错误提醒失败：\(error.localizedDescription)")
@@ -533,6 +649,7 @@ final class AppModel: ObservableObject {
             records = snapshot.records
             notifications.cancel(reminderID: reminder.id)
             showPersistentStatus(message)
+            await refreshCloudSyncStatus()
         } catch {
             showPersistentStatus("提醒状态更新失败：\(error.localizedDescription)")
         }
@@ -543,17 +660,45 @@ final class AppModel: ObservableObject {
 
         Task {
             _ = try? await repository.updateSearchHistory(currentHistory)
+            await self.refreshCloudSyncStatus()
         }
     }
 
-    private func applyVisibleStorageContainers(_ containers: [StorageContainer]) {
-        let normalized = Self.normalizeVisibleStorageContainers(containers)
-        visibleStorageContainers = normalized
-        persistVisibleStorageContainers(normalized)
+    private func refreshCloudSyncStatus() async {
+        let status = await repository.cloudSyncStatus()
+        switch status.availability {
+        case .available:
+            if let lastSuccessfulSyncDate = status.lastSuccessfulSyncDate {
+                cloudSyncStatusDetail = "已连接 iCloud · 上次同步 \(cloudSyncDateFormatter.string(from: lastSuccessfulSyncDate))"
+            } else {
+                cloudSyncStatusDetail = "已连接 iCloud · 等待首次同步"
+            }
+        case .noAccount:
+            cloudSyncStatusDetail = "未登录 iCloud，当前仅保留本机数据"
+        case .restricted:
+            cloudSyncStatusDetail = "当前设备无法使用 iCloud，当前仅保留本机数据"
+        case .temporarilyUnavailable:
+            cloudSyncStatusDetail = "iCloud 暂时不可用，稍后会自动重试"
+        case .unknown:
+            if let lastErrorDescription = status.lastErrorDescription, !lastErrorDescription.isEmpty {
+                cloudSyncStatusDetail = "iCloud 同步状态暂时不可用：\(lastErrorDescription)"
+            } else {
+                cloudSyncStatusDetail = "iCloud 同步状态暂时不可用"
+            }
+        }
     }
 
-    private func persistVisibleStorageContainers(_ containers: [StorageContainer]) {
-        UserDefaults.standard.set(containers.map(\.rawValue), forKey: Self.visibleStorageContainersKey)
+    private func applyStorageContainerDefinitions(_ definitions: [StorageContainerDefinition]) {
+        let normalized = Self.normalizeStorageContainerDefinitions(definitions)
+        storageContainerDefinitions = normalized
+        persistStorageContainerDefinitions(normalized)
+    }
+
+    private func persistStorageContainerDefinitions(_ definitions: [StorageContainerDefinition]) {
+        guard let data = try? JSONEncoder().encode(definitions) else {
+            return
+        }
+        UserDefaults.standard.set(data, forKey: Self.storageContainerDefinitionsKey)
     }
 
     private func persistLastBackupDate(_ date: Date) {
@@ -638,28 +783,50 @@ final class AppModel: ObservableObject {
             .store(in: &cancellables)
     }
 
-    private static var defaultVisibleStorageContainers: [StorageContainer] {
+    private static var defaultStorageContainerDefinitions: [StorageContainerDefinition] {
         [
-            .documentPouch,
-            .medicineKit,
-            .digitalBox,
-            .wardrobe,
-            .bag
+            StorageContainerDefinition(builtIn: .documentPouch),
+            StorageContainerDefinition(builtIn: .medicineKit),
+            StorageContainerDefinition(builtIn: .digitalBox),
+            StorageContainerDefinition(builtIn: .wardrobe),
+            StorageContainerDefinition(builtIn: .bag)
         ]
     }
 
-    private static func loadVisibleStorageContainers() -> [StorageContainer] {
-        guard let rawValues = UserDefaults.standard.array(forKey: visibleStorageContainersKey) as? [String] else {
-            return defaultVisibleStorageContainers
+    private static func loadStorageContainerDefinitions() -> [StorageContainerDefinition] {
+        if let data = UserDefaults.standard.data(forKey: storageContainerDefinitionsKey),
+           let definitions = try? JSONDecoder().decode([StorageContainerDefinition].self, from: data) {
+            return normalizeStorageContainerDefinitions(definitions)
         }
 
-        let containers = rawValues.compactMap(StorageContainer.init(rawValue:))
-        return normalizeVisibleStorageContainers(containers)
+        if let rawValues = UserDefaults.standard.array(forKey: visibleStorageContainersKey) as? [String] {
+            let migrated = rawValues
+                .compactMap(StorageContainer.init(rawValue:))
+                .map { StorageContainerDefinition(builtIn: $0) }
+            return normalizeStorageContainerDefinitions(migrated)
+        }
+
+        return defaultStorageContainerDefinitions
     }
 
-    private static func normalizeVisibleStorageContainers(_ containers: [StorageContainer]) -> [StorageContainer] {
-        let unique = Set(containers)
-        let ordered = StorageContainer.allCases.filter(unique.contains)
-        return ordered.isEmpty ? defaultVisibleStorageContainers : ordered
+    private static func normalizeStorageContainerDefinitions(_ definitions: [StorageContainerDefinition]) -> [StorageContainerDefinition] {
+        var seen = Set<String>()
+        var normalized: [StorageContainerDefinition] = []
+
+        for definition in definitions {
+            guard !seen.contains(definition.id) else {
+                continue
+            }
+
+            if let rawValue = definition.builtInRawValue,
+               StorageContainer(rawValue: rawValue) == nil {
+                continue
+            }
+
+            normalized.append(definition)
+            seen.insert(definition.id)
+        }
+
+        return normalized
     }
 }

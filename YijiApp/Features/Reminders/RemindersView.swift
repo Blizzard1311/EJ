@@ -14,7 +14,7 @@ struct RemindersView: View {
 
             if appModel.reminders.isEmpty {
                 Section {
-                    Text("还没有提醒事项。")
+                    Text("暂无提醒")
                         .foregroundStyle(.secondary)
                 }
             } else {
@@ -51,7 +51,7 @@ struct RemindersView: View {
     private var summarySection: some View {
         Section {
             VStack(alignment: .leading, spacing: 14) {
-                sectionTitle("提醒", subtitle: "待办、已提醒、已完成")
+                sectionTitle("提醒")
 
                 HStack(spacing: 10) {
                     summaryCard(title: "待提醒", value: "\(appModel.pendingReminders.count)", color: .orange)
@@ -89,7 +89,7 @@ struct RemindersView: View {
     private func remindersSection(title: String, reminders: [Reminder]) -> some View {
         if !reminders.isEmpty {
             Section {
-                sectionTitle(title, subtitle: title == "待提醒" ? "按时间排列" : "完成、取消和失败")
+                sectionTitle(title)
 
                 ForEach(reminders) { reminder in
                     VStack(alignment: .leading, spacing: 10) {
@@ -256,23 +256,25 @@ struct RemindersView: View {
         switch appModel.notifications.authorizationStatus {
         case .granted:
             if appModel.notifications.isScheduled(reminderID: reminder.id) {
-                return ("通知已开启", "bell.badge.fill", .green)
+                return ("已开启", "bell.badge.fill", .green)
             }
-            return ("等待同步", "clock.badge", .orange)
+            return ("待同步", "clock.badge", .orange)
         case .denied:
-            return ("通知未开启", "bell.slash.fill", .red)
+            return ("未开启", "bell.slash.fill", .red)
         case .unknown:
-            return ("待开启通知", "bell.badge", .orange)
+            return ("待开启", "bell.badge", .orange)
         }
     }
 
-    private func sectionTitle(_ title: String, subtitle: String) -> some View {
+    private func sectionTitle(_ title: String, subtitle: String = "") -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
                 .font(.headline.weight(.semibold))
-            Text(subtitle)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            if !subtitle.isEmpty {
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 }

@@ -75,13 +75,13 @@ final class CalendarWeatherModel: NSObject, ObservableObject {
     var statusText: String {
         switch state {
         case .idle, .needsAuthorization:
-            return "开启定位后，月历会显示未来 10 天的天气提示。"
+            return "开启定位"
         case .loading:
-            return "正在获取未来 10 天的天气。"
+            return "天气更新中"
         case .ready:
-            return "天气图标表示天气，颜色表示冷热；超过未来 10 天的日期会留空。"
+            return "天气已更新"
         case .denied:
-            return "定位未开启，月历天气不会显示。"
+            return "定位未开启"
         case .failed(let message):
             return message
         }
