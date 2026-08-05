@@ -19,11 +19,11 @@ final class LocalNotificationScheduler: ObservableObject {
         var displayName: String {
             switch self {
             case .unknown:
-                "未请求"
+                AppLocalization.text("未请求")
             case .granted:
-                "已授权"
+                AppLocalization.text("已授权")
             case .denied:
-                "未授权"
+                AppLocalization.text("未授权")
             }
         }
     }
@@ -35,9 +35,9 @@ final class LocalNotificationScheduler: ObservableObject {
         var errorDescription: String? {
             switch self {
             case .permissionDenied:
-                "通知权限未开启，请到系统设置中允许通知。"
+                AppLocalization.text("通知权限未开启，请到系统设置中允许通知。")
             case .pastDue:
-                "提醒时间已过，无法创建一次性本地通知。"
+                AppLocalization.text("提醒时间已过，无法创建一次性本地通知。")
             }
         }
     }
@@ -104,7 +104,9 @@ final class LocalNotificationScheduler: ObservableObject {
 
         let content = UNMutableNotificationContent()
         content.title = reminder.title
-        content.body = reminder.body.isEmpty ? "你设置的提醒时间到了。" : reminder.body
+        content.body = reminder.body.isEmpty
+            ? AppLocalization.text("你设置的提醒时间到了。")
+            : reminder.body
         content.sound = .default
 
         let trigger = try makeTrigger(for: reminder)

@@ -1,6 +1,7 @@
 name: Yiji
 options:
   bundleIdPrefix: com.blizzard1311
+  developmentLanguage: zh-Hans
 packages:
   YijiCore:
     path: ./YijiCore
@@ -19,11 +20,19 @@ targets:
         INFOPLIST_FILE: YijiApp/Resources/Info.plist
         DEVELOPMENT_TEAM: AWQP33QVBW
         MARKETING_VERSION: "1.0"
-        CURRENT_PROJECT_VERSION: "1"
+        CURRENT_PROJECT_VERSION: "9"
         SWIFT_VERSION: 6.0
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_ENTITLEMENTS: YijiApp/YijiApp.entitlements
         TARGETED_DEVICE_FAMILY: "1"
+      configs:
+        Debug:
+          CLOUDKIT_CONTAINER_ENVIRONMENT: Development
+          YIJI_CLOUD_SYNC_ENABLED: YES
+        Release:
+          CLOUDKIT_CONTAINER_ENVIRONMENT: Production
+          CODE_SIGN_ENTITLEMENTS: YijiApp/YijiApp-Release.entitlements
+          YIJI_CLOUD_SYNC_ENABLED: NO
     dependencies:
       - package: YijiCore
     scheme:

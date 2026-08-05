@@ -19,11 +19,11 @@ final class SpeechTranscriber: ObservableObject {
         var displayName: String {
             switch self {
             case .unknown:
-                "未请求"
+                AppLocalization.text("未请求")
             case .granted:
-                "已授权"
+                AppLocalization.text("已授权")
             case .denied:
-                "未授权"
+                AppLocalization.text("未授权")
             }
         }
     }
@@ -37,7 +37,8 @@ final class SpeechTranscriber: ObservableObject {
     var onFinalTranscript: ((String) -> Void)?
 
     private let audioEngine = AVAudioEngine()
-    private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "zh-CN"))
+    private var speechRecognizer: SFSpeechRecognizer?
+    private var speechRecognizerLocaleIdentifier: String?
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     private var isFinishingRecognition = false
@@ -65,7 +66,7 @@ final class SpeechTranscriber: ObservableObject {
 
         if isRunningInSimulator {
             authorizationStatus = .denied
-            errorMessage = "当前环境无法使用语音录入，请直接输入文字。"
+            errorMessage = AppLocalization.text("当前环境无法使用语音录入，请直接输入文字。")
             isRecording = false
             return
         }
@@ -86,7 +87,7 @@ final class SpeechTranscriber: ObservableObject {
 
         guard speechAuthorized && microphoneAuthorized else {
             authorizationStatus = .denied
-            errorMessage = "没有语音识别或麦克风权限，请到系统设置里开启。"
+            errorMessage = AppLocalization.text("没有语音识别或麦克风权限，请到系统设置里开启。")
             return
         }
 
@@ -103,17 +104,30 @@ final class SpeechTranscriber: ObservableObject {
         onTranscript?("")
     }
 
+    func refreshRecognitionLanguage() {
+        if isRecording || recognitionTask != nil || recognitionRequest != nil {
+            cancelRecordingSession()
+        }
+        speechRecognizer = nil
+        speechRecognizerLocaleIdentifier = nil
+        transcript = ""
+        errorMessage = nil
+        onTranscript?("")
+    }
+
     private func beginRecordingSession() {
         authorizationStatus = .granted
 
+        refreshSpeechRecognizerIfNeeded()
+
         guard let speechRecognizer else {
-            errorMessage = "当前设备不支持中文语音识别。"
-            logger.error("speech recognizer unavailable for zh-CN locale")
+            errorMessage = AppLocalization.text("当前设备不支持所选语言的语音识别。")
+            logger.error("speech recognizer unavailable for locale \(AppLocalization.speechLocale.identifier, privacy: .public)")
             return
         }
 
         guard speechRecognizer.isAvailable else {
-            errorMessage = "语音识别当前不可用，请稍后再试。"
+            errorMessage = AppLocalization.text("语音识别当前不可用，请稍后再试。")
             logger.error("speech recognizer is not available")
             return
         }
@@ -128,19 +142,19 @@ final class SpeechTranscriber: ObservableObject {
             try audioSession.setCategory(.record, mode: .measurement, options: [.duckOthers])
             try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
         } catch {
-            errorMessage = "无法启动录音会话：\(error.localizedDescription)"
+            errorMessage = AppLocalization.format("speech.session_start_error", error.localizedDescription)
             logger.error("audio session activation failed: \(error.localizedDescription, privacy: .public)")
             return
         }
 
         let inputNode = audioEngine.inputNode
         guard let recordingFormat = validRecordingFormat(for: inputNode) else {
-            errorMessage = "当前设备没有可用的麦克风输入，请直接输入文字。"
+            errorMessage = AppLocalization.text("当前设备没有可用的麦克风输入，请直接输入文字。")
             logger.error("no valid recording format available from input node")
             do {
                 try audioSession.setActive(false, options: .notifyOthersOnDeactivation)
             } catch {
-                errorMessage = "当前设备没有可用的麦克风输入，且无法关闭录音会话：\(error.localizedDescription)"
+                errorMessage = AppLocalization.format("speech.microphone_deactivate_error", error.localizedDescription)
                 logger.error("audio session deactivation after invalid format failed: \(error.localizedDescription, privacy: .public)")
             }
             return
@@ -172,9 +186,9 @@ final class SpeechTranscriber: ObservableObject {
                     }
 
                     if self.isNoSpeechDetected(nsError) {
-                        self.errorMessage = "没有识别到语音，请靠近麦克风后重试。"
+                        self.errorMessage = AppLocalization.text("没有识别到语音，请靠近麦克风后重试。")
                     } else {
-                        self.errorMessage = "语音识别失败：\(error.localizedDescription)"
+                        self.errorMessage = AppLocalization.format("speech.recognition_error", error.localizedDescription)
                         self.logger.error(
                             "recognition task failed domain=\(nsError.domain, privacy: .public) code=\(nsError.code) description=\(error.localizedDescription, privacy: .public)"
                         )
@@ -197,10 +211,19 @@ final class SpeechTranscriber: ObservableObject {
             scheduleAutoStop(after: initialSpeechTimeout)
             scheduleMaxRecordingStop()
         } catch {
-            errorMessage = "无法开始录音：\(error.localizedDescription)"
+            errorMessage = AppLocalization.format("speech.recording_start_error", error.localizedDescription)
             logger.error("audio engine start failed: \(error.localizedDescription, privacy: .public)")
             stopRecording()
         }
+    }
+
+    private func refreshSpeechRecognizerIfNeeded() {
+        let locale = AppLocalization.speechLocale
+        guard speechRecognizer == nil || speechRecognizerLocaleIdentifier != locale.identifier else {
+            return
+        }
+        speechRecognizer = SFSpeechRecognizer(locale: locale)
+        speechRecognizerLocaleIdentifier = locale.identifier
     }
 
     private func requestInitialPermissions(
@@ -228,7 +251,7 @@ final class SpeechTranscriber: ObservableObject {
 
         guard speechAuthorized && microphoneAuthorized else {
             authorizationStatus = .denied
-            errorMessage = "没有语音识别或麦克风权限，请到系统设置里开启。"
+            errorMessage = AppLocalization.text("没有语音识别或麦克风权限，请到系统设置里开启。")
             isRecording = false
             return
         }
@@ -296,7 +319,7 @@ final class SpeechTranscriber: ObservableObject {
         do {
             try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         } catch {
-            errorMessage = errorMessage ?? "无法结束录音会话：\(error.localizedDescription)"
+            errorMessage = errorMessage ?? AppLocalization.format("speech.session_end_error", error.localizedDescription)
             logger.error("audio session deactivation failed: \(error.localizedDescription, privacy: .public)")
         }
     }

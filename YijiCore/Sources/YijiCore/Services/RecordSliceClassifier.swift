@@ -11,17 +11,17 @@ public enum RecordSliceCategory: String, Codable, CaseIterable, Sendable {
     public var displayName: String {
         switch self {
         case .personal:
-            "私人"
+            YijiLocalization.text("私人")
         case .family:
-            "家庭"
+            YijiLocalization.text("家庭")
         case .finance:
-            "理财"
+            YijiLocalization.text("理财")
         case .work:
-            "工作"
+            YijiLocalization.text("工作")
         case .business:
-            "商务"
+            YijiLocalization.text("商务")
         case .life:
-            "生活"
+            YijiLocalization.text("生活")
         }
     }
 }

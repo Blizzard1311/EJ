@@ -196,6 +196,9 @@ public struct RecordParser: Sendable {
     }
 
     private func parseDate(content: String, now: Date, calendar: Calendar) -> Date? {
+        if let relativeDuration = parseRelativeDuration(content: content, now: now, calendar: calendar) {
+            return relativeDuration
+        }
         if let explicit = parseExplicitMonthDay(content: content, now: now, calendar: calendar) {
             return explicit
         }
@@ -260,6 +263,37 @@ public struct RecordParser: Sendable {
             return nil
         }
         return adjustedCandidateForMidnightRollover(rawCandidate, content: content, calendar: calendar)
+    }
+
+    private func parseRelativeDuration(content: String, now: Date, calendar: Calendar) -> Date? {
+        if firstMatch(pattern: #"半\s*(?:个)?小时\s*(?:以后|之后|后)"#, in: content) != nil {
+            return calendar.date(byAdding: .minute, value: 30, to: now)
+        }
+
+        guard let result = firstMatch(
+            pattern: #"([零〇一二三四五六七八九十两\d]{1,4})\s*(分钟|分|(?:个)?小时|钟头|天|日|周|星期|礼拜)\s*(?:以后|之后|后)"#,
+            in: content
+        ), result.count >= 3,
+              let amount = parseChineseOrArabicNumber(result[1]),
+              amount > 0 else {
+            return nil
+        }
+
+        let component: Calendar.Component
+        switch result[2] {
+        case "分钟", "分":
+            component = .minute
+        case "小时", "个小时", "钟头":
+            component = .hour
+        case "天", "日":
+            component = .day
+        case "周", "星期", "礼拜":
+            component = .weekOfYear
+        default:
+            return nil
+        }
+
+        return calendar.date(byAdding: component, value: amount, to: now)
     }
 
     private func parseExplicitMonthDay(content: String, now: Date, calendar: Calendar) -> Date? {
@@ -594,6 +628,7 @@ public struct RecordParser: Sendable {
             #"^((?:下|本|这)?(?:周|星期|礼拜)[一二三四五六日天])"#,
             #"^(每(?:天|周|月|年)\S*)"#,
             #"^(?:(?:\d{4})年)?\d{1,2}月\d{1,2}[日号]?"#,
+            #"^(?:半\s*(?:个)?小时|[零〇一二三四五六七八九十两\d]{1,4}\s*(?:分钟|分|(?:个)?小时|钟头|天|日|周|星期|礼拜))\s*(?:以后|之后|后)"#,
             #"^(凌晨|早上|上午|中午|下午|晚上)?\s*[零〇一二三四五六七八九十两\d]{1,3}\s*[:：]\s*[零〇一二三四五六七八九十两\d]{1,3}"#,
             #"^(凌晨|早上|上午|中午|下午|晚上)?\s*[零〇一二三四五六七八九十两\d]{1,3}(?:点钟|点|时)(?:(?:半|整)|(?:[零〇一二三四五六七八九十两\d]{1,3})分?)?"#
         ]

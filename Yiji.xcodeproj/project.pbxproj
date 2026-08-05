@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A11C4E9D4E9A4B4A9F2D1020 /* AppLocalization.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11C4E9D4E9A4B4A9F2D1021 /* AppLocalization.swift */; };
+		A11C4E9D4E9A4B4A9F2D1022 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A11C4E9D4E9A4B4A9F2D1024 /* Localizable.strings */; };
+		A11C4E9D4E9A4B4A9F2D1023 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = A11C4E9D4E9A4B4A9F2D1026 /* InfoPlist.strings */; };
 		184DA782A2346AB710E8FB4B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE74B6354ED6D3461850CD5 /* SettingsView.swift */; };
 		1C830643861E223A614BEB7C /* SpeechTranscriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = B51FC9167409097E58FBBB2A /* SpeechTranscriber.swift */; };
 		28417EFC97D8DEECFFC44AAB /* YijiApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45C73C5C165EF7EF86D4E78B /* YijiApp.swift */; };
@@ -15,11 +18,13 @@
 		2E557FB543B996996737F768 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87E6A52DE10DA0F3DC05944F /* AppModel.swift */; };
 		340A91E10A8A3F500E5E355D /* CalendarWeatherModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 340A91E00A8A3F500E5E355D /* CalendarWeatherModel.swift */; };
 		3B9348217AB896011470879E /* CalendarMonthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5197A753E79221627D0658D /* CalendarMonthView.swift */; };
+		3D4A91B27A3105F1D2D1A9C0 /* CloudKitVaultSyncCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D4A91B17A3105F1D2D1A9C0 /* CloudKitVaultSyncCoordinator.swift */; };
 		4756E92A5263C4A994E5E5A7 /* RecordRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 541D4AD217DBEA96DD3DB0A2 /* RecordRowView.swift */; };
 		495D66A2945D9E230285D65E /* CaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DA15AE611AE40938E9346ED /* CaptureView.swift */; };
 		4E958F81767C717BF9E2AAA5 /* RootTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77CA13A090393EC6FA432A42 /* RootTabView.swift */; };
 		5443251CD38B414380172C1D /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CBCFA4D6DB99FA1FEA32B45 /* AppTheme.swift */; };
 		7673E8631DE0EA5C97A81A6C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 502E8D564C8ED246A9CC8FC4 /* Assets.xcassets */; };
+		A11C4E9D4E9A4B4A9F2D1011 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A11C4E9D4E9A4B4A9F2D1010 /* PrivacyInfo.xcprivacy */; };
 		84D16D797002375CC02564C9 /* RecordDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06982B2E73493E9D1A75DB60 /* RecordDetailView.swift */; };
 		AD94090516ADA29EBFD28F20 /* ReminderEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0209B8EBF57A23214D300167 /* ReminderEditorView.swift */; };
 		BF214AC162A2BBCDEE18846D /* FileBackedVaultStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D273F4EB9A2E7EE7405A5CD /* FileBackedVaultStore.swift */; };
@@ -31,11 +36,17 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A11C4E9D4E9A4B4A9F2D1021 /* AppLocalization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLocalization.swift; sourceTree = "<group>"; };
+		A11C4E9D4E9A4B4A9F2D1025 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		A11C4E9D4E9A4B4A9F2D1027 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		A11C4E9D4E9A4B4A9F2D1028 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
+		A11C4E9D4E9A4B4A9F2D1029 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
 		0209B8EBF57A23214D300167 /* ReminderEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderEditorView.swift; sourceTree = "<group>"; };
 		06982B2E73493E9D1A75DB60 /* RecordDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordDetailView.swift; sourceTree = "<group>"; };
 		1D273F4EB9A2E7EE7405A5CD /* FileBackedVaultStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileBackedVaultStore.swift; sourceTree = "<group>"; };
 		2DA15AE611AE40938E9346ED /* CaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureView.swift; sourceTree = "<group>"; };
 		340A91E00A8A3F500E5E355D /* CalendarWeatherModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarWeatherModel.swift; sourceTree = "<group>"; };
+		3D4A91B17A3105F1D2D1A9C0 /* CloudKitVaultSyncCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitVaultSyncCoordinator.swift; sourceTree = "<group>"; };
 		45C73C5C165EF7EF86D4E78B /* YijiApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YijiApp.swift; sourceTree = "<group>"; };
 		4CBCFA4D6DB99FA1FEA32B45 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
 		502E8D564C8ED246A9CC8FC4 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -47,6 +58,7 @@
 		87E6A52DE10DA0F3DC05944F /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
 		946735739ADE8830AB6AC329 /* YijiApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = YijiApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		970EAA28B509C08E0551C5EF /* LocalNotificationScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalNotificationScheduler.swift; sourceTree = "<group>"; };
+		A11C4E9D4E9A4B4A9F2D1010 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		A137C959894E2B333C1843B0 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		B51FC9167409097E58FBBB2A /* SpeechTranscriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechTranscriber.swift; sourceTree = "<group>"; };
 		C5197A753E79221627D0658D /* CalendarMonthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarMonthView.swift; sourceTree = "<group>"; };
@@ -82,6 +94,9 @@
 			isa = PBXGroup;
 			children = (
 				502E8D564C8ED246A9CC8FC4 /* Assets.xcassets */,
+				A11C4E9D4E9A4B4A9F2D1026 /* InfoPlist.strings */,
+				A11C4E9D4E9A4B4A9F2D1024 /* Localizable.strings */,
+				A11C4E9D4E9A4B4A9F2D1010 /* PrivacyInfo.xcprivacy */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -186,6 +201,7 @@
 		CEDFB8E0E061F5C606FCA0FD /* Persistence */ = {
 			isa = PBXGroup;
 			children = (
+				3D4A91B17A3105F1D2D1A9C0 /* CloudKitVaultSyncCoordinator.swift */,
 				1D273F4EB9A2E7EE7405A5CD /* FileBackedVaultStore.swift */,
 			);
 			path = Persistence;
@@ -202,6 +218,7 @@
 		DF919159335DF5E299F0A008 /* App */ = {
 			isa = PBXGroup;
 			children = (
+				A11C4E9D4E9A4B4A9F2D1021 /* AppLocalization.swift */,
 				87E6A52DE10DA0F3DC05944F /* AppModel.swift */,
 				4CBCFA4D6DB99FA1FEA32B45 /* AppTheme.swift */,
 				E05ED3A46E8682723638A5F2 /* PreviewSupport.swift */,
@@ -282,11 +299,12 @@
 				LastUpgradeCheck = 2630;
 			};
 			buildConfigurationList = 94A5D567BC512EE3888C3A7C /* Build configuration list for PBXProject "Yiji" */;
-			developmentRegion = en;
+			developmentRegion = zh-Hans;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				Base,
 				en,
+				zh-Hans,
 			);
 			mainGroup = 98A485684807419FB64CEE5E;
 			minimizedProjectReferenceProxies = 1;
@@ -310,6 +328,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				7673E8631DE0EA5C97A81A6C /* Assets.xcassets in Resources */,
+				A11C4E9D4E9A4B4A9F2D1023 /* InfoPlist.strings in Resources */,
+				A11C4E9D4E9A4B4A9F2D1022 /* Localizable.strings in Resources */,
+				A11C4E9D4E9A4B4A9F2D1011 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -327,10 +348,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A11C4E9D4E9A4B4A9F2D1020 /* AppLocalization.swift in Sources */,
 				2E557FB543B996996737F768 /* AppModel.swift in Sources */,
 				5443251CD38B414380172C1D /* AppTheme.swift in Sources */,
 				340A91E10A8A3F500E5E355D /* CalendarWeatherModel.swift in Sources */,
 				3B9348217AB896011470879E /* CalendarMonthView.swift in Sources */,
+				3D4A91B27A3105F1D2D1A9C0 /* CloudKitVaultSyncCoordinator.swift in Sources */,
 				495D66A2945D9E230285D65E /* CaptureView.swift in Sources */,
 				BF214AC162A2BBCDEE18846D /* FileBackedVaultStore.swift in Sources */,
 				F65D59C6AD4A9F75185E9242 /* HomeView.swift in Sources */,
@@ -358,15 +381,37 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXVariantGroup section */
+		A11C4E9D4E9A4B4A9F2D1024 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				A11C4E9D4E9A4B4A9F2D1025 /* en */,
+				A11C4E9D4E9A4B4A9F2D1028 /* zh-Hans */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+		A11C4E9D4E9A4B4A9F2D1026 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				A11C4E9D4E9A4B4A9F2D1027 /* en */,
+				A11C4E9D4E9A4B4A9F2D1029 /* zh-Hans */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
 /* Begin XCBuildConfiguration section */
 		2E0224C9D6F0DADEE55C84E7 /* Release */ = {
 			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = YijiApp/YijiApp.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
+				buildSettings = {
+					ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+					CLOUDKIT_CONTAINER_ENVIRONMENT = Production;
+					CODE_SIGN_ENTITLEMENTS = "YijiApp/YijiApp-Release.entitlements";
+					CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 9;
 				DEVELOPMENT_TEAM = AWQP33QVBW;
 				INFOPLIST_FILE = YijiApp/Resources/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -380,17 +425,19 @@
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 1;
+				YIJI_CLOUD_SYNC_ENABLED = NO;
 			};
 			name = Release;
 		};
 		4E56D28D7015298779AB4EC0 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = YijiApp/YijiApp.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
+				buildSettings = {
+					ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+					CLOUDKIT_CONTAINER_ENVIRONMENT = Development;
+					CODE_SIGN_ENTITLEMENTS = YijiApp/YijiApp.entitlements;
+					CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 9;
 				DEVELOPMENT_TEAM = AWQP33QVBW;
 				INFOPLIST_FILE = YijiApp/Resources/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -404,6 +451,7 @@
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 1;
+				YIJI_CLOUD_SYNC_ENABLED = YES;
 			};
 			name = Debug;
 		};

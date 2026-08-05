@@ -22,8 +22,6 @@ struct RecordDetailView: View {
                 let reminder = appModel.reminder(for: record)
                 VStack(alignment: .leading, spacing: 16) {
                     heroCard(for: record, reminder: reminder)
-                    summaryGrid(for: record)
-                    reminderCard(for: record, reminder: reminder)
                     detailCard(for: record)
                     originalContentCard(for: record)
                 }
@@ -70,13 +68,8 @@ struct RecordDetailView: View {
     @ViewBuilder
     private var unavailableState: some View {
         VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 10) {
-                Label("这条记录已不存在。", systemImage: "tray.full")
-                    .font(.headline)
-                Text("它可能已经被删除，或者在导入备份时被新的本地数据覆盖。")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
+            Label("这条记录已不存在。", systemImage: "tray.full")
+                .font(.headline)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(18)
             .background(
@@ -84,7 +77,7 @@ struct RecordDetailView: View {
                     .fill(.white.opacity(0.92))
             )
 
-            Button("返回上一页") {
+            Button("返回") {
                 dismiss()
             }
             .buttonStyle(.borderedProminent)
@@ -105,15 +98,28 @@ struct RecordDetailView: View {
                     )
 
                 VStack(alignment: .leading, spacing: 7) {
-                    Text(primaryTitle(for: record))
-                        .font(.title2.weight(.semibold))
-                        .lineLimit(2)
-                        .fixedSize(horizontal: false, vertical: true)
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text(primaryTitle(for: record))
+                            .font(.title2.weight(.semibold))
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
 
-                    HStack(spacing: 8) {
-                        chip(record.displayCategoryName, color: categoryColor(for: record))
-                        if let storageContainer = record.resolvedStorageContainer {
-                            chip(storageContainer.displayName, color: storageContainerColor(storageContainer))
+                        if let reminder {
+                            Image(systemName: reminderIcon(for: reminder))
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(reminderColor(for: reminder))
+                                .accessibilityLabel(
+                                    AppLocalization.format("record.related_reminder", reminder.status.displayName)
+                                )
+                        }
+                    }
+
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            chip(record.displayCategoryName, color: categoryColor(for: record))
+                            ForEach(record.resolvedStorageContainers, id: \.rawValue) { storageContainer in
+                                chip(storageContainer.displayName, color: storageContainerColor(storageContainer))
+                            }
                         }
                     }
                 }
@@ -128,14 +134,6 @@ struct RecordDetailView: View {
                 value: YijiDateFormatter.dayFormatter.string(from: record.createdAt),
                 systemImage: "calendar"
             )
-
-            if let reminder {
-                infoLine(
-                    "提醒",
-                    value: reminderStatusText(for: reminder),
-                    systemImage: reminder.status == .pending ? "bell.badge" : "bell"
-                )
-            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(20)
@@ -145,134 +143,12 @@ struct RecordDetailView: View {
         )
     }
 
-    private func summaryGrid(for record: Record) -> some View {
-        LazyVGrid(
-            columns: [
-                GridItem(.flexible(), spacing: 10),
-                GridItem(.flexible(), spacing: 10)
-            ],
-            spacing: 10
-        ) {
-            summaryTile(
-                title: "数量",
-                value: quantityText(for: record) ?? "未填写",
-                systemImage: "number",
-                color: quantityText(for: record) == nil ? .gray : .blue
-            )
-            summaryTile(
-                title: "场景",
-                value: record.resolvedStorageContainer?.displayName ?? record.displayCategoryName,
-                systemImage: "folder",
-                color: record.resolvedStorageContainer.map(storageContainerColor) ?? categoryColor(for: record)
-            )
-            summaryTile(
-                title: "记录日期",
-                value: YijiDateFormatter.dayFormatter.string(from: record.createdAt),
-                systemImage: "calendar",
-                color: .green
-            )
-            summaryTile(
-                title: "提醒",
-                value: reminderShortText(for: record),
-                systemImage: "bell",
-                color: reminderShortColor(for: record)
-            )
-        }
-    }
-
-    private func summaryTile(title: String, value: String, systemImage: String, color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Image(systemName: systemImage)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(color)
-                .frame(width: 26, height: 26)
-                .background(
-                    RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        .fill(color.opacity(0.12))
-                )
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text(value)
-                    .font(.subheadline.weight(.semibold))
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.82)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .frame(maxWidth: .infinity, minHeight: 104, alignment: .topLeading)
-        .padding(14)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(.white.opacity(0.92))
-        )
-    }
-
-    private func reminderCard(for record: Record, reminder: Reminder?) -> some View {
-        groupedCard(title: "到期与提醒") {
-            if let reminder {
-                HStack(alignment: .top, spacing: 12) {
-                    Image(systemName: reminderIcon(for: reminder))
-                        .font(.headline.weight(.semibold))
-                        .foregroundStyle(reminderColor(for: reminder))
-                        .frame(width: 32, height: 32)
-                        .background(
-                            RoundedRectangle(cornerRadius: 11, style: .continuous)
-                                .fill(reminderColor(for: reminder).opacity(0.12))
-                        )
-
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(reminder.title)
-                            .font(.subheadline.weight(.semibold))
-                        Text(YijiDateFormatter.dateTimeFormatter.string(from: reminder.remindAt))
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                        Text(reminderStatusText(for: reminder))
-                            .font(.footnote.weight(.medium))
-                            .foregroundStyle(reminderColor(for: reminder))
-                    }
-                }
-            } else {
-                HStack(alignment: .top, spacing: 12) {
-                    Image(systemName: needsExpiryReminder(record) ? "bell.badge" : "bell.slash")
-                        .font(.headline.weight(.semibold))
-                        .foregroundStyle(needsExpiryReminder(record) ? .orange : .gray)
-                        .frame(width: 32, height: 32)
-                        .background(
-                            RoundedRectangle(cornerRadius: 11, style: .continuous)
-                                .fill((needsExpiryReminder(record) ? Color.orange : Color.gray).opacity(0.12))
-                        )
-
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(needsExpiryReminder(record) ? "可添加到期提醒" : "未设置到期提醒")
-                            .font(.subheadline.weight(.semibold))
-                        Text(needsExpiryReminder(record) ? "原文包含到期相关信息。" : "这条记录当前没有关联提醒。")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-        }
-    }
-
     private func detailCard(for record: Record) -> some View {
         groupedCard(title: "详情") {
-            if let objectName = record.objectName {
-                detailRow(title: "名称", value: objectName)
-            }
             if let quantity = quantityText(for: record) {
                 detailRow(title: "数量", value: quantity)
             }
-            if let location = record.location {
-                detailRow(title: "位置", value: location)
-            }
-            if let storageContainer = record.resolvedStorageContainer {
-                detailRow(title: "收纳场景", value: storageContainer.displayName)
-            }
-            detailRow(title: "分类", value: record.displayCategoryName)
-            detailRow(title: "记录日期", value: YijiDateFormatter.dayFormatter.string(from: record.createdAt))
+            detailRow(title: "录入方式", value: sourceName(record.source))
             if let eventTimeSummary = record.eventTimeSummary {
                 detailRow(title: "相关时间", value: eventTimeSummary)
             }
@@ -280,14 +156,14 @@ struct RecordDetailView: View {
     }
 
     private func originalContentCard(for record: Record) -> some View {
-        groupedCard(title: "原始记录") {
+        groupedCard(title: "原文") {
             Button {
                 withAnimation(.easeInOut(duration: 0.18)) {
                     showingOriginalContent.toggle()
                 }
             } label: {
                 HStack {
-                    Label(showingOriginalContent ? "收起原文" : "查看原文", systemImage: "doc.text")
+                    Label(showingOriginalContent ? "收起" : "查看", systemImage: "doc.text")
                     Spacer()
                     Image(systemName: showingOriginalContent ? "chevron.up" : "chevron.down")
                         .font(.caption.weight(.semibold))
@@ -309,7 +185,7 @@ struct RecordDetailView: View {
 
     private func groupedCard<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(title)
+            Text(AppLocalization.text(title))
                 .font(.headline)
             content()
         }
@@ -324,7 +200,7 @@ struct RecordDetailView: View {
     @ViewBuilder
     private func detailRow(title: String, value: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
-            Text(title)
+            Text(AppLocalization.text(title))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .frame(width: 72, alignment: .leading)
@@ -338,7 +214,7 @@ struct RecordDetailView: View {
     private func infoLine(_ title: String, value: String, systemImage: String) -> some View {
         Label {
             HStack(spacing: 4) {
-                Text(title)
+                Text(AppLocalization.text(title))
                     .foregroundStyle(.secondary)
                 Text(value)
                     .foregroundStyle(.primary)
@@ -433,11 +309,11 @@ struct RecordDetailView: View {
     private func sourceName(_ source: CaptureSource) -> String {
         switch source {
         case .voice:
-            "语音"
+            AppLocalization.text("语音")
         case .text:
-            "文字"
+            AppLocalization.text("文字")
         case .imported:
-            "导入"
+            AppLocalization.text("导入")
         }
     }
 
@@ -481,44 +357,6 @@ struct RecordDetailView: View {
         return nil
     }
 
-    private func reminderShortText(for record: Record) -> String {
-        guard let reminder = appModel.reminder(for: record) else {
-            return needsExpiryReminder(record) ? "可添加" : "未设置"
-        }
-
-        return reminder.status == .pending ? timeDistanceText(to: reminder.remindAt) : reminder.status.displayName
-    }
-
-    private func reminderShortColor(for record: Record) -> Color {
-        guard let reminder = appModel.reminder(for: record) else {
-            return needsExpiryReminder(record) ? .orange : .gray
-        }
-
-        return reminderColor(for: reminder)
-    }
-
-    private func reminderStatusText(for reminder: Reminder) -> String {
-        if reminder.status == .pending {
-            return timeDistanceText(to: reminder.remindAt)
-        }
-        return reminder.status.displayName
-    }
-
-    private func timeDistanceText(to date: Date) -> String {
-        let calendar = Calendar(identifier: .gregorian)
-        let today = calendar.startOfDay(for: Date())
-        let targetDay = calendar.startOfDay(for: date)
-        let days = calendar.dateComponents([.day], from: today, to: targetDay).day ?? 0
-
-        if days > 0 {
-            return "还有 \(days) 天"
-        }
-        if days == 0 {
-            return "今天"
-        }
-        return "已过期 \(abs(days)) 天"
-    }
-
     private func reminderColor(for reminder: Reminder) -> Color {
         switch reminder.status {
         case .pending:
@@ -537,21 +375,16 @@ struct RecordDetailView: View {
     private func reminderIcon(for reminder: Reminder) -> String {
         switch reminder.status {
         case .pending:
-            "bell.badge"
+            "bell.fill"
         case .notified:
-            "checkmark.bell"
+            "bell"
         case .done:
-            "checkmark.circle"
+            "bell"
         case .cancelled:
             "bell.slash"
         case .failed:
-            "exclamationmark.triangle"
+            "bell.badge"
         }
-    }
-
-    private func needsExpiryReminder(_ record: Record) -> Bool {
-        let keywords = ["到期", "过期", "有效期", "保质期", "失效", "截止"]
-        return keywords.contains { record.content.localizedCaseInsensitiveContains($0) }
     }
 
     private var currentRecord: Record? {

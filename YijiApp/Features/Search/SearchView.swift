@@ -16,8 +16,6 @@ struct SearchView: View {
                 resultSummarySection
             } else if !appModel.searchHistory.isEmpty {
                 recentSearchSection
-            } else {
-                onboardingSection
             }
 
             resultsSection
@@ -25,7 +23,7 @@ struct SearchView: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .background(screenBackground)
-        .navigationTitle("搜索页")
+        .navigationTitle("搜索")
         .onAppear(perform: configureVoiceSearch)
         .onDisappear {
             if voiceSearch.isRecording {
@@ -72,7 +70,7 @@ struct SearchView: View {
     private var searchInputSection: some View {
         Section {
             VStack(alignment: .leading, spacing: 12) {
-                Text("搜索物品、位置、提醒和关键词")
+                Text("搜索")
                     .font(.headline.weight(.semibold))
 
                 HStack(spacing: 10) {
@@ -109,15 +107,9 @@ struct SearchView: View {
                     Label(voiceSearchHint, systemImage: voiceSearch.isRecording ? "waveform" : "mic")
                         .font(.footnote)
                         .foregroundStyle(voiceSearch.isRecording ? .red : .secondary)
-                } else {
-                    Text("支持自然语言搜索，也支持直接说“我的户口本在哪”。")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
                 }
 
                 filterPicker
-
-                quickFilters
             }
             .padding(18)
             .background(
@@ -150,30 +142,20 @@ struct SearchView: View {
         }
     }
 
-    private var quickFilters: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                quickFilter("户口本")
-                quickFilter("身份证在哪")
-                quickFilter("钥匙")
-                quickFilter("发票")
-                quickFilter("提醒")
-            }
-            .padding(.vertical, 4)
-        }
-    }
-
     @ViewBuilder
     private var resultSummarySection: some View {
         Section {
             VStack(alignment: .leading, spacing: 12) {
-                sectionTitle("查询回答", subtitle: "最相关记录")
+                sectionTitle("结果")
 
                 Text(answerText)
                     .font(.body)
 
                 HStack {
-                    summaryPill("\(filteredResults.count) 条结果", systemImage: "tray.full")
+                    summaryPill(
+                        AppLocalization.format("result_count", filteredResults.count),
+                        systemImage: "tray.full"
+                    )
                     summaryPill(selectedFilter.title, systemImage: "line.3.horizontal.decrease.circle")
                 }
             }
@@ -191,7 +173,7 @@ struct SearchView: View {
     private var recentSearchSection: some View {
         Section {
             HStack {
-                sectionTitle("最近搜索", subtitle: "点一下继续搜，点右侧可移除")
+                sectionTitle("最近搜索")
                 Spacer()
                 Button("清空历史") {
                     appModel.clearSearchHistory()
@@ -236,27 +218,9 @@ struct SearchView: View {
         .listRowBackground(Color.clear)
     }
 
-    private var onboardingSection: some View {
-        Section {
-            VStack(alignment: .leading, spacing: 10) {
-                sectionTitle("试试这些自然语言搜索", subtitle: "按照你真实会说的话去搜就行")
-                exampleSearch("户口本在哪")
-                exampleSearch("帮我找身份证")
-                exampleSearch("有哪些提醒记录")
-            }
-            .padding(18)
-            .background(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(.white.opacity(0.92))
-            )
-        }
-        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-        .listRowBackground(Color.clear)
-    }
-
     private var resultsSection: some View {
         Section {
-            sectionTitle(resultsTitle, subtitle: isSearching ? "最相关记录" : "全部本地记录")
+            sectionTitle(resultsTitle)
 
             if filteredResults.isEmpty {
                 emptyState
@@ -265,19 +229,12 @@ struct SearchView: View {
                     NavigationLink {
                         RecordDetailView(recordID: record.id)
                     } label: {
-                        VStack(alignment: .leading, spacing: 10) {
-                            RecordRowView(record: record)
-                            if isSearching {
-                                Text(record.answerSummary)
-                                    .font(.footnote)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        .padding(16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                .fill(.white.opacity(0.92))
-                        )
+                        RecordRowView(record: record)
+                            .padding(16)
+                            .background(
+                                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                    .fill(.white.opacity(0.92))
+                            )
                     }
                     .buttonStyle(.plain)
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
@@ -308,35 +265,6 @@ struct SearchView: View {
         )
     }
 
-    private func quickFilter(_ keyword: String) -> some View {
-        Button(keyword) {
-            appModel.searchText = keyword
-            appModel.registerSearchTerm(keyword)
-        }
-        .buttonStyle(.plain)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(
-            Capsule()
-                .fill(Color(red: 0.97, green: 0.98, blue: 1.0))
-        )
-    }
-
-    private func exampleSearch(_ text: String) -> some View {
-        Button(text) {
-            appModel.searchText = text
-            appModel.registerSearchTerm(text)
-        }
-        .buttonStyle(.plain)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color(red: 0.97, green: 0.98, blue: 1.0))
-        )
-    }
-
     private func summaryPill(_ text: String, systemImage: String) -> some View {
         Label(text, systemImage: systemImage)
             .font(.caption)
@@ -349,13 +277,15 @@ struct SearchView: View {
             .foregroundStyle(.secondary)
     }
 
-    private func sectionTitle(_ title: String, subtitle: String) -> some View {
+    private func sectionTitle(_ title: String, subtitle: String = "") -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title)
+            Text(AppLocalization.text(title))
                 .font(.headline.weight(.semibold))
-            Text(subtitle)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            if !subtitle.isEmpty {
+                Text(AppLocalization.text(subtitle))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 
@@ -381,43 +311,48 @@ struct SearchView: View {
     private var answerText: String {
         let keyword = appModel.searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !keyword.isEmpty else {
-            return "输入关键词后显示结果。"
+            return ""
         }
 
         if let first = filteredResults.first {
             if filteredResults.count == 1 {
                 return first.answerSummary
             }
-            return "我找到了 \(filteredResults.count) 条与“\(keyword)”相关的记录，最近一条是：\(first.answerSummary)"
+            return AppLocalization.format(
+                "search.found_summary",
+                filteredResults.count,
+                keyword,
+                first.answerSummary
+            )
         }
 
-        return "没有找到与“\(keyword)”相关的历史记录。"
+        return AppLocalization.format("search.no_history", keyword)
     }
 
     private var resultsTitle: String {
         if isSearching {
-            return "搜索结果"
+            return AppLocalization.text("搜索结果")
         }
-        return "全部记录"
+        return AppLocalization.text("全部记录")
     }
 
     private var emptyTitle: String {
         if isSearching {
-            return "没有找到结果"
+            return AppLocalization.text("没有找到结果")
         }
-        return "还没有可搜索的记录"
+        return AppLocalization.text("还没有可搜索的记录")
     }
 
     private var emptyDescription: String {
         if isSearching {
-            return "换个关键词试试，或者减少筛选条件。"
+            return AppLocalization.text("换个关键词试试")
         }
-        return "先去录入一句话，之后就能在这里快速找回。"
+        return AppLocalization.text("暂无记录")
     }
 
     private var voiceSearchHint: String? {
         if voiceSearch.isRecording {
-            return "正在听你说，结束后会自动开始搜索。"
+            return AppLocalization.text("录音中")
         }
 
         guard let message = voiceSearch.errorMessage?.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -425,8 +360,8 @@ struct SearchView: View {
             return nil
         }
 
-        if message.localizedCaseInsensitiveContains("权限已开启") {
-            return "权限已开启，再点一次麦克风开始语音搜索。"
+        if message.localizedCaseInsensitiveContains(AppLocalization.text("权限已开启")) {
+            return AppLocalization.text("权限已开启")
         }
 
         return message
@@ -466,15 +401,15 @@ private enum SearchFilter: CaseIterable {
     var title: String {
         switch self {
         case .all:
-            "全部"
+            AppLocalization.text("全部")
         case .storage:
-            "位置"
+            AppLocalization.text("位置")
         case .reminder:
-            "提醒"
+            AppLocalization.text("提醒")
         case .note:
-            "笔记"
+            AppLocalization.text("笔记")
         case .other:
-            "其他"
+            AppLocalization.text("其他")
         }
     }
 }

@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import CoreLocation
 import UniformTypeIdentifiers
 import YijiCore
 
@@ -9,18 +10,25 @@ struct SettingsView: View {
     @State private var showingImportPicker = false
     @State private var pendingImportURL: URL?
     @State private var showingImportConfirmation = false
-    private let backupDateFormatter = YijiDateFormatter.dateTimeFormatter
+    private let locationManager = CLLocationManager()
+    private var backupDateFormatter: DateFormatter {
+        YijiDateFormatter.dateTimeFormatter
+    }
 
     var body: some View {
         List {
+            pageTitleSection
             localModeSection
-            remindersSection
+            languageSection
+            privacySection
             localDataSection
+            supportSection
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .background(screenBackground)
         .task {
+            appModel.speech.refreshAuthorizationStatus()
             await appModel.refreshNotificationStatus()
         }
         .fileImporter(
@@ -34,7 +42,9 @@ struct SettingsView: View {
                 pendingImportURL = url
                 showingImportConfirmation = true
             case .failure(let error):
-                appModel.showPersistentStatus("选择备份文件失败：\(error.localizedDescription)")
+                appModel.showPersistentStatus(
+                    AppLocalization.format("error.with_detail", AppLocalization.text("选择备份文件失败"), error.localizedDescription)
+                )
             }
         }
         .confirmationDialog(
@@ -53,120 +63,178 @@ struct SettingsView: View {
                 pendingImportURL = nil
             }
         } message: {
-            Text(pendingImportURL?.lastPathComponent ?? "请选择一个 JSON 备份文件。")
+            Text(pendingImportURL?.lastPathComponent ?? AppLocalization.text("请选择一个 JSON 备份文件。"))
         }
     }
 
     private var screenBackground: some View {
-        LinearGradient(
-            colors: [
-                Color(red: 0.95, green: 0.96, blue: 0.99),
-                Color(red: 0.98, green: 0.98, blue: 0.99)
-            ],
-            startPoint: .top,
-            endPoint: .bottom
-        )
-        .ignoresSafeArea()
+        AppTheme.canvas.ignoresSafeArea()
+    }
+
+    private var pageTitleSection: some View {
+        Section {
+            Text("设置")
+                .font(.title2.weight(.bold))
+                .foregroundStyle(AppTheme.ink)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .listRowInsets(EdgeInsets(top: 16, leading: 20, bottom: 0, trailing: 20))
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
     }
 
     private var localModeSection: some View {
         Section {
-            settingsCardSection(title: "本机数据", subtitle: "记录、提醒和权限") {
-                HStack(spacing: 10) {
+            settingsCardSection(title: "本机数据") {
+                HStack(spacing: 0) {
                     metricCard(title: "记录", value: "\(appModel.records.count)")
+                    Divider()
                     metricCard(title: "提醒", value: "\(appModel.reminders.count)")
                 }
 
-                HStack(spacing: 10) {
-                    metricCard(title: "剩余可记录", value: "\(appModel.remainingRecordSlots)")
-                    metricCard(title: "待提醒", value: "\(appModel.pendingReminders.count)")
-                }
+                Divider()
 
                 infoStrip(
-                    title: "记录",
-                    detail: appModel.recordCapacityText,
+                    title: "数据存储",
+                    detail: AppReleaseConfiguration.cloudSyncEnabled
+                        ? "记录和提醒会先保存在本机，并在可用时同步到 iCloud"
+                        : "记录和提醒保存在本机，可随时导出备份",
                     systemImage: "internaldrive"
                 )
-
-                HStack(spacing: 8) {
-                    statusPill("语音 · \(appModel.speech.authorizationStatus.displayName)")
-                    statusPill("通知 · \(appModel.notifications.authorizationStatus.displayName)")
-                }
             }
         }
-        .listRowInsets(EdgeInsets(top: 16, leading: 16, bottom: 6, trailing: 16))
+        .listRowInsets(EdgeInsets(top: 12, leading: 20, bottom: 6, trailing: 20))
         .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
     }
 
-    private var remindersSection: some View {
+    private var privacySection: some View {
         Section {
-            settingsCardSection(title: "提醒", subtitle: "待办和通知") {
-                NavigationLink {
-                    RemindersView()
-                } label: {
-                    actionRow(
-                        "提醒管理",
-                        detail: appModel.pendingReminders.isEmpty
-                            ? "暂无待提醒"
-                            : "还有 \(appModel.pendingReminders.count) 条待提醒",
-                        systemImage: "bell"
-                    )
-                }
-                .buttonStyle(.plain)
+            settingsCardSection(title: "权限与隐私") {
+                infoStrip(
+                    title: "语音与麦克风",
+                    detail: "用于语音录入",
+                    systemImage: "mic",
+                    status: appModel.speech.authorizationStatus.displayName
+                )
 
-                switch appModel.notifications.authorizationStatus {
-                case .unknown:
+                Divider()
+
+                infoStrip(
+                    title: "通知",
+                    detail: "用于到期提醒",
+                    systemImage: "bell.badge",
+                    status: appModel.notifications.authorizationStatus.displayName
+                )
+
+                Divider()
+
+                infoStrip(
+                    title: "定位",
+                    detail: "用于月历天气",
+                    systemImage: "location",
+                    status: locationAuthorizationDisplayName
+                )
+
+                if appModel.notifications.authorizationStatus == .unknown {
+                    Divider()
                     actionButton("开启通知权限", systemImage: "bell.badge") {
                         Task {
                             await appModel.requestNotificationAccess()
                         }
                     }
-                case .denied:
-                    actionButton("前往系统设置开启通知", systemImage: "gearshape") {
+                }
+
+                if shouldShowOpenSettingsAction {
+                    Divider()
+                    actionButton("前往系统设置", systemImage: "gearshape") {
                         guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
                         openURL(url)
                     }
-                case .granted:
-                    infoStrip(
-                        title: "通知",
-                        detail: "已开启",
-                        systemImage: "bell.badge.fill"
-                    )
-                }
-
-                if let nextReminder = appModel.nextPendingReminder {
-                    infoStrip(
-                        title: "下一条待提醒",
-                        detail: "\(backupDateFormatter.string(from: nextReminder.remindAt)) · \(nextReminder.title)",
-                        systemImage: "clock.badge"
-                    )
-                } else {
-                    infoStrip(
-                        title: "下一条待提醒",
-                        detail: "暂无待提醒",
-                        systemImage: "clock.badge.checkmark"
-                    )
                 }
 
                 if let statusMessage = appModel.statusMessage {
+                    Divider()
                     Text(statusMessage)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .padding(14)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
         }
-        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+        .listRowInsets(EdgeInsets(top: 6, leading: 20, bottom: 6, trailing: 20))
         .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+    }
+
+    private var languageSection: some View {
+        Section {
+            settingsCardSection(title: "语言") {
+                HStack(spacing: 12) {
+                    Image(systemName: "globe")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(AppTheme.accent)
+                        .frame(width: 36, height: 36)
+                        .background(
+                            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                .fill(AppTheme.surfaceMuted)
+                        )
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("App 语言")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text("更改后立即应用，并同步调整语音识别语言")
+                            .font(.subheadline)
+                            .foregroundStyle(.primary)
+                    }
+
+                    Spacer(minLength: 8)
+
+                    Picker(
+                        "App 语言",
+                        selection: Binding(
+                            get: { appModel.appLanguage },
+                            set: { appModel.selectAppLanguage($0) }
+                        )
+                    ) {
+                        ForEach(AppLanguage.allCases) { language in
+                            Text(language.displayName).tag(language)
+                        }
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.menu)
+                    .tint(AppTheme.accent)
+                }
+                .padding(14)
+            }
+        }
+        .listRowInsets(EdgeInsets(top: 6, leading: 20, bottom: 6, trailing: 20))
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
     }
 
     private var localDataSection: some View {
         Section {
-            settingsCardSection(title: "备份", subtitle: "导出或恢复本地数据") {
+            settingsCardSection(title: "备份与恢复") {
+                if AppReleaseConfiguration.cloudSyncEnabled {
+                    infoStrip(
+                        title: "iCloud 同步",
+                        detail: appModel.cloudSyncStatusDetail,
+                        systemImage: "icloud"
+                    )
+
+                    Divider()
+                }
+
                 infoStrip(
                     title: "上次备份",
-                    detail: appModel.lastBackupDate.map { backupDateFormatter.string(from: $0) } ?? "还没有导出过备份",
+                    detail: appModel.lastBackupDate.map { backupDateFormatter.string(from: $0) } ?? "暂无备份",
                     systemImage: "externaldrive.badge.timemachine"
                 )
+
+                Divider()
 
                 actionButton("生成备份文件", systemImage: "arrow.down.doc") {
                     Task {
@@ -174,11 +242,22 @@ struct SettingsView: View {
                     }
                 }
 
+                Divider()
+
                 actionButton("导入备份文件", systemImage: "square.and.arrow.down") {
                     showingImportPicker = true
                 }
 
+                Divider()
+
+                infoStrip(
+                    title: "卸载前保护",
+                    detail: "如果准备删除 App，仍建议先导出备份文件到“文件”或 iCloud Drive",
+                    systemImage: "externaldrive.badge.icloud"
+                )
+
                 if let exportURL = appModel.exportURL {
+                    Divider()
                     ShareLink(item: exportURL) {
                         actionRow(
                             "分享备份文件",
@@ -191,43 +270,89 @@ struct SettingsView: View {
                 }
             }
         }
-        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 18, trailing: 16))
+        .listRowInsets(EdgeInsets(top: 6, leading: 20, bottom: 18, trailing: 20))
         .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+    }
+
+    private var supportSection: some View {
+        Section {
+            settingsCardSection(title: "支持") {
+                Button {
+                    openURL(AppSupport.privacyURL)
+                } label: {
+                    actionRow(
+                        "隐私政策",
+                        detail: "blizzard1311.github.io",
+                        systemImage: "hand.raised",
+                        showsChevron: false
+                    )
+                }
+                .buttonStyle(.plain)
+
+                Divider()
+
+                Button {
+                    openURL(AppSupport.supportURL)
+                } label: {
+                    actionRow(
+                        "在线支持",
+                        detail: "blizzard1311.github.io",
+                        systemImage: "questionmark.circle",
+                        showsChevron: false
+                    )
+                }
+                .buttonStyle(.plain)
+
+                Divider()
+
+                Button {
+                    openURL(AppSupport.emailURL)
+                } label: {
+                    actionRow(
+                        "联系支持",
+                        detail: AppSupport.email,
+                        systemImage: "envelope",
+                        showsChevron: false
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .listRowInsets(EdgeInsets(top: 6, leading: 20, bottom: 18, trailing: 20))
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
     }
 
     private func metricCard(title: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(value)
                 .font(.title3.weight(.semibold))
-            Text(title)
+            Text(AppLocalization.text(title))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color(red: 0.97, green: 0.98, blue: 1.0))
-        )
     }
 
     private func actionRow(_ title: String, detail: String, systemImage: String, showsChevron: Bool = true) -> some View {
         HStack(spacing: 12) {
             Image(systemName: systemImage)
                 .frame(width: 24, height: 24)
-                .foregroundStyle(.blue)
+                .foregroundStyle(AppTheme.accent)
                 .padding(7)
                 .background(
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(Color.blue.opacity(0.12))
+                        .fill(AppTheme.surfaceMuted)
                 )
 
             VStack(alignment: .leading, spacing: 3) {
-                Text(title)
+                Text(AppLocalization.text(title))
                     .font(.subheadline)
                 if !detail.isEmpty {
-                    Text(detail)
+                    Text(AppLocalization.text(detail))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -240,10 +365,6 @@ struct SettingsView: View {
             }
         }
         .padding(14)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color(red: 0.97, green: 0.98, blue: 1.0))
-        )
     }
 
     private func actionButton(_ title: String, systemImage: String, action: @escaping () -> Void) -> some View {
@@ -253,63 +374,102 @@ struct SettingsView: View {
         .buttonStyle(.plain)
     }
 
-    private func statusPill(_ title: String) -> some View {
-        Text(title)
-            .font(.caption2.weight(.medium))
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 9)
-            .padding(.vertical, 5)
-            .background(
-                Capsule()
-                    .fill(Color.white.opacity(0.78))
-            )
+    private var locationAuthorizationDisplayName: String {
+        switch locationManager.authorizationStatus {
+        case .authorizedAlways, .authorizedWhenInUse:
+            return AppLocalization.text("已授权")
+        case .denied, .restricted:
+            return AppLocalization.text("未授权")
+        case .notDetermined:
+            return AppLocalization.text("未请求")
+        @unknown default:
+            return AppLocalization.text("未请求")
+        }
     }
 
-    private func infoStrip(title: String, detail: String, systemImage: String) -> some View {
+    private var shouldShowOpenSettingsAction: Bool {
+        appModel.speech.authorizationStatus == .denied ||
+        appModel.notifications.authorizationStatus == .denied ||
+        locationManager.authorizationStatus == .denied ||
+        locationManager.authorizationStatus == .restricted
+    }
+
+    private func infoStrip(
+        title: String,
+        detail: String,
+        systemImage: String,
+        status: String? = nil
+    ) -> some View {
         HStack(spacing: 12) {
             Image(systemName: systemImage)
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.blue)
-                .frame(width: 28, height: 28)
+                .foregroundStyle(AppTheme.accent)
+                .frame(width: 36, height: 36)
+                .background(
+                    RoundedRectangle(cornerRadius: 11, style: .continuous)
+                        .fill(AppTheme.surfaceMuted)
+                )
 
             VStack(alignment: .leading, spacing: 3) {
-                Text(title)
+                Text(AppLocalization.text(title))
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Text(detail)
+                Text(AppLocalization.text(detail))
                     .font(.subheadline)
                     .foregroundStyle(.primary)
             }
 
             Spacer(minLength: 0)
+
+            if let status {
+                Text(status)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(permissionStatusColor(status))
+                    .lineLimit(1)
+            }
         }
         .padding(14)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color(red: 0.97, green: 0.98, blue: 1.0))
-        )
     }
 
     private func settingsCardSection<Content: View>(
         title: String,
-        subtitle: String,
+        subtitle: String = "",
         @ViewBuilder content: () -> Content
     ) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.headline.weight(.semibold))
-                Text(subtitle)
+        VStack(alignment: .leading, spacing: 8) {
+            Text(AppLocalization.text(title))
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(AppTheme.ink)
+                .padding(.leading, 3)
+
+            if !subtitle.isEmpty {
+                Text(AppLocalization.text(subtitle))
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .padding(.leading, 3)
             }
-            content()
+
+            VStack(spacing: 0) {
+                content()
+            }
+            .background(AppTheme.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 21, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 21, style: .continuous)
+                    .stroke(AppTheme.line, lineWidth: 1)
+            )
         }
-        .padding(18)
-        .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(.white.opacity(0.92))
-        )
+    }
+
+    private func permissionStatusColor(_ status: String) -> Color {
+        switch status {
+        case AppLocalization.text("已授权"):
+            AppTheme.completed
+        case AppLocalization.text("未授权"):
+            .red
+        default:
+            AppTheme.reminder
+        }
     }
 }
 

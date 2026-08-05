@@ -21,20 +21,20 @@ struct ReminderEditorView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     heroCard
 
-                    editorCard(title: "提醒内容", subtitle: "标题和备注") {
+                    editorCard(title: "提醒内容") {
                         VStack(spacing: 12) {
                             fieldGroup(title: "标题") {
-                                TextField("例如：交房租、给妈妈打电话", text: $draft.title)
+                                TextField("输入标题", text: $draft.title)
                             }
 
-                            fieldGroup(title: "说明") {
-                                TextField("补充地点、金额或备注", text: $draft.body, axis: .vertical)
+                            fieldGroup(title: "备注") {
+                                TextField("输入备注", text: $draft.body, axis: .vertical)
                                     .lineLimit(3...5)
                             }
                         }
                     }
 
-                    editorCard(title: "提醒时间", subtitle: "时间、重复和状态") {
+                    editorCard(title: "提醒时间") {
                         VStack(alignment: .leading, spacing: 14) {
                             fieldGroup(title: "时间") {
                                 DatePicker(
@@ -64,19 +64,19 @@ struct ReminderEditorView: View {
                         }
                     }
 
-                    editorCard(title: "通知", subtitle: "保存结果") {
+                    editorCard(title: "状态") {
                         VStack(alignment: .leading, spacing: 10) {
                             HStack(spacing: 10) {
                                 Image(systemName: editorHint.icon)
                                     .foregroundStyle(editorHint.color)
                                     .frame(width: 24)
-                                Text(editorHint.text)
+                                Text(AppLocalization.text(editorHint.text))
                                     .font(.subheadline.weight(.medium))
                                     .foregroundStyle(editorHint.color)
                             }
 
                             if let detail = editorHint.detail {
-                                Text(detail)
+                                Text(AppLocalization.text(detail))
                                     .font(.footnote)
                                     .foregroundStyle(.secondary)
                             }
@@ -160,16 +160,18 @@ struct ReminderEditorView: View {
 
     private func editorCard<Content: View>(
         title: String,
-        subtitle: String,
+        subtitle: String = "",
         @ViewBuilder content: () -> Content
     ) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(title)
+                Text(AppLocalization.text(title))
                     .font(.headline.weight(.semibold))
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                if !subtitle.isEmpty {
+                    Text(AppLocalization.text(subtitle))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
             content()
         }
@@ -183,7 +185,7 @@ struct ReminderEditorView: View {
 
     private func fieldGroup<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title)
+            Text(AppLocalization.text(title))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             content()
@@ -208,7 +210,7 @@ struct ReminderEditorView: View {
         } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(title)
+                    Text(AppLocalization.text(title))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Text(selectionText)
@@ -251,7 +253,7 @@ struct ReminderEditorView: View {
                     if didSave {
                         dismiss()
                     } else {
-                        saveErrorMessage = "保存失败，请稍后再试。"
+                        saveErrorMessage = AppLocalization.text("保存失败，请稍后再试。")
                     }
                 }
             } label: {
@@ -282,7 +284,7 @@ struct ReminderEditorView: View {
     }
 
     private func statusBadge(title: String, color: Color) -> some View {
-        Text(title)
+        Text(AppLocalization.text(title))
             .font(.caption.weight(.medium))
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
@@ -315,20 +317,20 @@ struct ReminderEditorView: View {
     private var editorHint: (text: String, icon: String, color: Color, detail: String?) {
         if draft.status != .pending {
             if draft.status == .notified {
-                return ("已送达", "checkmark.bell.fill", .blue, "改回“待提醒”可重新安排。")
+                return ("已送达", "checkmark.bell.fill", .blue, nil)
             }
             return ("未安排通知", "bell.slash", .gray, nil)
         }
 
         if draft.repeatRule == .none && draft.remindAt <= Date() {
-            return ("时间已过", "exclamationmark.triangle.fill", .red, "请改到未来时间。")
+            return ("时间已过", "exclamationmark.triangle.fill", .red, nil)
         }
 
         switch appModel.notifications.authorizationStatus {
         case .granted:
             return ("通知已开启", "bell.badge.fill", .green, nil)
         case .denied:
-            return ("通知未开启", "bell.slash.fill", .red, "可在系统设置中开启。")
+            return ("通知未开启", "bell.slash.fill", .red, nil)
         case .unknown:
             return ("待开启通知", "bell.badge", .orange, nil)
         }
@@ -349,7 +351,7 @@ struct ReminderEditorView: View {
         guard reminder.status == .pending else { return nil }
         guard reminder.repeatRule == .none else { return nil }
         guard reminder.remindAt <= Date() else { return nil }
-        return "一次性提醒时间已过，请调整到未来时间，或先改为已提醒/已完成/已取消。"
+        return AppLocalization.text("提醒时间已过，请调整后再保存。")
     }
 }
 

@@ -9,6 +9,7 @@ struct RecordRowView: View {
 
     let record: Record
     var style: Style = .detailed
+    var reminder: Reminder?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
@@ -28,7 +29,22 @@ struct RecordRowView: View {
                 }
                 Spacer(minLength: 10)
                 VStack(alignment: .trailing, spacing: style == .stream ? 4 : 6) {
-                    categoryChip
+                    HStack(spacing: 6) {
+                        if let reminder {
+                            Image(systemName: "alarm.fill")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(reminderColor(reminder.status))
+                                .accessibilityLabel(
+                                    AppLocalization.format(
+                                        "reminder.time_status",
+                                        YijiDateFormatter.dateTimeFormatter.string(from: reminder.remindAt),
+                                        reminder.status.displayName
+                                    )
+                                )
+                        }
+
+                        categoryChip
+                    }
 
                     if style == .detailed {
                         Text(YijiDateFormatter.dayFormatter.string(from: record.recordDate))
@@ -52,6 +68,17 @@ struct RecordRowView: View {
 
                 if let secondaryMeta {
                     infoChip(secondaryMeta.text, icon: secondaryMeta.icon)
+                }
+
+                if let reminder {
+                    infoChip(
+                        YijiDateFormatter.timeFormatter.string(from: reminder.remindAt),
+                        icon: "alarm"
+                    )
+
+                    if reminder.repeatRule != .none {
+                        infoChip(reminder.repeatRule.displayName, icon: "repeat")
+                    }
                 }
 
                 if let storageContainer = record.resolvedStorageContainer {
@@ -103,11 +130,11 @@ struct RecordRowView: View {
 
     private var detailedPrimaryDescription: String? {
         if let location = record.location, record.category == .storage {
-            return "位置：\(location)"
+            return AppLocalization.format("location.value", location)
         }
 
         if let eventTimeSummary = record.eventTimeSummary {
-            return "时间：\(eventTimeSummary)"
+            return AppLocalization.format("time.value", eventTimeSummary)
         }
 
         return record.answerSummary
@@ -115,7 +142,7 @@ struct RecordRowView: View {
 
     private var streamPrimaryDescription: String? {
         if let location = record.location, record.category == .storage {
-            return "放在 \(location)"
+            return AppLocalization.format("stored_at.value", location)
         }
 
         if let objectName = record.objectName,
@@ -143,7 +170,7 @@ struct RecordRowView: View {
     }
 
     private var secondaryMeta: (text: String, icon: String)? {
-        if let eventTimeSummary = record.eventTimeSummary {
+        if reminder == nil, let eventTimeSummary = record.eventTimeSummary {
             return (eventTimeSummary, "calendar")
         }
 
@@ -186,11 +213,11 @@ struct RecordRowView: View {
     private func sourceName(_ source: CaptureSource) -> String {
         switch source {
         case .voice:
-            "语音"
+            AppLocalization.text("语音")
         case .text:
-            "文字"
+            AppLocalization.text("文字")
         case .imported:
-            "导入"
+            AppLocalization.text("导入")
         }
     }
 
@@ -223,6 +250,21 @@ struct RecordRowView: View {
             "tray.2"
         case .bag:
             "bag"
+        }
+    }
+
+    private func reminderColor(_ status: ReminderStatus) -> Color {
+        switch status {
+        case .pending:
+            .orange
+        case .notified:
+            .green
+        case .done:
+            .blue
+        case .cancelled:
+            .gray
+        case .failed:
+            .red
         }
     }
 

@@ -22,14 +22,23 @@ struct RootTabView: View {
             }
 
             NavigationStack {
+                CalendarView()
+            }
+            .tag(AppTab.calendar)
+            .tabItem {
+                Label(AppTab.calendar.title, systemImage: AppTab.calendar.systemImage)
+            }
+            .badge(appModel.pendingReminders.isEmpty ? 0 : appModel.pendingReminders.count)
+
+            NavigationStack {
                 SettingsView()
             }
             .tag(AppTab.settings)
             .tabItem {
                 Label(AppTab.settings.title, systemImage: AppTab.settings.systemImage)
             }
-            .badge(appModel.pendingReminders.isEmpty ? 0 : appModel.pendingReminders.count)
         }
+        .tint(AppTheme.accent)
         .toolbarBackground(.visible, for: .tabBar)
         .toolbarColorScheme(.light, for: .tabBar)
     }
@@ -38,27 +47,32 @@ struct RootTabView: View {
 enum AppTab: Hashable {
     case home
     case capture
+    case calendar
     case settings
 
     var title: String {
         switch self {
         case .home:
-            "记"
+            AppLocalization.text("记录")
         case .capture:
-            "录"
+            AppLocalization.text("收纳")
+        case .calendar:
+            AppLocalization.text("日历")
         case .settings:
-            "设"
+            AppLocalization.text("设置")
         }
     }
 
     var systemImage: String {
         switch self {
         case .home:
-            "waveform.circle.fill"
+            "mic"
         case .capture:
-            "square.stack.3d.up.fill"
+            "square.stack.3d.up"
+        case .calendar:
+            "calendar"
         case .settings:
-            "gearshape.fill"
+            "gearshape"
         }
     }
 }

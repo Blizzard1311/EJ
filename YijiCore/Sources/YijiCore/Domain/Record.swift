@@ -9,13 +9,13 @@ public enum RecordCategory: String, Codable, CaseIterable, Sendable {
     public var displayName: String {
         switch self {
         case .storage:
-            "物品位置"
+            YijiLocalization.text("物品位置")
         case .reminder:
-            "提醒事项"
+            YijiLocalization.text("提醒事项")
         case .note:
-            "想法笔记"
+            YijiLocalization.text("想法笔记")
         case .other:
-            "其他"
+            YijiLocalization.text("其他")
         }
     }
 }
@@ -72,17 +72,32 @@ public struct Record: Identifiable, Hashable, Codable, Sendable {
 public extension Record {
     var displayCategoryName: String {
         if category == .note, eventTime != nil {
-            return "时间安排"
+            return YijiLocalization.text("时间安排")
         }
         return category.displayName
     }
 
     var resolvedStorageContainer: StorageContainer? {
+        resolvedStorageContainers.first
+    }
+
+    var resolvedStorageContainers: [StorageContainer] {
         guard category == .storage else {
-            return nil
+            return []
         }
 
-        return storageContainer ?? StorageContainerClassifier.classify(for: self)
+        var containers: [StorageContainer] = []
+
+        if let storageContainer {
+            containers.append(storageContainer)
+        }
+
+        for container in StorageContainerClassifier.classifyAll(for: self)
+        where !containers.contains(container) {
+            containers.append(container)
+        }
+
+        return containers
     }
 
     var sliceCategories: [RecordSliceCategory] {
@@ -110,12 +125,12 @@ public extension Record {
     var answerSummary: String {
         let dateText = YijiDateFormatter.dayFormatter.string(from: recordDate)
         if let objectName, let location {
-            return "你在 \(dateText) 记录过：\(objectName) 放在 \(location)。"
+            return YijiLocalization.format("record.answer.storage", dateText, objectName, location)
         }
         if let eventTime {
-            return "你记录过一项时间相关内容：\(eventTime.displayText())，\(content)。"
+            return YijiLocalization.format("record.answer.event", eventTime.displayText(), content)
         }
-        return "你在 \(dateText) 记录过：\(content)。"
+        return YijiLocalization.format("record.answer.note", dateText, content)
     }
 
     var eventTimeSummary: String? {

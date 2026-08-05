@@ -10,9 +10,9 @@ struct HomeView: View {
         var title: String {
             switch self {
             case .storage:
-                "收纳场景"
+                AppLocalization.text("收纳")
             case .calendar:
-                "日历"
+                AppLocalization.text("计划")
             }
         }
 
@@ -29,59 +29,115 @@ struct HomeView: View {
     private struct StorageContainerPickerView: View {
         @EnvironmentObject private var appModel: AppModel
         @Environment(\.dismiss) private var dismiss
+        @State private var showingAddCustomContainer = false
+        @State private var newCustomContainerName = ""
 
         var body: some View {
             NavigationStack {
                 List {
-                    Section("固定显示") {
-                        ForEach(StorageContainer.allCases, id: \.rawValue) { container in
-                            Button {
-                                appModel.toggleVisibleStorageContainer(container)
-                            } label: {
-                                HStack(spacing: 12) {
-                                    Image(systemName: storageContainerIcon(container))
-                                        .foregroundStyle(storageContainerTint(container))
-                                        .frame(width: 24, height: 24)
+                    Section("容器") {
+                        ForEach(appModel.storageContainerDefinitions) { definition in
+                            HStack(spacing: 12) {
+                                Image(systemName: storageContainerIcon(definition))
+                                    .foregroundStyle(storageContainerTint(definition))
+                                    .frame(width: 24, height: 24)
 
-                                    Text(container.displayName)
-                                        .foregroundStyle(.primary)
+                                TextField(
+                                    "容器名称",
+                                    text: Binding(
+                                        get: { definition.name },
+                                        set: { appModel.updateStorageContainerName($0, for: definition.id) }
+                                    )
+                                )
+                                .textInputAutocapitalization(.never)
 
-                                    Spacer(minLength: 8)
+                                Spacer(minLength: 8)
 
-                                    Image(systemName: appModel.isStorageContainerVisible(container) ? "checkmark.circle.fill" : "circle")
-                                        .foregroundStyle(
-                                            appModel.isStorageContainerVisible(container)
-                                                ? storageContainerTint(container)
-                                                : Color.secondary.opacity(0.4)
-                                        )
+                                Button(role: .destructive) {
+                                    appModel.removeStorageContainerDefinition(definition.id)
+                                } label: {
+                                    Image(systemName: definition.isCustom ? "trash" : "minus.circle")
+                                        .foregroundStyle(.red)
                                 }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
                         }
                     }
 
-                    Section {
-                        Text("已选容器会固定在收纳场景中。")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                    if !appModel.availableBuiltInStorageContainers.isEmpty {
+                        Section("添加内置容器") {
+                            ForEach(appModel.availableBuiltInStorageContainers, id: \.rawValue) { container in
+                                Button {
+                                    appModel.addBuiltInStorageContainer(container)
+                                } label: {
+                                    HStack(spacing: 12) {
+                                        Image(systemName: storageContainerIcon(container))
+                                            .foregroundStyle(storageContainerTint(container))
+                                            .frame(width: 24, height: 24)
+
+                                        Text(container.displayName)
+                                            .foregroundStyle(.primary)
+
+                                        Spacer(minLength: 8)
+
+                                        Image(systemName: "plus.circle.fill")
+                                            .foregroundStyle(AppTheme.accent)
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
                     }
                 }
-                .navigationTitle("显示容器")
+                .navigationTitle("管理容器")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) {
                         Button("恢复默认") {
-                            appModel.resetVisibleStorageContainers()
+                            appModel.resetStorageContainerDefinitions()
                         }
                     }
 
                     ToolbarItem(placement: .topBarTrailing) {
+                        Button("新增") {
+                            newCustomContainerName = ""
+                            showingAddCustomContainer = true
+                        }
+                    }
+
+                    ToolbarItem(placement: .confirmationAction) {
                         Button("完成") {
                             dismiss()
                         }
                     }
                 }
+                .alert("新增容器", isPresented: $showingAddCustomContainer) {
+                    TextField("容器名称", text: $newCustomContainerName)
+                    Button("取消", role: .cancel) {
+                        newCustomContainerName = ""
+                    }
+                    Button("新增") {
+                        appModel.addCustomStorageContainer(named: newCustomContainerName)
+                        newCustomContainerName = ""
+                    }
+                } message: {
+                    Text("输入新的容器名称")
+                }
             }
+        }
+
+        private func storageContainerIcon(_ definition: StorageContainerDefinition) -> String {
+            if let container = definition.builtInContainer {
+                return storageContainerIcon(container)
+            }
+            return "shippingbox"
+        }
+
+        private func storageContainerTint(_ definition: StorageContainerDefinition) -> Color {
+            if let container = definition.builtInContainer {
+                return storageContainerTint(container)
+            }
+            return Color(red: 0.42, green: 0.49, blue: 0.78)
         }
 
         private func storageContainerIcon(_ container: StorageContainer) -> String {
@@ -128,16 +184,16 @@ struct HomeView: View {
     }
 
     private struct StorageContainerGroup: Identifiable {
-        let container: StorageContainer?
+        enum Kind {
+            case builtIn(StorageContainer)
+            case custom
+            case uncategorized
+        }
+
+        let id: String
+        let displayName: String
+        let kind: Kind
         let records: [Record]
-
-        var id: String {
-            container?.rawValue ?? "other-location"
-        }
-
-        var displayName: String {
-            container?.displayName ?? "其他位置"
-        }
     }
 
     private struct FolderTabShape: Shape {
@@ -205,19 +261,11 @@ struct HomeView: View {
                 activeSearchSection
                 queryResultsSection
             } else {
-                sceneTabsSection
-
                 if let statusMessage = appModel.statusMessage {
                     statusSection(statusMessage)
                 }
 
-                switch activeScene {
-                case .storage:
-                    storageContainersSection
-                case .calendar:
-                    monthCalendarSection
-                    calendarContentSection
-                }
+                storageContainersSection
             }
         }
         .listStyle(.plain)
@@ -261,25 +309,6 @@ struct HomeView: View {
                 deletingRecord = nil
             }
         }
-        .onAppear {
-            syncSelectedDateIfNeeded()
-            if activeScene == .calendar {
-                calendarWeatherModel.activate()
-            }
-        }
-        .onChange(of: appModel.focusedRecordID) { _ in
-            syncSelectedDateIfNeeded()
-        }
-        .onChange(of: activeScene) { newValue in
-            if newValue == .calendar {
-                calendarWeatherModel.activate()
-            }
-        }
-        .onChange(of: scenePhase) { newValue in
-            if newValue == .active, activeScene == .calendar {
-                calendarWeatherModel.activate()
-            }
-        }
         .sheet(isPresented: $showingStorageContainerPicker) {
             StorageContainerPickerView()
                 .environmentObject(appModel)
@@ -287,15 +316,7 @@ struct HomeView: View {
     }
 
     private var screenBackground: some View {
-        LinearGradient(
-            colors: [
-                Color(red: 0.94, green: 0.95, blue: 0.98),
-                Color(red: 0.97, green: 0.98, blue: 0.99)
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-        .ignoresSafeArea()
+        AppTheme.canvas.ignoresSafeArea()
     }
 
     private var sceneTabsSection: some View {
@@ -326,7 +347,7 @@ struct HomeView: View {
                 CalendarMonthView(
                     selectedDate: selectedDate,
                     visibleMonth: visibleMonth,
-                    eventDates: recordDateSet,
+                    eventDates: [],
                     reminderDates: pendingReminderDateSet,
                     notifiedDates: notifiedReminderDateSet,
                     weatherByDate: calendarWeatherModel.weatherByDate,
@@ -386,9 +407,9 @@ struct HomeView: View {
 
     @ViewBuilder
     private var calendarContentSection: some View {
-        if selectedDateRecords.isEmpty && selectedDateReminders.isEmpty {
+        if selectedDateReminders.isEmpty {
             Section {
-                Text("这一天还没有内容。你可以回“记”里新增，或换一个日期看看。")
+                Text("暂无提醒")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .padding(14)
@@ -404,10 +425,6 @@ struct HomeView: View {
             if !selectedDatePendingReminders.isEmpty || !selectedDateNotifiedReminders.isEmpty || !selectedDateArchivedReminders.isEmpty {
                 reminderSection(title: "提醒", reminders: selectedDateReminders)
             }
-
-            if !selectedDateStreamRecords.isEmpty {
-                recordsSection
-            }
         }
     }
 
@@ -418,12 +435,12 @@ struct HomeView: View {
 
                 LazyVGrid(
                     columns: [
-                        GridItem(.flexible(), spacing: 10, alignment: .top),
-                        GridItem(.flexible(), spacing: 10, alignment: .top)
+                        GridItem(.flexible(), spacing: 12, alignment: .top),
+                        GridItem(.flexible(), spacing: 12, alignment: .top)
                     ],
-                    spacing: 10
+                    spacing: 12
                 ) {
-                    ForEach(displayedStorageGroups) { group in
+                    ForEach(allStorageGroups) { group in
                         Button {
                             selectedStorageGroupID = group.id
                         } label: {
@@ -433,48 +450,33 @@ struct HomeView: View {
                     }
                 }
             }
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(.white.opacity(0.92))
-            )
+            .padding(.horizontal, 2)
+            .padding(.vertical, 12)
         }
-        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+        .listRowInsets(EdgeInsets(top: 6, leading: 20, bottom: 6, trailing: 20))
         .listRowBackground(Color.clear)
     }
 
     private var storageContainersHeader: some View {
-        HStack(alignment: .top, spacing: 10) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("收纳场景")
-                    .font(.headline.weight(.semibold))
-
-                Text(storageContainersSectionSubtitle)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
+        HStack(spacing: 10) {
+            Text("收纳")
+                .font(.title2.weight(.bold))
             Spacer(minLength: 10)
 
-            VStack(alignment: .trailing, spacing: 8) {
-                countBadge("\(displayedStorageGroups.count) 个容器")
-
-                Button {
-                    showingStorageContainerPicker = true
-                } label: {
-                    Label("管理", systemImage: "slider.horizontal.3")
-                        .font(.caption2.weight(.semibold))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 5)
-                        .background(
-                            Capsule()
-                                .fill(Color.blue.opacity(0.10))
-                        )
-                        .foregroundStyle(.blue)
-                }
-                .buttonStyle(.plain)
+            Button {
+                showingStorageContainerPicker = true
+            } label: {
+                Label("管理", systemImage: "slider.horizontal.3")
+                    .font(.caption.weight(.semibold))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 9)
+                    .background(
+                        Capsule()
+                            .fill(AppTheme.surfaceMuted)
+                    )
+                    .foregroundStyle(AppTheme.accent)
             }
+            .buttonStyle(.plain)
         }
     }
 
@@ -484,7 +486,7 @@ struct HomeView: View {
                 sectionHeader(
                     title: title,
                     subtitle: reminderSectionSubtitle,
-                    countText: "\(reminders.count) 条"
+                    countText: AppLocalization.format("reminder_count", reminders.count)
                 )
 
                 ForEach(Array(reminders.enumerated()), id: \.element.id) { index, reminder in
@@ -505,43 +507,6 @@ struct HomeView: View {
         .listRowBackground(Color.clear)
     }
 
-    private var recordsSection: some View {
-        Section {
-            VStack(alignment: .leading, spacing: 8) {
-                sectionHeader(
-                    title: "记录",
-                    subtitle: recordsSectionSubtitle,
-                    countText: "\(selectedDateStreamRecords.count) 条"
-                )
-
-                ForEach(Array(selectedDateStreamRecords.enumerated()), id: \.element.id) { index, record in
-                    if index > 0 {
-                        Divider()
-                    }
-
-                    NavigationLink {
-                        RecordDetailView(recordID: record.id)
-                    } label: {
-                        recordCard(for: record)
-                    }
-                    .buttonStyle(.plain)
-                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        Button("删除", role: .destructive) {
-                            deletingRecord = record
-                        }
-                    }
-                }
-            }
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(.white.opacity(0.92))
-            )
-        }
-        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 10, trailing: 16))
-        .listRowBackground(Color.clear)
-    }
-
     private var activeSearchSection: some View {
         Section {
             VStack(alignment: .leading, spacing: 8) {
@@ -552,7 +517,7 @@ struct HomeView: View {
 
                     Spacer(minLength: 8)
 
-                    Button("返回月历") {
+                    Button("返回计划") {
                         clearSearch()
                     }
                     .buttonStyle(.plain)
@@ -634,7 +599,7 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("没有找到匹配内容")
                 .font(.footnote.weight(.semibold))
-            Text("你可以换一种问法，或者先回首页把它记下来。")
+            Text("换个关键词试试")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
@@ -649,7 +614,6 @@ struct HomeView: View {
     private var calendarLegend: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 18) {
-                calendarLegendItem(title: "记录", color: .blue)
                 calendarLegendItem(title: "待提醒", color: .orange)
                 calendarLegendItem(title: "已提醒", color: .green)
             }
@@ -676,7 +640,7 @@ struct HomeView: View {
                 .fill(color)
                 .frame(width: 6, height: 6)
 
-            Text(title)
+            Text(AppLocalization.text(title))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -737,36 +701,36 @@ struct HomeView: View {
                 }
                 .buttonStyle(.plain)
                 .font(.caption2.weight(.semibold))
-                .foregroundStyle(.blue)
+                .foregroundStyle(AppTheme.accent)
             } else if let actionTitle = calendarWeatherModel.actionTitle {
                 Button(actionTitle) {
                     calendarWeatherModel.refresh()
                 }
                 .buttonStyle(.plain)
                 .font(.caption2.weight(.semibold))
-                .foregroundStyle(.blue)
+                .foregroundStyle(AppTheme.accent)
             }
         }
         .padding(.horizontal, 4)
     }
 
     private func storageContainerCard(for group: StorageContainerGroup) -> some View {
-        let tint = storageContainerTint(group.container)
+        let tint = storageContainerTint(for: group)
 
         return VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 10) {
-                Image(systemName: storageContainerIcon(group.container))
+                Image(systemName: storageContainerIcon(for: group))
                     .font(.headline.weight(.semibold))
                     .foregroundStyle(tint)
-                    .frame(width: 30, height: 30)
+                    .frame(width: 36, height: 36)
                     .background(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
                             .fill(tint.opacity(0.13))
                     )
 
                 Spacer(minLength: 8)
 
-                countBadge("\(group.records.count) 件")
+                countBadge(AppLocalization.format("item_count", group.records.count))
             }
 
             VStack(alignment: .leading, spacing: 3) {
@@ -774,11 +738,6 @@ struct HomeView: View {
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
                     .lineLimit(1)
-
-                Text(storageContainerCaption(for: group))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
             }
 
             VStack(alignment: .leading, spacing: 6) {
@@ -794,10 +753,6 @@ struct HomeView: View {
                                 .foregroundStyle(.secondary)
                         }
 
-                        Text("新增后会显示在这里。")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
                     }
                     .padding(.top, 4)
                 } else {
@@ -828,7 +783,7 @@ struct HomeView: View {
                     }
 
                     if group.records.count > 3 {
-                        Text("还有 \(group.records.count - 3) 件")
+                        Text(AppLocalization.format("more_item_count", group.records.count - 3))
                             .font(.caption2.weight(.medium))
                             .foregroundStyle(tint)
                     }
@@ -839,11 +794,11 @@ struct HomeView: View {
         .padding(14)
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(tint.opacity(0.08))
+                .fill(AppTheme.surface)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(tint.opacity(0.14), lineWidth: 1)
+                .stroke(AppTheme.line, lineWidth: 1)
         )
     }
 
@@ -856,22 +811,18 @@ struct HomeView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Label("暂无物品", systemImage: "square.dashed")
                             .font(.headline)
-                        Text("之后记录到这个场景的物品会显示在这里。")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(18)
                     .background(
                         RoundedRectangle(cornerRadius: 22, style: .continuous)
-                            .fill(.white.opacity(0.92))
+                            .fill(AppTheme.surface)
                     )
                 } else {
                     VStack(alignment: .leading, spacing: 10) {
                         sectionHeader(
                             title: "记录详情",
-                            subtitle: "只显示“\(group.displayName)”里的记录",
-                            countText: "\(group.records.count) 件"
+                            countText: AppLocalization.format("item_count", group.records.count)
                         )
 
                         ForEach(Array(group.records.enumerated()), id: \.element.id) { index, record in
@@ -885,7 +836,7 @@ struct HomeView: View {
                     .padding(16)
                     .background(
                         RoundedRectangle(cornerRadius: 24, style: .continuous)
-                            .fill(.white.opacity(0.92))
+                            .fill(AppTheme.surface)
                     )
                 }
             }
@@ -897,11 +848,11 @@ struct HomeView: View {
     }
 
     private func storageContainerDetailHeader(for group: StorageContainerGroup) -> some View {
-        let tint = storageContainerTint(group.container)
+        let tint = storageContainerTint(for: group)
 
         return VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top, spacing: 12) {
-                Image(systemName: storageContainerIcon(group.container))
+                Image(systemName: storageContainerIcon(for: group))
                     .font(.title2.weight(.semibold))
                     .foregroundStyle(tint)
                     .frame(width: 44, height: 44)
@@ -913,21 +864,27 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(group.displayName)
                         .font(.title2.weight(.semibold))
-                    Text("\(group.records.count) 件物品")
+                    Text(AppLocalization.format("item_count", group.records.count))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
             }
 
             if let latestRecordDate = group.records.map(\.createdAt).max() {
-                infoChip("最近记录 \(YijiDateFormatter.dayFormatter.string(from: latestRecordDate))", icon: "calendar")
+                infoChip(
+                    AppLocalization.format(
+                        "record.latest_date",
+                        YijiDateFormatter.dayFormatter.string(from: latestRecordDate)
+                    ),
+                    icon: "calendar"
+                )
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(18)
         .background(
             RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(.white.opacity(0.92))
+                .fill(AppTheme.surface)
         )
     }
 
@@ -947,10 +904,21 @@ struct HomeView: View {
                     )
 
                 VStack(alignment: .leading, spacing: 5) {
-                    Text(record.objectName ?? record.content)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.primary)
-                        .lineLimit(2)
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Text(record.objectName ?? record.content)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.primary)
+                            .lineLimit(2)
+
+                        if let reminder {
+                            Image(systemName: reminder.status == .pending ? "bell.fill" : "bell")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(reminderStatusColor(reminder.status))
+                                .accessibilityLabel(
+                                    AppLocalization.format("record.related_reminder", reminder.status.displayName)
+                                )
+                        }
+                    }
 
                     if let location = record.location {
                         Text(location)
@@ -966,14 +934,6 @@ struct HomeView: View {
             HStack(spacing: 8) {
                 infoChip(YijiDateFormatter.dayFormatter.string(from: record.createdAt), icon: "calendar")
                 infoChip(quantityText(for: record) ?? "数量未填写", icon: "number")
-            }
-
-            if let reminder {
-                infoChip(reminderStatusText(for: reminder), icon: "bell")
-            } else if needsExpiryReminder(record) {
-                infoChip("可添加到期提醒", icon: "bell.badge")
-            } else {
-                infoChip("未设置到期提醒", icon: "bell.slash")
             }
         }
         .padding(.vertical, 8)
@@ -996,15 +956,21 @@ struct HomeView: View {
 
                 Spacer(minLength: 10)
 
-                Text(reminder.status.displayName)
-                    .font(.caption2.weight(.medium))
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 3)
-                    .background(
-                        Capsule()
-                            .fill(reminderStatusColor(reminder.status).opacity(0.14))
-                    )
-                    .foregroundStyle(reminderStatusColor(reminder.status))
+                HStack(spacing: 6) {
+                    Image(systemName: "alarm.fill")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(reminderStatusColor(reminder.status))
+
+                    Text(reminder.status.displayName)
+                        .font(.caption2.weight(.medium))
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(
+                            Capsule()
+                                .fill(reminderStatusColor(reminder.status).opacity(0.14))
+                        )
+                        .foregroundStyle(reminderStatusColor(reminder.status))
+                }
             }
 
             HStack(spacing: 8) {
@@ -1018,7 +984,7 @@ struct HomeView: View {
                 } label: {
                     Label("查看关联记录", systemImage: "doc.text")
                         .font(.caption)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(AppTheme.accent)
                 }
                 .buttonStyle(.plain)
             }
@@ -1032,7 +998,7 @@ struct HomeView: View {
             if isFocused {
                 Label(appModel.focusedRecordBadgeText ?? "刚更新", systemImage: "checkmark.circle.fill")
                     .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(AppTheme.accent)
             }
 
             RecordRowView(record: record, style: .stream)
@@ -1041,19 +1007,21 @@ struct HomeView: View {
         .padding(.vertical, 8)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(isFocused ? Color(red: 0.93, green: 0.96, blue: 1.0).opacity(0.96) : Color.white.opacity(0.48))
+                .fill(isFocused ? AppTheme.surfaceMuted : AppTheme.surface.opacity(0.48))
         )
     }
 
-    private func sectionHeader(title: String, subtitle: String, countText: String) -> some View {
+    private func sectionHeader(title: String, subtitle: String = "", countText: String) -> some View {
         HStack(alignment: .top, spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(title)
+                Text(AppLocalization.text(title))
                     .font(.headline.weight(.semibold))
-                Text(subtitle)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                if !subtitle.isEmpty {
+                    Text(AppLocalization.text(subtitle))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
 
             Spacer(minLength: 10)
@@ -1111,33 +1079,6 @@ struct HomeView: View {
         }
 
         return nil
-    }
-
-    private func reminderStatusText(for reminder: Reminder) -> String {
-        if reminder.status == .pending {
-            return timeDistanceText(to: reminder.remindAt)
-        }
-        return reminder.status.displayName
-    }
-
-    private func timeDistanceText(to date: Date) -> String {
-        let calendar = Calendar(identifier: .gregorian)
-        let today = calendar.startOfDay(for: Date())
-        let targetDay = calendar.startOfDay(for: date)
-        let days = calendar.dateComponents([.day], from: today, to: targetDay).day ?? 0
-
-        if days > 0 {
-            return "还有 \(days) 天"
-        }
-        if days == 0 {
-            return "今天"
-        }
-        return "已过期 \(abs(days)) 天"
-    }
-
-    private func needsExpiryReminder(_ record: Record) -> Bool {
-        let keywords = ["到期", "过期", "有效期", "保质期", "失效", "截止"]
-        return keywords.contains { record.content.localizedCaseInsensitiveContains($0) }
     }
 
     private func countBadge(_ text: String) -> some View {
@@ -1222,17 +1163,17 @@ struct HomeView: View {
     private func storageContainerTint(_ container: StorageContainer?) -> Color {
         switch container {
         case .medicineKit:
-            Color(red: 0.86, green: 0.44, blue: 0.40)
+            Color(red: 0.82, green: 0.50, blue: 0.34)
         case .documentPouch:
-            Color(red: 0.28, green: 0.55, blue: 0.92)
+            AppTheme.accent
         case .jewelryBox:
-            Color(red: 0.70, green: 0.48, blue: 0.80)
+            Color(red: 0.56, green: 0.52, blue: 0.60)
         case .digitalBox:
-            Color(red: 0.25, green: 0.65, blue: 0.72)
+            Color(red: 0.40, green: 0.54, blue: 0.60)
         case .wardrobe:
             Color(red: 0.47, green: 0.59, blue: 0.40)
         case .storageBox:
-            Color(red: 0.71, green: 0.53, blue: 0.36)
+            Color(red: 0.65, green: 0.56, blue: 0.45)
         case .drawer:
             Color(red: 0.58, green: 0.50, blue: 0.42)
         case .bag:
@@ -1242,17 +1183,26 @@ struct HomeView: View {
         }
     }
 
-    private func storageContainerCaption(for group: StorageContainerGroup) -> String {
-        let locations = group.records
-            .compactMap(\.location)
-            .prefix(2)
-            .joined(separator: " · ")
-
-        if !locations.isEmpty {
-            return locations
+    private func storageContainerIcon(for group: StorageContainerGroup) -> String {
+        switch group.kind {
+        case .builtIn(let container):
+            return storageContainerIcon(container)
+        case .custom:
+            return "shippingbox"
+        case .uncategorized:
+            return "tray.full"
         }
+    }
 
-        return "按场景回看"
+    private func storageContainerTint(for group: StorageContainerGroup) -> Color {
+        switch group.kind {
+        case .builtIn(let container):
+            return storageContainerTint(container)
+        case .custom:
+            return AppTheme.accent
+        case .uncategorized:
+            return Color(red: 0.55, green: 0.58, blue: 0.64)
+        }
     }
 
     private func reminderStatusColor(_ status: ReminderStatus) -> Color {
@@ -1323,18 +1273,23 @@ struct HomeView: View {
         }
 
         guard !trimmedSearchText.isEmpty else {
-            return "输入后显示结果。"
+            return ""
         }
 
         guard let first = queryResults.first else {
-            return "没有找到与“\(trimmedSearchText)”相关的历史记录。"
+            return AppLocalization.format("search.no_history", trimmedSearchText)
         }
 
         if queryResults.count == 1 {
             return first.answerSummary
         }
 
-        return "我找到了 \(queryResults.count) 条与“\(trimmedSearchText)”相关的记录，最近一条是: \(first.answerSummary)"
+        return AppLocalization.format(
+            "search.found_summary",
+            queryResults.count,
+            trimmedSearchText,
+            first.answerSummary
+        )
     }
 
     private var selectedDateRecords: [Record] {
@@ -1359,42 +1314,53 @@ struct HomeView: View {
             }
     }
 
-    private var selectedDateStreamRecords: [Record] {
-        selectedDateRecords.filter { $0.category != .storage }
-    }
-
     private var allStorageGroups: [StorageContainerGroup] {
-        let grouped = Dictionary(grouping: allStorageRecords) { $0.resolvedStorageContainer }
+        var groupedRecords: [String: [Record]] = [:]
+        for record in allStorageRecords {
+            for groupID in storageGroupIDs(for: record) {
+                groupedRecords[groupID, default: []].append(record)
+            }
+        }
+        let configuredIDs = Set(appModel.storageContainerDefinitions.map(\.id))
 
-        let orderedContainers = StorageContainer.allCases.compactMap { container -> StorageContainerGroup? in
-            guard let records = grouped[container], !records.isEmpty else {
+        let configuredGroups = appModel.storageContainerDefinitions.map { definition in
+            makeStorageContainerGroup(
+                id: definition.id,
+                displayName: definition.displayName,
+                kind: definition.builtInContainer.map(StorageContainerGroup.Kind.builtIn) ?? .custom,
+                records: groupedRecords[definition.id] ?? []
+            )
+        }
+
+        let transientBuiltInGroups = StorageContainer.allCases.compactMap { container -> StorageContainerGroup? in
+            guard !configuredIDs.contains(container.rawValue),
+                  let records = groupedRecords[container.rawValue],
+                  !records.isEmpty else {
                 return nil
             }
-            return StorageContainerGroup(container: container, records: records)
+
+            return makeStorageContainerGroup(
+                id: container.rawValue,
+                displayName: container.displayName,
+                kind: .builtIn(container),
+                records: records
+            )
         }
 
-        let uncategorized = grouped[nil]
-            .map { StorageContainerGroup(container: nil, records: $0) }
-
-        return orderedContainers + (uncategorized.map { [$0] } ?? [])
-    }
-
-    private var displayedStorageGroups: [StorageContainerGroup] {
-        let grouped = Dictionary(uniqueKeysWithValues: allStorageGroups.map { ($0.id, $0) })
-
-        let persistentGroups = appModel.visibleStorageContainers.map { container in
-            grouped[container.rawValue] ?? StorageContainerGroup(container: container, records: [])
-        }
-
-        let transientGroups = allStorageGroups.filter { group in
-            guard let container = group.container else {
-                return true
+        let uncategorizedGroup: StorageContainerGroup? = {
+            guard let records = groupedRecords["other-location"], !records.isEmpty else {
+                return nil
             }
 
-            return !appModel.visibleStorageContainers.contains(container)
-        }
+            return makeStorageContainerGroup(
+                id: "other-location",
+                displayName: "其他位置",
+                kind: .uncategorized,
+                records: records
+            )
+        }()
 
-        return persistentGroups + transientGroups
+        return configuredGroups + transientBuiltInGroups + (uncategorizedGroup.map { [$0] } ?? [])
     }
 
     private var selectedStorageGroup: StorageContainerGroup? {
@@ -1402,7 +1368,7 @@ struct HomeView: View {
             return nil
         }
 
-        return displayedStorageGroups.first { $0.id == selectedStorageGroupID }
+        return allStorageGroups.first { $0.id == selectedStorageGroupID }
     }
 
     private var selectedDateReminders: [Reminder] {
@@ -1423,8 +1389,563 @@ struct HomeView: View {
         selectedDateReminders.filter { $0.status != .pending && $0.status != .notified }
     }
 
-    private var recordDateSet: Set<Date> {
+    private var pendingReminderDateSet: Set<Date> {
+        Set(
+            appModel.reminders
+                .filter { $0.status == .pending }
+                .map { filterCalendar.startOfDay(for: $0.remindAt) }
+        )
+    }
+
+    private var notifiedReminderDateSet: Set<Date> {
+        Set(
+            appModel.reminders
+                .filter { $0.status == .notified }
+                .map { filterCalendar.startOfDay(for: $0.remindAt) }
+        )
+    }
+
+    private var allTimelineDates: Set<Date> {
         Set(appModel.records.map { filterCalendar.startOfDay(for: $0.recordDate) })
+            .union(pendingReminderDateSet)
+            .union(notifiedReminderDateSet)
+    }
+
+    private var reminderSectionSubtitle: String {
+        ""
+    }
+
+    private func storageGroupIDs(for record: Record) -> [String] {
+        var groupIDs = record.resolvedStorageContainers.map(\.rawValue)
+
+        if let customDefinition = appModel.matchingCustomStorageContainerDefinition(for: record),
+           !groupIDs.contains(customDefinition.id) {
+            groupIDs.append(customDefinition.id)
+        }
+
+        if groupIDs.isEmpty {
+            groupIDs.append("other-location")
+        }
+
+        return groupIDs
+    }
+
+    private func makeStorageContainerGroup(
+        id: String,
+        displayName: String,
+        kind: StorageContainerGroup.Kind,
+        records: [Record]
+    ) -> StorageContainerGroup {
+        StorageContainerGroup(
+            id: id,
+            displayName: displayName,
+            kind: kind,
+            records: records
+        )
+    }
+
+    private func clearSearch() {
+        appModel.clearActiveSearch()
+    }
+
+    private func openLocationSettings() {
+        guard let settingsURL = URL(string: UIApplication.openSettingsURLString) else {
+            return
+        }
+        openURL(settingsURL)
+    }
+
+    private var selectedDateWeather: CalendarDayWeather? {
+        calendarWeatherModel.dayWeather(for: selectedDate)
+    }
+}
+
+struct CalendarView: View {
+    private struct DayEntry: Identifiable {
+        let record: Record?
+        let reminder: Reminder?
+        let date: Date
+
+        var id: String {
+            if let record {
+                return "record-\(record.id.uuidString)"
+            }
+            if let reminder {
+                return "reminder-\(reminder.id.uuidString)"
+            }
+            return "empty-\(date.timeIntervalSinceReferenceDate)"
+        }
+    }
+
+    @EnvironmentObject private var appModel: AppModel
+    @Environment(\.openURL) private var openURL
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var selectedDate = Calendar(identifier: .gregorian).startOfDay(for: Date())
+    @State private var visibleMonth = Calendar(identifier: .gregorian).startOfDay(for: Date())
+    @StateObject private var weatherModel = CalendarWeatherModel()
+
+    var body: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 12) {
+                Text("日历")
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(AppTheme.ink)
+
+                if let statusMessage = appModel.statusMessage {
+                    statusCard(statusMessage)
+                }
+
+                calendarCard
+
+                if selectedDateEntries.isEmpty {
+                    emptyDayCard
+                } else {
+                    dayEntriesCard
+                }
+            }
+            .padding(16)
+        }
+        .background(screenBackground)
+        .onAppear {
+            syncSelectedDateIfNeeded()
+            weatherModel.activate()
+        }
+        .onChange(of: appModel.focusedRecordID) { _ in
+            syncSelectedDateIfNeeded()
+        }
+        .onChange(of: scenePhase) { newValue in
+            if newValue == .active {
+                weatherModel.activate()
+            }
+        }
+    }
+
+    private var calendarCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            CalendarMonthView(
+                selectedDate: selectedDate,
+                visibleMonth: visibleMonth,
+                eventDates: recordDateSet,
+                reminderDates: pendingReminderDateSet,
+                notifiedDates: notifiedReminderDateSet,
+                weatherByDate: weatherModel.weatherByDate,
+                calendar: filterCalendar,
+                inlineItems: calendarInlineItems,
+                onDateSelected: { date in
+                    selectedDate = filterCalendar.startOfDay(for: date)
+                },
+                onVisibleMonthChanged: { date in
+                    visibleMonth = filterCalendar.startOfDay(for: date)
+                }
+            )
+
+            calendarLegend
+
+            weatherStatusRow
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 16)
+        .padding(.bottom, 14)
+        .background(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(AppTheme.surface)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(AppTheme.line, lineWidth: 1)
+        )
+    }
+
+    private var dayEntriesCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionHeader(
+                title: "当天记录",
+                countText: AppLocalization.format("record_count", selectedDateEntries.count)
+            )
+
+            ForEach(Array(selectedDateEntries.enumerated()), id: \.element.id) { index, entry in
+                if index > 0 {
+                    Divider()
+                }
+
+                dayEntryRow(entry)
+            }
+        }
+        .padding(16)
+        .background(cardBackground)
+    }
+
+    @ViewBuilder
+    private func dayEntryRow(_ entry: DayEntry) -> some View {
+        if let record = entry.record {
+            NavigationLink {
+                RecordDetailView(recordID: record.id)
+            } label: {
+                RecordRowView(record: record, style: .stream, reminder: entry.reminder)
+                    .padding(.vertical, 6)
+            }
+            .buttonStyle(.plain)
+        } else if let reminder = entry.reminder {
+            reminderContent(reminder)
+        }
+    }
+
+    private func reminderContent(_ reminder: Reminder) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 10) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(reminder.title)
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.primary)
+
+                    if !reminder.body.isEmpty {
+                        Text(reminder.body)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(3)
+                    }
+                }
+
+                Spacer(minLength: 10)
+
+                Text(reminder.status.displayName)
+                    .font(.caption2.weight(.medium))
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(
+                        Capsule()
+                            .fill(reminderStatusColor(reminder.status).opacity(0.14))
+                    )
+                    .foregroundStyle(reminderStatusColor(reminder.status))
+            }
+
+            HStack(spacing: 8) {
+                infoChip(YijiDateFormatter.timeFormatter.string(from: reminder.remindAt), icon: "clock")
+                infoChip(reminder.repeatRule.displayName, icon: "repeat")
+            }
+        }
+        .padding(.vertical, 6)
+    }
+
+    private var emptyDayCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("这一天还没有内容", systemImage: "calendar.badge.plus")
+                .font(.headline)
+
+            Text("在“记录”页记录事项或设置提醒后，会自动显示在对应日期。")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(18)
+        .background(cardBackground)
+    }
+
+    private func statusCard(_ statusMessage: String) -> some View {
+        Label(statusMessage, systemImage: "info.circle")
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color.white.opacity(0.74))
+            )
+    }
+
+    private var calendarLegend: some View {
+        VStack(spacing: 12) {
+            Divider()
+
+            HStack(spacing: 10) {
+                legendItem(title: "记录", color: AppTheme.accent)
+                legendItem(title: "待提醒", color: AppTheme.reminder)
+                legendItem(title: "已提醒", color: AppTheme.completed)
+                legendItem(title: "天气", color: Color(red: 0.40, green: 0.54, blue: 0.60))
+
+                Spacer(minLength: 4)
+
+                Text("点击日期查看详情")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(AppTheme.accent)
+                    .lineLimit(1)
+            }
+        }
+        .padding(.horizontal, 4)
+    }
+
+    private func legendItem(title: String, color: Color) -> some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(color)
+                .frame(width: 5, height: 5)
+
+            Text(AppLocalization.text(title))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func selectedDateWeatherCard(_ weather: CalendarDayWeather) -> some View {
+        let accentColor = Color(uiColor: weather.accentColor)
+
+        return HStack(spacing: 10) {
+            Image(systemName: weather.symbolName)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(accentColor)
+                .frame(width: 24, height: 24)
+                .background(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(accentColor.opacity(0.10))
+                )
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(weather.summaryLine)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.primary)
+
+                Text(weather.temperatureLine)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 8)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(accentColor.opacity(0.08))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(accentColor.opacity(0.14), lineWidth: 1)
+        )
+    }
+
+    private var weatherStatusRow: some View {
+        HStack(spacing: 8) {
+            Image(systemName: weatherModel.statusIconName)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Text(weatherModel.statusText)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+
+            Spacer(minLength: 8)
+
+            if weatherModel.shouldOfferSettings {
+                Button("去设置") {
+                    openLocationSettings()
+                }
+                .buttonStyle(.plain)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(AppTheme.accent)
+            } else if let actionTitle = weatherModel.actionTitle {
+                Button(actionTitle) {
+                    weatherModel.refresh()
+                }
+                .buttonStyle(.plain)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(AppTheme.accent)
+            }
+        }
+        .padding(.horizontal, 4)
+    }
+
+    private func sectionHeader(title: String, countText: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Text(AppLocalization.text(title))
+                .font(.headline.weight(.semibold))
+
+            Spacer(minLength: 10)
+
+            Text(countText)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 5)
+                .background(
+                    Capsule()
+                        .fill(Color.black.opacity(0.05))
+                )
+        }
+    }
+
+    private func infoChip(_ text: String, icon: String) -> some View {
+        Label(text, systemImage: icon)
+            .font(.caption2)
+            .lineLimit(1)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                Capsule()
+                    .fill(Color(red: 0.97, green: 0.98, blue: 1.0))
+            )
+            .foregroundStyle(.secondary)
+    }
+
+    private func reminderStatusColor(_ status: ReminderStatus) -> Color {
+        switch status {
+        case .pending:
+            .orange
+        case .notified:
+            .green
+        case .done:
+            .blue
+        case .cancelled:
+            .gray
+        case .failed:
+            .red
+        }
+    }
+
+    private func syncSelectedDateIfNeeded() {
+        if let focusedRecordID = appModel.focusedRecordID,
+           let record = appModel.records.first(where: { $0.id == focusedRecordID }) {
+            let recordDay = filterCalendar.startOfDay(for: record.recordDate)
+            selectedDate = recordDay
+            visibleMonth = recordDay
+            return
+        }
+
+        guard selectedDateEntries.isEmpty,
+              let firstDate = allTimelineDates.sorted(by: >).first else {
+            return
+        }
+
+        selectedDate = firstDate
+        visibleMonth = firstDate
+    }
+
+    private func openLocationSettings() {
+        guard let settingsURL = URL(string: UIApplication.openSettingsURLString) else {
+            return
+        }
+        openURL(settingsURL)
+    }
+
+    private var filterCalendar: Calendar {
+        Calendar(identifier: .gregorian)
+    }
+
+    private var selectedDateEntries: [DayEntry] {
+        let remindersForSelectedDate = selectedDateReminders
+        let remindersByRecordID = Dictionary(
+            grouping: remindersForSelectedDate.compactMap { reminder -> (UUID, Reminder)? in
+                guard let recordID = reminder.recordID else {
+                    return nil
+                }
+                return (recordID, reminder)
+            },
+            by: \.0
+        )
+        .mapValues { matches in
+            matches.map(\.1).sorted { $0.remindAt < $1.remindAt }
+        }
+
+        var representedRecordIDs = Set<UUID>()
+        var entries: [DayEntry] = []
+
+        for record in appModel.records {
+            let remindersOnSelectedDate = remindersByRecordID[record.id] ?? []
+            let hasLinkedReminder = appModel.reminders.contains { $0.recordID == record.id }
+            let recordIsOnSelectedDate = filterCalendar.isDate(record.recordDate, inSameDayAs: selectedDate)
+            let shouldShowRecordDate = record.category != .reminder || !hasLinkedReminder
+
+            guard (recordIsOnSelectedDate && shouldShowRecordDate) || !remindersOnSelectedDate.isEmpty else {
+                continue
+            }
+
+            let reminder = remindersOnSelectedDate.first
+            entries.append(
+                DayEntry(
+                    record: record,
+                    reminder: reminder,
+                    date: reminder?.remindAt ?? record.recordDate
+                )
+            )
+            representedRecordIDs.insert(record.id)
+        }
+
+        for reminder in remindersForSelectedDate {
+            if let recordID = reminder.recordID, representedRecordIDs.contains(recordID) {
+                continue
+            }
+
+            entries.append(
+                DayEntry(
+                    record: appModel.record(for: reminder),
+                    reminder: reminder,
+                    date: reminder.remindAt
+                )
+            )
+
+            if let recordID = reminder.recordID {
+                representedRecordIDs.insert(recordID)
+            }
+        }
+
+        return entries.sorted { lhs, rhs in
+            if lhs.date == rhs.date {
+                return lhs.id < rhs.id
+            }
+            return lhs.date < rhs.date
+        }
+    }
+
+    private var calendarInlineItems: [CalendarInlineItem] {
+        selectedDateEntries.map { entry in
+            let title = entry.record?.objectName
+                ?? entry.record?.content
+                ?? entry.reminder?.title
+                ?? "记录"
+            let status = entry.reminder?.status.displayName ?? "记录"
+            let tone: CalendarInlineItem.Tone
+
+            switch entry.reminder?.status {
+            case .pending:
+                tone = .pending
+            case .notified, .done:
+                tone = .completed
+            case .cancelled, .failed, nil:
+                tone = .record
+            }
+
+            return CalendarInlineItem(
+                id: entry.id,
+                time: YijiDateFormatter.timeFormatter.string(from: entry.date),
+                title: title,
+                status: status,
+                tone: tone
+            )
+        }
+    }
+
+    private var selectedDateReminders: [Reminder] {
+        appModel.reminders
+            .filter { filterCalendar.isDate($0.remindAt, inSameDayAs: selectedDate) }
+            .sorted { $0.remindAt < $1.remindAt }
+    }
+
+    private var recordDateSet: Set<Date> {
+        Set(
+            appModel.records.compactMap { record in
+                guard record.category == .reminder,
+                      let linkedReminder = appModel.reminders.first(where: { $0.recordID == record.id }) else {
+                    return filterCalendar.startOfDay(for: record.recordDate)
+                }
+
+                switch linkedReminder.status {
+                case .pending, .notified:
+                    return nil
+                case .done, .cancelled, .failed:
+                    return filterCalendar.startOfDay(for: linkedReminder.remindAt)
+                }
+            }
+        )
     }
 
     private var pendingReminderDateSet: Set<Date> {
@@ -1444,62 +1965,22 @@ struct HomeView: View {
     }
 
     private var allTimelineDates: Set<Date> {
-        recordDateSet.union(pendingReminderDateSet).union(notifiedReminderDateSet)
-    }
-
-    private var reminderSectionSubtitle: String {
-        if !selectedDatePendingReminders.isEmpty && !selectedDateNotifiedReminders.isEmpty {
-            return "待提醒和已提醒都会按时间显示"
-        }
-
-        if !selectedDatePendingReminders.isEmpty {
-            return "当天待提醒"
-        }
-
-        if !selectedDateNotifiedReminders.isEmpty {
-            return "当天已提醒"
-        }
-
-        return "当天提醒会按时间顺序排列"
-    }
-
-    private var recordsSectionSubtitle: String {
-        if selectedDateStreamRecords.count <= 1 {
-            if selectedDateReminders.isEmpty {
-                return "这一天的记录会显示在这里"
-            }
-            return "按时间倒序回看这一天留下的内容"
-        }
-
-        return "想法、事项和其他记录会按时间倒序显示"
-    }
-
-    private var storageContainersSectionSubtitle: String {
-        if allStorageRecords.isEmpty {
-            return "先固定你常用的容器，后面录入的物品会自动归到这里"
-        }
-
-        if allStorageGroups.count == 1,
-           let first = allStorageGroups.first {
-            return "你目前主要在“\(first.displayName)”里找东西"
-        }
-
-        return "按收纳场景回看物品"
-    }
-
-    private func clearSearch() {
-        appModel.clearActiveSearch()
-    }
-
-    private func openLocationSettings() {
-        guard let settingsURL = URL(string: UIApplication.openSettingsURLString) else {
-            return
-        }
-        openURL(settingsURL)
+        recordDateSet
+            .union(pendingReminderDateSet)
+            .union(notifiedReminderDateSet)
     }
 
     private var selectedDateWeather: CalendarDayWeather? {
-        calendarWeatherModel.dayWeather(for: selectedDate)
+        weatherModel.dayWeather(for: selectedDate)
+    }
+
+    private var cardBackground: some View {
+        RoundedRectangle(cornerRadius: 20, style: .continuous)
+            .fill(AppTheme.surface)
+    }
+
+    private var screenBackground: some View {
+        AppTheme.canvas.ignoresSafeArea()
     }
 }
 

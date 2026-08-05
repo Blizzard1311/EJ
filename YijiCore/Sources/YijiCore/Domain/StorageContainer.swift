@@ -13,21 +13,21 @@ public enum StorageContainer: String, Codable, CaseIterable, Sendable {
     public var displayName: String {
         switch self {
         case .medicineKit:
-            "医药箱"
+            YijiLocalization.text("医药箱")
         case .documentPouch:
-            "证件袋"
+            YijiLocalization.text("证件袋")
         case .jewelryBox:
-            "首饰盒"
+            YijiLocalization.text("首饰盒")
         case .digitalBox:
-            "数码盒"
+            YijiLocalization.text("数码盒")
         case .wardrobe:
-            "衣柜"
+            YijiLocalization.text("衣柜")
         case .storageBox:
-            "储物盒"
+            YijiLocalization.text("储物盒")
         case .drawer:
-            "抽屉"
+            YijiLocalization.text("抽屉")
         case .bag:
-            "随身包"
+            YijiLocalization.text("随身包")
         }
     }
 }

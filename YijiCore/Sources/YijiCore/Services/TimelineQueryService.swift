@@ -102,14 +102,14 @@ public enum TimelineQueryService {
         let categoryText = categorySummaryText(for: query)
 
         guard !matches.isEmpty else {
-            return "\(rangeText)\(categoryText)暂时没有找到已记录的计划或安排。"
+            return YijiLocalization.format("timeline.none", rangeText, categoryText)
         }
 
         if matches.count == 1, let first = matches.first {
-            return "\(rangeText)\(categoryText)你有 1 项安排：\(first.content)。"
+            return YijiLocalization.format("timeline.one", rangeText, categoryText, first.content)
         }
 
-        return "\(rangeText)\(categoryText)你有 \(matches.count) 项安排，已按时间排好。"
+        return YijiLocalization.format("timeline.many", rangeText, categoryText, matches.count)
     }
 
     private static func sectionTitle(for record: Record, calendar: Calendar) -> String {
@@ -149,8 +149,9 @@ public enum TimelineQueryService {
             return " "
         }
 
-        let names = query.sliceCategories.map(\.displayName).joined(separator: "、")
-        return " 的\(names)事项里，"
+        let separator = YijiLocalization.isEnglish ? ", " : "、"
+        let names = query.sliceCategories.map(\.displayName).joined(separator: separator)
+        return YijiLocalization.format("timeline.category", names)
     }
 }
 

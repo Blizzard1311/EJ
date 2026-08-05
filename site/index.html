@@ -3,7 +3,6 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="robots" content="noindex">
   <title>易记 Yiji | 合规信息页</title>
   <link rel="stylesheet" href="./assets/styles.css">
 </head>
@@ -15,7 +14,7 @@
       <p>
         这组页面用于易记 iOS App 的公开合规展示，供 App Store Connect 填写
         <strong>Privacy Policy URL</strong> 和 <strong>Support URL</strong> 使用。
-        它不是新的 Web 应用，不提供账号、云同步、在线录入或后台服务。
+        它不是新的 Web 应用，不提供账号、在线录入或开发者后台服务。
       </p>
       <div class="hero-meta">
         <span class="pill">App 名称：易记</span>
@@ -23,8 +22,7 @@
         <span class="pill">首发形态：本地优先 iOS MVP</span>
       </div>
       <div class="banner">
-        上线前仍需替换页面中的联系邮箱、真实域名和最终公开链接。
-        推荐单独使用子域名部署，例如 <code>legal.your-domain.com</code>，与现有 Web 应用彻底隔离。
+        本页面由 GitHub Pages 静态托管，不依赖开发者自有服务器、数据库或持续运行的后台服务。
       </div>
       <nav class="nav" aria-label="Primary">
         <a class="primary" href="./privacy.html">隐私政策 / Privacy Policy</a>
@@ -38,26 +36,26 @@
         <p>用于公开展示 App 的隐私说明、支持方式和基础产品信息，满足 App 审核和用户查看需要。</p>
       </article>
       <article class="card span-6">
-        <h2>隔离原则</h2>
-        <p>静态 HTML 独立部署，不共享数据库、不复用现有前端路由、不影响你服务器上已有的 Web 业务。</p>
+        <h2>托管方式</h2>
+        <p>静态 HTML 通过 GitHub Pages 默认 HTTPS 域名公开，不共享数据库，也不依赖开发者云服务器续费。</p>
       </article>
       <article class="card span-6">
         <h2>建议提交链接</h2>
         <p class="small">
-          Privacy Policy URL：<code>https://legal.your-domain.com/privacy.html</code><br>
-          Support URL：<code>https://legal.your-domain.com/support.html</code>
+          Privacy Policy URL：<code>https://blizzard1311.github.io/EJ/privacy.html</code><br>
+          Support URL：<code>https://blizzard1311.github.io/EJ/support.html</code>
         </p>
       </article>
       <article class="card span-6">
         <h2>当前产品边界</h2>
         <p class="small">
-          当前版本无账号、无云同步、无 group、无付费订阅，核心能力为本地记录、语音录入、本地提醒和备份导入导出。
+          当前版本无账号、无 group、无付费订阅或自动云同步，核心能力为本地记录、语音录入、本地提醒和备份导入导出。
         </p>
       </article>
     </section>
 
     <footer class="footer">
-      Last updated: 2026-06-09
+      Last updated: 2026-08-05
     </footer>
   </main>
 </body>

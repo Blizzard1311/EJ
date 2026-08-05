@@ -3,7 +3,6 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="robots" content="noindex">
   <title>易记 Yiji | 隐私政策</title>
   <link rel="stylesheet" href="./assets/styles.css">
 </head>
@@ -14,10 +13,10 @@
       <h1>易记隐私政策</h1>
       <p>
         本页面适用于易记当前首发阶段的本地优先 iOS 版本。
-        当前版本不提供账号系统，也不以开发者自建服务器为中心处理用户数据。
+        当前版本不提供账号系统、自动云同步或开发者自建数据服务器；记录保存在本机，备份只在用户主动操作后导出。
       </p>
       <div class="hero-meta">
-        <span class="pill">生效日期：2026-06-09</span>
+        <span class="pill">生效日期：2026-08-05</span>
         <span class="pill">适用版本：Yiji iOS MVP</span>
       </div>
       <div class="nav">
@@ -25,7 +24,7 @@
         <a href="./support.html">支持页面</a>
       </div>
       <div class="banner">
-        提交 App Store 前，请把本页中的占位联系方式替换为真实邮箱和正式支持链接。
+        本政策与易记设置页使用相同的公开支持链接和联系邮箱。
       </div>
       <div class="toc" aria-label="Table of contents">
         <a href="#zh">中文</a>
@@ -38,7 +37,7 @@
       <h2>1. 我们是谁</h2>
       <p>易记是一款面向个人生活场景的本地优先记录应用，用于帮助用户记录物品位置、提醒事项和临时笔记。</p>
 
-      <h2>2. 我们收集什么信息</h2>
+      <h2>2. 应用处理与存储的信息</h2>
       <p>当前版本不要求你创建账号，也不主动向开发者服务器上传你的个人记录内容。</p>
       <ul>
         <li>你手动输入的记录内容</li>
@@ -47,7 +46,7 @@
         <li>最近搜索历史</li>
         <li>你手动导出的本地备份文件内容</li>
       </ul>
-      <p>这些信息默认保存在你的设备本地，用于实现记录、搜索、提醒和备份恢复功能。</p>
+      <p>这些信息保存在你的设备本地。当前首发版本不提供自动云同步；只有当你主动导出备份时，应用才会生成 JSON 文件，并由你决定是否保存到“文件”、iCloud Drive 或其他位置。</p>
 
       <h2>3. 语音与麦克风权限</h2>
       <p>当你使用语音录入功能时，易记会请求麦克风权限和语音识别权限。</p>
@@ -57,36 +56,39 @@
       </p>
       <p>iOS 语音识别能力可能由 Apple 提供或处理，你对该功能的使用也会受到 Apple 自身隐私政策和系统行为的约束。</p>
 
-      <h2>4. 通知权限</h2>
+      <h2>4. 定位与天气</h2>
+      <p>当你主动获取日历天气时，易记会请求“使用 App 时”定位权限，并使用约 3 公里精度的位置向 Apple WeatherKit 请求未来天气。定位只用于本次天气请求，不写入易记的记录、备份或 Release 日志。拒绝定位不会影响记录、搜索、提醒或备份。</p>
+
+      <h2>5. 通知权限</h2>
       <p>当你使用提醒功能时，易记会请求通知权限，用于在提醒时间到达时，通过 iPhone 的本地通知向你发送提醒。</p>
       <p>当前版本使用的是本地通知，不依赖开发者服务器推送。</p>
 
-      <h2>5. 文件访问与本地备份</h2>
+      <h2>6. 文件访问与本地备份</h2>
       <p>当你导入备份文件时，易记会通过系统文件选择器访问你主动选中的 JSON 文件。导出备份文件时，易记会在系统提供的分享与存储流程中生成备份文件。</p>
       <p>易记不会在未获得你主动操作的情况下，浏览或读取你的其他文件。</p>
 
-      <h2>6. 数据共享</h2>
+      <h2>7. 数据共享</h2>
       <ul>
         <li>不提供账号系统</li>
-        <li>不提供云同步</li>
+        <li>不提供自动云同步</li>
         <li>不提供群组共享</li>
         <li>不提供广告 SDK</li>
         <li>不提供第三方营销跟踪</li>
         <li>不向开发者服务器发送你的记录正文、提醒内容或搜索历史</li>
       </ul>
 
-      <h2>7. 数据保留与删除</h2>
-      <p>你的记录、提醒和搜索历史默认保留在你的设备本地，直到你在应用内手动删除、用导入备份覆盖当前数据，或卸载应用。</p>
+      <h2>8. 数据保留与删除</h2>
+      <p>你的记录、提醒和搜索历史默认保留在你的设备本地，直到你在应用内手动删除、用导入备份覆盖当前数据，或删除应用。</p>
       <p>如果你导出了备份文件，该备份文件的保存、删除和转移由你自己控制。</p>
 
-      <h2>8. 儿童隐私</h2>
+      <h2>9. 儿童隐私</h2>
       <p>当前版本不面向儿童进行定向画像、广告投放或社交运营。如果你是监护人，并认为未成年人在未经允许的情况下使用了本应用，请通过支持渠道联系开发者。</p>
 
-      <h2>9. 政策更新</h2>
-      <p>如果易记未来引入账号、云同步、家庭 group、服务器接口或第三方服务，本隐私政策将同步更新。</p>
+      <h2>10. 政策更新</h2>
+      <p>如果易记未来进一步引入账号、家庭 group、开发者服务器接口或第三方服务，本隐私政策将同步更新。</p>
 
-      <h2>10. 联系方式</h2>
-      <p>支持邮箱：<strong>待替换为真实邮箱</strong></p>
+      <h2>11. 联系方式</h2>
+      <p>支持邮箱：<a href="mailto:zl.kenneth@gmail.com">zl.kenneth@gmail.com</a></p>
       <p>支持页面：<strong>待替换为正式支持链接</strong></p>
     </section>
 
@@ -95,7 +97,7 @@
       <h2>1. Who We Are</h2>
       <p>Yiji is a local-first personal memory app designed to help users save everyday information such as where items are stored, what reminders they need, and quick notes.</p>
 
-      <h2>2. What Information We Collect</h2>
+      <h2>2. Information the App Processes and Stores</h2>
       <p>In the current version, Yiji does not require account registration and does not actively upload your personal records to a developer-operated server.</p>
       <ul>
         <li>Text that you manually enter</li>
@@ -104,48 +106,51 @@
         <li>Recent search history</li>
         <li>Backup data that you choose to export manually</li>
       </ul>
-      <p>This information is used only to provide local record storage, search, reminders, and backup restore features.</p>
+      <p>This information is stored on your device. The current release does not provide automatic cloud sync. A JSON file is created only when you explicitly export a backup, and you choose whether to save it to Files, iCloud Drive, or another destination.</p>
 
       <h2>3. Microphone and Speech Recognition Permissions</h2>
       <p>When you use voice input, Yiji may request microphone permission and speech recognition permission.</p>
       <p>These permissions are used only to convert your speech into text inside the app. Yiji does not currently operate its own speech-processing backend and does not intentionally upload your audio recordings to a developer-controlled server.</p>
       <p>However, iOS speech recognition may rely on Apple-provided services or system processing, and your use of that functionality is also subject to Apple's own privacy policies and system behavior.</p>
 
-      <h2>4. Notification Permission</h2>
+      <h2>4. Location and Weather</h2>
+      <p>When you request calendar weather, Yiji asks for When In Use location permission and uses a location with approximately three-kilometer accuracy to request forecast data from Apple WeatherKit. Location is used only for the weather request and is not written to Yiji records, backups, or Release logs. Denying location does not affect capture, search, reminders, or backups.</p>
+
+      <h2>5. Notification Permission</h2>
       <p>When you use reminders, Yiji may request notification permission so your iPhone can deliver local reminder notifications at the scheduled time.</p>
       <p>The current version uses local notifications and does not rely on developer server push delivery.</p>
 
-      <h2>5. File Access and Local Backups</h2>
-      <p>If you import a backup, Yiji accesses only the JSON file that you explicitly choose through the system file picker. If you export a backup, Yiji creates a backup file through the standard iOS share and save flow.</p>
+      <h2>6. File Access and Local Backups</h2>
+      <p>If you import a backup, Yiji accesses only the JSON file that you explicitly choose through the system file picker. If you export a backup, Yiji creates a backup file through the standard iOS share and save flow, which may include saving the file to Files or iCloud Drive if you choose.</p>
       <p>Yiji does not browse or read unrelated files on your device without your direct action.</p>
 
-      <h2>6. Data Sharing</h2>
+      <h2>7. Data Sharing</h2>
       <ul>
         <li>No account registration</li>
-        <li>No cloud sync</li>
+        <li>No automatic cloud sync</li>
         <li>No group sharing</li>
         <li>No advertising SDKs</li>
         <li>No third-party marketing trackers</li>
         <li>No record text, reminder text, or search history sent to a developer-operated backend</li>
       </ul>
 
-      <h2>7. Data Retention and Deletion</h2>
+      <h2>8. Data Retention and Deletion</h2>
       <p>Your data remains on your device until you delete it manually inside the app, overwrite it by importing a backup, or remove the app from your device.</p>
       <p>If you export a backup file, storage and deletion of that file are under your control.</p>
 
-      <h2>8. Children's Privacy</h2>
+      <h2>9. Children's Privacy</h2>
       <p>The current version is not designed for profiling children, targeted advertising, or social interaction. If you are a parent or guardian and believe a minor used the app inappropriately, please contact the developer through the support channel.</p>
 
-      <h2>9. Policy Updates</h2>
-      <p>If Yiji later introduces accounts, cloud sync, family groups, server-side services, or third-party integrations, this Privacy Policy will be updated accordingly.</p>
+      <h2>10. Policy Updates</h2>
+      <p>If Yiji later introduces accounts, family groups, developer-operated server-side services, or third-party integrations, this Privacy Policy will be updated accordingly.</p>
 
-      <h2>10. Contact</h2>
-      <p>Support email: <strong>replace before release</strong></p>
-      <p>Support page: <strong>replace before release</strong></p>
+      <h2>11. Contact</h2>
+      <p>Support email: <a href="mailto:zl.kenneth@gmail.com">zl.kenneth@gmail.com</a></p>
+      <p>Support page: <a href="./support.html">https://blizzard1311.github.io/EJ/support.html</a></p>
     </section>
 
     <footer class="footer">
-      Last updated: 2026-06-09
+      Last updated: 2026-08-05
     </footer>
   </main>
 </body>
