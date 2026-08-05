@@ -108,7 +108,9 @@ struct RecordDetailView: View {
                             Image(systemName: reminderIcon(for: reminder))
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(reminderColor(for: reminder))
-                                .accessibilityLabel("有关联提醒：\(reminder.status.displayName)")
+                                .accessibilityLabel(
+                                    AppLocalization.format("record.related_reminder", reminder.status.displayName)
+                                )
                         }
                     }
 
@@ -183,7 +185,7 @@ struct RecordDetailView: View {
 
     private func groupedCard<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(title)
+            Text(AppLocalization.text(title))
                 .font(.headline)
             content()
         }
@@ -198,7 +200,7 @@ struct RecordDetailView: View {
     @ViewBuilder
     private func detailRow(title: String, value: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
-            Text(title)
+            Text(AppLocalization.text(title))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .frame(width: 72, alignment: .leading)
@@ -212,7 +214,7 @@ struct RecordDetailView: View {
     private func infoLine(_ title: String, value: String, systemImage: String) -> some View {
         Label {
             HStack(spacing: 4) {
-                Text(title)
+                Text(AppLocalization.text(title))
                     .foregroundStyle(.secondary)
                 Text(value)
                     .foregroundStyle(.primary)
@@ -307,11 +309,11 @@ struct RecordDetailView: View {
     private func sourceName(_ source: CaptureSource) -> String {
         switch source {
         case .voice:
-            "语音"
+            AppLocalization.text("语音")
         case .text:
-            "文字"
+            AppLocalization.text("文字")
         case .imported:
-            "导入"
+            AppLocalization.text("导入")
         }
     }
 

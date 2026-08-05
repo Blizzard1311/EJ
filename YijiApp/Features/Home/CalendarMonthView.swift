@@ -1,7 +1,20 @@
 import SwiftUI
-import UIKit
 
-struct CalendarMonthView: UIViewRepresentable {
+struct CalendarInlineItem: Identifiable, Equatable {
+    enum Tone {
+        case record
+        case pending
+        case completed
+    }
+
+    let id: String
+    let time: String
+    let title: String
+    let status: String
+    let tone: Tone
+}
+
+struct CalendarMonthView: View {
     let selectedDate: Date
     let visibleMonth: Date
     let eventDates: Set<Date>
@@ -9,249 +22,346 @@ struct CalendarMonthView: UIViewRepresentable {
     let notifiedDates: Set<Date>
     let weatherByDate: [Date: CalendarDayWeather]
     let calendar: Calendar
+    let inlineItems: [CalendarInlineItem]
     let onDateSelected: (Date) -> Void
     let onVisibleMonthChanged: (Date) -> Void
 
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
+    @State private var expandedDate: Date?
+
+    init(
+        selectedDate: Date,
+        visibleMonth: Date,
+        eventDates: Set<Date>,
+        reminderDates: Set<Date>,
+        notifiedDates: Set<Date>,
+        weatherByDate: [Date: CalendarDayWeather],
+        calendar: Calendar,
+        inlineItems: [CalendarInlineItem] = [],
+        onDateSelected: @escaping (Date) -> Void,
+        onVisibleMonthChanged: @escaping (Date) -> Void
+    ) {
+        self.selectedDate = selectedDate
+        self.visibleMonth = visibleMonth
+        self.eventDates = eventDates
+        self.reminderDates = reminderDates
+        self.notifiedDates = notifiedDates
+        self.weatherByDate = weatherByDate
+        self.calendar = calendar
+        self.inlineItems = inlineItems
+        self.onDateSelected = onDateSelected
+        self.onVisibleMonthChanged = onVisibleMonthChanged
+        _expandedDate = State(initialValue: calendar.startOfDay(for: selectedDate))
     }
 
-    func makeUIView(context: Context) -> CalendarContainerView {
-        let container = CalendarContainerView()
-        let calendarView = container.calendarView
+    var body: some View {
+        VStack(spacing: 0) {
+            monthHeader
+                .padding(.bottom, 18)
 
-        calendarView.calendar = calendar
-        calendarView.locale = Locale(identifier: "zh_CN")
-        calendarView.fontDesign = .rounded
-        calendarView.wantsDateDecorations = true
-        calendarView.delegate = context.coordinator
+            weekdayHeader
+                .padding(.bottom, 8)
 
-        let selection = UICalendarSelectionSingleDate(delegate: context.coordinator)
-        selection.selectedDate = dateComponents(for: selectedDate)
-        calendarView.selectionBehavior = selection
-        calendarView.visibleDateComponents = dateComponents(for: visibleMonth)
+            VStack(spacing: 4) {
+                ForEach(Array(monthWeeks.enumerated()), id: \.offset) { _, week in
+                    weekRow(week)
 
-        container.applyCalendarChrome()
-        return container
-    }
-
-    func updateUIView(_ uiView: CalendarContainerView, context: Context) {
-        context.coordinator.parent = self
-
-        let calendarView = uiView.calendarView
-        calendarView.calendar = calendar
-        calendarView.locale = Locale(identifier: "zh_CN")
-
-        let selectedComponents = dateComponents(for: selectedDate)
-        if let selection = calendarView.selectionBehavior as? UICalendarSelectionSingleDate,
-           selection.selectedDate != selectedComponents {
-            selection.setSelected(selectedComponents, animated: true)
-        }
-
-        let visibleComponents = dateComponents(for: visibleMonth)
-        if calendarView.visibleDateComponents.year != visibleComponents.year
-            || calendarView.visibleDateComponents.month != visibleComponents.month {
-            calendarView.setVisibleDateComponents(visibleComponents, animated: true)
-        }
-
-        let decoratedDays = eventDates
-            .union(reminderDates)
-            .union(notifiedDates)
-            .union(Set(weatherByDate.keys))
-        let daysToReload = decoratedDays.union(context.coordinator.decoratedDays)
-        context.coordinator.decoratedDays = decoratedDays
-        if !daysToReload.isEmpty {
-            calendarView.reloadDecorations(
-                forDateComponents: Array(daysToReload).map(dateComponents(for:)),
-                animated: true
-            )
-        }
-
-        uiView.applyCalendarChrome()
-    }
-
-    private func dateComponents(for date: Date) -> DateComponents {
-        var components = calendar.dateComponents([.year, .month, .day], from: date)
-        components.calendar = calendar
-        return components
-    }
-
-    final class Coordinator: NSObject, UICalendarViewDelegate, UICalendarSelectionSingleDateDelegate {
-        var parent: CalendarMonthView
-        var decoratedDays: Set<Date> = []
-
-        init(_ parent: CalendarMonthView) {
-            self.parent = parent
-        }
-
-        func dateSelection(_ selection: UICalendarSelectionSingleDate, didSelectDate dateComponents: DateComponents?) {
-            guard let dateComponents,
-                  let date = parent.calendar.date(from: dateComponents) else {
-                return
-            }
-            parent.onDateSelected(parent.calendar.startOfDay(for: date))
-        }
-
-        func calendarView(_ calendarView: UICalendarView, decorationFor dateComponents: DateComponents) -> UICalendarView.Decoration? {
-            guard let date = parent.calendar.date(from: dateComponents) else {
-                return nil
-            }
-
-            let day = parent.calendar.startOfDay(for: date)
-            let hasRecord = parent.eventDates.contains(day)
-            let hasPendingReminder = parent.reminderDates.contains(day)
-            let hasNotifiedReminder = parent.notifiedDates.contains(day)
-            let weather = parent.weatherByDate[day]
-            let colors = decorationColors(
-                hasRecord: hasRecord,
-                hasPendingReminder: hasPendingReminder,
-                hasNotifiedReminder: hasNotifiedReminder
-            )
-
-            guard weather != nil || !colors.isEmpty else {
-                return nil
-            }
-
-            return .customView {
-                self.decorationView(weather: weather, colors: colors)
-            }
-        }
-
-        func calendarView(_ calendarView: UICalendarView, didChangeVisibleDateComponentsFrom previousDateComponents: DateComponents) {
-            guard let date = parent.calendar.date(from: calendarView.visibleDateComponents) else {
-                return
-            }
-            parent.onVisibleMonthChanged(date)
-        }
-
-        private func decorationView(weather: CalendarDayWeather?, colors: [UIColor]) -> UIView {
-            let stack = UIStackView()
-            stack.axis = .vertical
-            stack.alignment = .center
-            stack.spacing = weather != nil && !colors.isEmpty ? 1 : 0
-
-            if let weather {
-                let imageView = UIImageView(image: UIImage(systemName: weather.symbolName))
-                imageView.tintColor = weather.accentColor
-                imageView.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 10, weight: .semibold)
-                imageView.contentMode = .scaleAspectFit
-                imageView.translatesAutoresizingMaskIntoConstraints = false
-                NSLayoutConstraint.activate([
-                    imageView.widthAnchor.constraint(equalToConstant: 12),
-                    imageView.heightAnchor.constraint(equalToConstant: 11)
-                ])
-                stack.addArrangedSubview(imageView)
-            }
-
-            if let dotsImage = dotDecorationImage(colors: colors) {
-                let dotsView = UIImageView(image: dotsImage)
-                dotsView.contentMode = .center
-                stack.addArrangedSubview(dotsView)
-            }
-
-            return stack
-        }
-
-        private func dotDecorationImage(colors: [UIColor]) -> UIImage? {
-            guard !colors.isEmpty else {
-                return nil
-            }
-
-            let dotDiameter: CGFloat = 4
-            let spacing: CGFloat = 2
-            let width = CGFloat(colors.count) * dotDiameter + CGFloat(max(colors.count - 1, 0)) * spacing
-            let renderer = UIGraphicsImageRenderer(size: CGSize(width: width, height: dotDiameter))
-
-            return renderer.image { context in
-                for (index, color) in colors.enumerated() {
-                    let originX = CGFloat(index) * (dotDiameter + spacing)
-                    let dotRect = CGRect(x: originX, y: 0, width: dotDiameter, height: dotDiameter)
-                    context.cgContext.setFillColor(color.cgColor)
-                    context.cgContext.fillEllipse(in: dotRect)
+                    if let expandedDate,
+                       week.contains(where: { date in
+                           guard let date else { return false }
+                           return displayCalendar.isDate(date, inSameDayAs: expandedDate)
+                       }) {
+                        expandedDetails(for: expandedDate)
+                            .transition(.asymmetric(
+                                insertion: .opacity.combined(with: .move(edge: .top)),
+                                removal: .opacity
+                            ))
+                    }
                 }
             }
-            .withRenderingMode(.alwaysOriginal)
         }
-
-        private func decorationColors(
-            hasRecord: Bool,
-            hasPendingReminder: Bool,
-            hasNotifiedReminder: Bool
-        ) -> [UIColor] {
-            var colors: [UIColor] = []
-
-            if hasRecord {
-                colors.append(.systemBlue)
+        .onChange(of: selectedDate) { newValue in
+            let day = displayCalendar.startOfDay(for: newValue)
+            guard expandedDate.map({ !displayCalendar.isDate($0, inSameDayAs: day) }) ?? true else {
+                return
             }
-
-            if hasPendingReminder {
-                colors.append(.systemOrange)
-            }
-
-            if hasNotifiedReminder {
-                colors.append(.systemGreen)
-            }
-
-            return colors
+            expandedDate = day
         }
     }
-}
 
-final class CalendarContainerView: UIView {
-    static let minimumCalendarHeight: CGFloat = 500
-    let calendarView = UICalendarView()
-    private var minimumHeightConstraint: NSLayoutConstraint?
+    private var monthHeader: some View {
+        HStack(spacing: 12) {
+            Text(monthTitle)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(AppTheme.ink)
 
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        setup()
+            Spacer()
+
+            monthButton(systemImage: "chevron.left") {
+                moveMonth(by: -1)
+            }
+
+            monthButton(systemImage: "chevron.right") {
+                moveMonth(by: 1)
+            }
+        }
     }
 
-    @available(*, unavailable)
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
+    private func monthButton(systemImage: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(AppTheme.ink)
+                .frame(width: 32, height: 32)
+                .background(Circle().fill(AppTheme.canvas))
+                .overlay(Circle().stroke(AppTheme.line, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
     }
 
-    override var intrinsicContentSize: CGSize {
-        CGSize(width: UIView.noIntrinsicMetric, height: Self.minimumCalendarHeight)
+    private var weekdayHeader: some View {
+        HStack(spacing: 0) {
+            ForEach(weekdayNames, id: \.self) { weekday in
+                Text(weekday)
+                    .font(.caption2)
+                    .foregroundStyle(AppTheme.muted)
+                    .frame(maxWidth: .infinity)
+            }
+        }
     }
 
-    override func systemLayoutSizeFitting(
-        _ targetSize: CGSize,
-        withHorizontalFittingPriority horizontalFittingPriority: UILayoutPriority,
-        verticalFittingPriority: UILayoutPriority
-    ) -> CGSize {
-        CGSize(width: targetSize.width, height: Self.minimumCalendarHeight)
+    private func weekRow(_ week: [Date?]) -> some View {
+        HStack(spacing: 0) {
+            ForEach(Array(week.enumerated()), id: \.offset) { _, date in
+                if let date {
+                    dayButton(date)
+                } else {
+                    Color.clear
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                }
+            }
+        }
     }
 
-    func applyCalendarChrome() {
-        backgroundColor = .clear
-        layer.cornerRadius = 22
-        clipsToBounds = true
+    private func dayButton(_ date: Date) -> some View {
+        let day = displayCalendar.startOfDay(for: date)
+        let isSelected = displayCalendar.isDate(day, inSameDayAs: selectedDate)
+        let isExpanded = expandedDate.map { displayCalendar.isDate(day, inSameDayAs: $0) } ?? false
 
-        calendarView.backgroundColor = .clear
+        return Button {
+            withAnimation(.easeInOut(duration: 0.24)) {
+                if isExpanded {
+                    expandedDate = nil
+                } else {
+                    expandedDate = day
+                    onDateSelected(day)
+                }
+            }
+        } label: {
+            VStack(spacing: 3) {
+                Text(dayNumberFormatter.string(from: day))
+                    .font(.subheadline.weight(isSelected ? .semibold : .regular))
+                    .foregroundStyle(isSelected ? Color.white : dayTextColor(day))
+                    .frame(width: 30, height: 30)
+                    .background(
+                        Circle()
+                            .fill(isSelected ? AppTheme.accent : Color.clear)
+                    )
+
+                HStack(spacing: 2) {
+                    statusDot(visible: eventDates.contains(day), color: AppTheme.accent)
+                    statusDot(visible: reminderDates.contains(day), color: AppTheme.reminder)
+                    statusDot(visible: notifiedDates.contains(day), color: AppTheme.completed)
+                    statusDot(visible: weatherByDate[day] != nil, color: Color(red: 0.40, green: 0.54, blue: 0.60))
+                }
+                .frame(height: 3)
+            }
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(accessibilityDateFormatter.string(from: day))
+        .accessibilityValue(isExpanded ? "已展开" : "未展开")
     }
 
-    private func setup() {
-        backgroundColor = .clear
-        clipsToBounds = true
+    private func statusDot(visible: Bool, color: Color) -> some View {
+        Circle()
+            .fill(visible ? color : Color.clear)
+            .frame(width: 3, height: 3)
+    }
 
-        calendarView.translatesAutoresizingMaskIntoConstraints = false
-        calendarView.backgroundColor = .clear
-        calendarView.setContentHuggingPriority(.required, for: .vertical)
-        calendarView.setContentCompressionResistancePriority(.required, for: .vertical)
-        addSubview(calendarView)
+    private func expandedDetails(for date: Date) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(detailDateFormatter.string(from: date))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(AppTheme.ink)
 
-        minimumHeightConstraint = calendarView.heightAnchor.constraint(greaterThanOrEqualToConstant: Self.minimumCalendarHeight)
-        minimumHeightConstraint?.priority = .required
-        guard let minimumHeightConstraint else { return }
+                    Text(AppLocalization.format("records_for_day_count", inlineItems.count))
+                        .font(.caption2)
+                        .foregroundStyle(AppTheme.muted)
+                }
 
-        NSLayoutConstraint.activate([
-            calendarView.leadingAnchor.constraint(equalTo: leadingAnchor),
-            calendarView.trailingAnchor.constraint(equalTo: trailingAnchor),
-            calendarView.topAnchor.constraint(equalTo: topAnchor),
-            calendarView.bottomAnchor.constraint(equalTo: bottomAnchor),
-            minimumHeightConstraint
-        ])
+                Spacer()
+
+                if let weather = weatherByDate[displayCalendar.startOfDay(for: date)] {
+                    Label(weatherSummary(weather), systemImage: weather.symbolName)
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(AppTheme.accent)
+                        .lineLimit(1)
+                }
+            }
+
+            if inlineItems.isEmpty {
+                Text("当天暂无记录，可以按住语音添加")
+                    .font(.caption)
+                    .foregroundStyle(AppTheme.muted)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 8)
+            } else {
+                LazyVGrid(
+                    columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)],
+                    spacing: 8
+                ) {
+                    ForEach(inlineItems.prefix(4)) { item in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(item.time)
+                                .font(.caption2)
+                                .foregroundStyle(AppTheme.muted)
+
+                            Text(item.title)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(AppTheme.ink)
+                                .lineLimit(1)
+
+                            Text(item.status)
+                                .font(.caption2)
+                                .foregroundStyle(toneColor(item.tone))
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(10)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .fill(AppTheme.surface.opacity(0.82))
+                        )
+                    }
+                }
+            }
+        }
+        .padding(13)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(AppTheme.surfaceMuted)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(AppTheme.line, lineWidth: 1)
+        )
+        .padding(.vertical, 6)
+    }
+
+    private func toneColor(_ tone: CalendarInlineItem.Tone) -> Color {
+        switch tone {
+        case .record:
+            AppTheme.accent
+        case .pending:
+            AppTheme.reminder
+        case .completed:
+            AppTheme.completed
+        }
+    }
+
+    private func dayTextColor(_ date: Date) -> Color {
+        displayCalendar.isDateInToday(date) ? AppTheme.accent : AppTheme.ink
+    }
+
+    private func weatherSummary(_ weather: CalendarDayWeather) -> String {
+        "\(weather.highTemperatureText) · \(weather.conditionDescription)"
+    }
+
+    private func moveMonth(by value: Int) {
+        guard let month = displayCalendar.date(byAdding: .month, value: value, to: monthStart) else {
+            return
+        }
+        expandedDate = nil
+        onVisibleMonthChanged(month)
+    }
+
+    private var displayCalendar: Calendar {
+        var value = calendar
+        value.locale = calendarLocale
+        value.firstWeekday = 1
+        return value
+    }
+
+    private var monthStart: Date {
+        let components = displayCalendar.dateComponents([.year, .month], from: visibleMonth)
+        return displayCalendar.date(from: components) ?? visibleMonth
+    }
+
+    private var monthWeeks: [[Date?]] {
+        guard let dayRange = displayCalendar.range(of: .day, in: .month, for: monthStart) else {
+            return []
+        }
+
+        let weekday = displayCalendar.component(.weekday, from: monthStart)
+        let leadingCount = (weekday - displayCalendar.firstWeekday + 7) % 7
+        var days = Array<Date?>(repeating: nil, count: leadingCount)
+
+        for day in dayRange {
+            days.append(displayCalendar.date(byAdding: .day, value: day - 1, to: monthStart))
+        }
+
+        let trailingCount = (7 - days.count % 7) % 7
+        days.append(contentsOf: Array<Date?>(repeating: nil, count: trailingCount))
+
+        return stride(from: 0, to: days.count, by: 7).map { index in
+            Array(days[index..<min(index + 7, days.count)])
+        }
+    }
+
+    private var monthTitle: String {
+        monthTitleFormatter.string(from: monthStart)
+    }
+
+    private var weekdayNames: [String] {
+        ["周日", "周一", "周二", "周三", "周四", "周五", "周六"]
+            .map(AppLocalization.text)
+    }
+
+    private var monthTitleFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.locale = calendarLocale
+        formatter.dateFormat = usesEnglish ? "MMMM yyyy" : "yyyy 年 M 月"
+        return formatter
+    }
+
+    private var detailDateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.locale = calendarLocale
+        formatter.dateFormat = usesEnglish ? "MMMM d" : "M 月 d 日"
+        return formatter
+    }
+
+    private var dayNumberFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.locale = calendarLocale
+        formatter.dateFormat = "d"
+        return formatter
+    }
+
+    private var accessibilityDateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.locale = calendarLocale
+        formatter.dateStyle = .long
+        return formatter
+    }
+
+    private var usesEnglish: Bool {
+        AppLocalization.languageCode.lowercased().hasPrefix("en")
+    }
+
+    private var calendarLocale: Locale {
+        Locale(identifier: usesEnglish ? "en_US" : "zh_CN")
     }
 }

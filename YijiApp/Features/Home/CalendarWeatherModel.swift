@@ -18,7 +18,7 @@ struct CalendarDayWeather: Equatable {
     }
 
     var temperatureLine: String {
-        "最高 \(highTemperatureText) · 最低 \(lowTemperatureText)"
+        AppLocalization.format("weather.temperature_range", highTemperatureText, lowTemperatureText)
     }
 }
 
@@ -44,7 +44,6 @@ final class CalendarWeatherModel: NSObject, ObservableObject {
     private let locationManager: CLLocationManager
     private let weatherService: WeatherService
     private let refreshInterval: TimeInterval = 30 * 60
-    private let debugFileURL: URL?
 
     private var refreshTask: Task<Void, Never>?
     private var lastRefreshDate: Date?
@@ -60,9 +59,6 @@ final class CalendarWeatherModel: NSObject, ObservableObject {
         self.calendar = calendar
         self.locationManager = locationManager
         self.weatherService = weatherService
-        self.debugFileURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
-            .first?
-            .appendingPathComponent("calendar-weather-debug.txt")
         super.init()
         self.locationManager.delegate = self
         self.locationManager.desiredAccuracy = kCLLocationAccuracyThreeKilometers
@@ -75,13 +71,13 @@ final class CalendarWeatherModel: NSObject, ObservableObject {
     var statusText: String {
         switch state {
         case .idle, .needsAuthorization:
-            return "开启定位"
+            return AppLocalization.text("开启定位")
         case .loading:
-            return "天气更新中"
+            return AppLocalization.text("天气更新中")
         case .ready:
-            return "天气已更新"
+            return AppLocalization.text("天气已更新")
         case .denied:
-            return "定位未开启"
+            return AppLocalization.text("定位未开启")
         case .failed(let message):
             return message
         }
@@ -105,9 +101,9 @@ final class CalendarWeatherModel: NSObject, ObservableObject {
     var actionTitle: String? {
         switch state {
         case .idle, .needsAuthorization, .failed:
-            return "获取天气"
+            return AppLocalization.text("获取天气")
         case .ready:
-            return "刷新"
+            return AppLocalization.text("刷新")
         case .denied, .loading:
             return nil
         }
@@ -184,9 +180,7 @@ final class CalendarWeatherModel: NSObject, ObservableObject {
         refreshTask = Task { [weak self] in
             guard let self else { return }
             do {
-                emitDebugTrace(
-                    "loading weather lat=\(location.coordinate.latitude) lon=\(location.coordinate.longitude)"
-                )
+                emitDebugTrace("loading weather for authorized location")
                 let weather = try await weatherService.weather(for: location)
                 try Task.checkCancellation()
 
@@ -224,10 +218,10 @@ final class CalendarWeatherModel: NSObject, ObservableObject {
         let fallbackDescription = localizedDescription.isEmpty ? String(describing: error) : localizedDescription
 
         if fallbackDescription.contains("WeatherDaemon.WDSJWTAuthenticatorServiceListener.Errors") {
-            return "WeatherKit 认证失败，请确认开发者后台的 WeatherKit 能力和描述文件已生效。"
+            return AppLocalization.text("WeatherKit 认证失败，请确认开发者后台的 WeatherKit 能力和描述文件已生效。")
         }
 
-        return "天气暂时不可用：\(fallbackDescription)"
+        return AppLocalization.format("weather.error", fallbackDescription)
     }
 
     private func debugErrorDescription(for error: Error) -> String {
@@ -239,34 +233,9 @@ final class CalendarWeatherModel: NSObject, ObservableObject {
     }
 
     private func emitDebugTrace(_ message: String) {
-        logger.debug("\(message, privacy: .public)")
-        print("[CalendarWeather] \(message)")
-        appendDebugFileLine(message)
-    }
-
-    private func appendDebugFileLine(_ message: String) {
-        guard let debugFileURL else { return }
-        let line = "[\(ISO8601DateFormatter().string(from: Date()))] \(message)\n"
-
-        if let data = line.data(using: .utf8) {
-            if FileManager.default.fileExists(atPath: debugFileURL.path) {
-                if let handle = try? FileHandle(forWritingTo: debugFileURL) {
-                    defer { try? handle.close() }
-                    do {
-                        try handle.seekToEnd()
-                        try handle.write(contentsOf: data)
-                    } catch {
-                        logger.error("Failed to append weather debug file: \(error.localizedDescription, privacy: .public)")
-                    }
-                }
-            } else {
-                do {
-                    try data.write(to: debugFileURL, options: .atomic)
-                } catch {
-                    logger.error("Failed to create weather debug file: \(error.localizedDescription, privacy: .public)")
-                }
-            }
-        }
+#if DEBUG
+        logger.debug("\(message, privacy: .private(mask: .hash))")
+#endif
     }
 
     private func makeDayWeather(from day: DayWeather, normalizedDate: Date) -> CalendarDayWeather {
@@ -287,40 +256,40 @@ final class CalendarWeatherModel: NSObject, ObservableObject {
     private static func conditionDescription(for condition: WeatherCondition) -> String {
         switch condition {
         case .clear, .mostlyClear:
-            return "晴"
+            return AppLocalization.text("晴")
         case .partlyCloudy, .mostlyCloudy, .cloudy, .haze, .smoky:
-            return "多云"
+            return AppLocalization.text("多云")
         case .drizzle, .rain, .heavyRain, .sunShowers, .freezingDrizzle, .freezingRain:
-            return "有雨"
+            return AppLocalization.text("有雨")
         case .snow, .heavySnow, .sunFlurries, .flurries, .sleet, .wintryMix, .blowingSnow, .blizzard:
-            return "雨雪"
+            return AppLocalization.text("雨雪")
         case .thunderstorms, .scatteredThunderstorms, .isolatedThunderstorms, .strongStorms, .tropicalStorm, .hurricane:
-            return "雷暴"
+            return AppLocalization.text("雷暴")
         case .foggy:
-            return "有雾"
+            return AppLocalization.text("有雾")
         case .windy, .breezy, .blowingDust:
-            return "有风"
+            return AppLocalization.text("有风")
         case .hot:
-            return "炎热"
+            return AppLocalization.text("炎热")
         case .frigid:
-            return "寒冷"
+            return AppLocalization.text("寒冷")
         case .hail:
-            return "冰雹"
+            return AppLocalization.text("冰雹")
         default:
-            return "天气变化"
+            return AppLocalization.text("天气变化")
         }
     }
 
     private static func temperatureBandDescription(highCelsius: Int, lowCelsius: Int) -> String {
         if highCelsius >= 30 {
-            return "偏热"
+            return AppLocalization.text("偏热")
         }
 
         if lowCelsius <= 8 {
-            return "偏冷"
+            return AppLocalization.text("偏冷")
         }
 
-        return "温和"
+        return AppLocalization.text("温和")
     }
 
     private static func temperatureTintColor(highCelsius: Int, lowCelsius: Int) -> UIColor {
@@ -366,7 +335,7 @@ extension CalendarWeatherModel: CLLocationManagerDelegate {
             guard let location = locations.last else {
                 locationRequestInFlight = false
                 emitDebugTrace("location manager returned no locations")
-                state = .failed("没有拿到当前位置，请稍后重试。")
+                state = .failed(AppLocalization.text("没有拿到当前位置，请稍后重试。"))
                 return
             }
 
@@ -375,9 +344,7 @@ extension CalendarWeatherModel: CLLocationManagerDelegate {
                 return
             }
             locationRequestInFlight = false
-            emitDebugTrace(
-                "location updated lat=\(location.coordinate.latitude) lon=\(location.coordinate.longitude)"
-            )
+            emitDebugTrace("location updated")
             loadWeather(for: location)
         }
     }
@@ -394,12 +361,12 @@ extension CalendarWeatherModel: CLLocationManagerDelegate {
                     state = .denied
                     return
                 case .locationUnknown:
-                    message = "当前位置暂时不可用，请稍后再试。"
+                    message = AppLocalization.text("当前位置暂时不可用，请稍后再试。")
                 default:
-                    message = "定位失败，请稍后重试。"
+                    message = AppLocalization.text("定位失败，请稍后重试。")
                 }
             } else {
-                message = "定位失败，请稍后重试。"
+                message = AppLocalization.text("定位失败，请稍后重试。")
             }
 
             logger.error("Failed to resolve location: \(error.localizedDescription, privacy: .public)")

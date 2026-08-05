@@ -10,15 +10,15 @@ public enum ReminderRepeatRule: String, Codable, CaseIterable, Sendable {
     public var displayName: String {
         switch self {
         case .none:
-            "一次性"
+            YijiLocalization.text("一次性")
         case .daily:
-            "每天"
+            YijiLocalization.text("每天")
         case .weekly:
-            "每周"
+            YijiLocalization.text("每周")
         case .monthly:
-            "每月"
+            YijiLocalization.text("每月")
         case .yearly:
-            "每年"
+            YijiLocalization.text("每年")
         }
     }
 }
@@ -33,15 +33,15 @@ public enum ReminderStatus: String, Codable, CaseIterable, Sendable {
     public var displayName: String {
         switch self {
         case .pending:
-            "待提醒"
+            YijiLocalization.text("待提醒")
         case .notified:
-            "已提醒"
+            YijiLocalization.text("已提醒")
         case .done:
-            "已完成"
+            YijiLocalization.text("已完成")
         case .cancelled:
-            "已取消"
+            YijiLocalization.text("已取消")
         case .failed:
-            "失败"
+            YijiLocalization.text("失败")
         }
     }
 }

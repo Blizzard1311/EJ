@@ -31,11 +31,14 @@ struct StorageContainerDefinition: Identifiable, Codable, Hashable, Sendable {
     }
 
     var displayName: String {
+        if let builtInContainer {
+            return builtInContainer.displayName
+        }
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty {
             return trimmed
         }
-        return builtInContainer?.displayName ?? "未命名容器"
+        return builtInContainer?.displayName ?? AppLocalization.text("未命名容器")
     }
 
     var isCustom: Bool {
@@ -55,7 +58,9 @@ final class AppModel: ObservableObject {
     private let repository: FileBackedVaultStore
     private let parser = RecordParser()
     private let calendar = Calendar(identifier: .gregorian)
-    private let cloudSyncDateFormatter = YijiDateFormatter.dateTimeFormatter
+    private var cloudSyncDateFormatter: DateFormatter {
+        YijiDateFormatter.dateTimeFormatter
+    }
     private var statusRevision = 0
     private var statusClearTask: Task<Void, Never>?
     private var focusRevision = 0
@@ -82,6 +87,7 @@ final class AppModel: ObservableObject {
     }()
     @Published var searchText = ""
     @Published var searchHistory: [String] = []
+    @Published private(set) var appLanguage = AppLocalization.selectedLanguage
     @Published var exportURL: URL?
     @Published var statusMessage: String?
     @Published var focusedRecordID: UUID?
@@ -89,7 +95,11 @@ final class AppModel: ObservableObject {
     @Published private(set) var storageContainerDefinitions: [StorageContainerDefinition]
     @Published private(set) var lastBackupDate: Date?
     @Published private(set) var lastRecognizedVoiceText: String?
-    @Published private(set) var cloudSyncStatusDetail = "正在检查 iCloud 同步状态"
+    @Published private(set) var cloudSyncStatusDetail = AppLocalization.text(
+        AppReleaseConfiguration.cloudSyncEnabled
+            ? "正在检查 iCloud 同步状态"
+            : "当前版本使用本机存储与手动备份"
+    )
 
     init(repository: FileBackedVaultStore = FileBackedVaultStore()) {
         self.repository = repository
@@ -108,6 +118,24 @@ final class AppModel: ObservableObject {
         }
     }
 
+    func selectAppLanguage(_ language: AppLanguage) {
+        guard appLanguage != language else { return }
+        AppLocalization.selectedLanguage = language
+        appLanguage = language
+        statusMessage = nil
+        focusedRecordBadgeText = nil
+        speech.refreshRecognitionLanguage()
+        cloudSyncStatusDetail = AppLocalization.text(
+            AppReleaseConfiguration.cloudSyncEnabled
+                ? "正在检查 iCloud 同步状态"
+                : "当前版本使用本机存储与手动备份"
+        )
+
+        Task { [weak self] in
+            await self?.refreshCloudSyncStatus()
+        }
+    }
+
     func load() async {
         do {
             let snapshot = try await repository.load()
@@ -121,7 +149,7 @@ final class AppModel: ObservableObject {
                 clearStatusMessage()
             }
         } catch {
-            showPersistentStatus("读取本地数据失败：\(error.localizedDescription)")
+            showPersistentStatus(AppLocalization.format("error.with_detail", AppLocalization.text("读取本地数据失败"), error.localizedDescription))
         }
 
         speech.refreshAuthorizationStatus()
@@ -137,7 +165,7 @@ final class AppModel: ObservableObject {
             searchHistory = snapshot.searchHistory
             await notifications.sync(reminders: reminders)
         } catch {
-            showPersistentStatus("刷新 iCloud 数据失败：\(error.localizedDescription)")
+            showPersistentStatus(AppLocalization.format("error.with_detail", AppLocalization.text("刷新 iCloud 数据失败"), error.localizedDescription))
         }
 
         await refreshCloudSyncStatus()
@@ -174,7 +202,7 @@ final class AppModel: ObservableObject {
             }
             await refreshCloudSyncStatus()
         } catch {
-            showPersistentStatus("保存失败：\(error.localizedDescription)")
+            showPersistentStatus(AppLocalization.format("error.with_detail", AppLocalization.text("保存失败"), error.localizedDescription))
         }
     }
 
@@ -255,7 +283,7 @@ final class AppModel: ObservableObject {
             await notifications.sync(reminders: reminders)
             showTransientStatus("通知权限已开启。")
         } catch {
-            showPersistentStatus("通知权限未开启：\(error.localizedDescription)")
+            showPersistentStatus(AppLocalization.format("error.with_detail", AppLocalization.text("通知权限未开启"), error.localizedDescription))
         }
     }
 
@@ -266,7 +294,7 @@ final class AppModel: ObservableObject {
             showTransientStatus("本地备份文件已生成，可以直接分享或保存。")
         } catch {
             exportURL = nil
-            showPersistentStatus("导出备份失败：\(error.localizedDescription)")
+            showPersistentStatus(AppLocalization.format("error.with_detail", AppLocalization.text("导出备份失败"), error.localizedDescription))
         }
     }
 
@@ -301,7 +329,7 @@ final class AppModel: ObservableObject {
                 showTransientStatus(message)
             }
         } catch {
-            showPersistentStatus("导入备份失败：\(error.localizedDescription)")
+            showPersistentStatus(AppLocalization.format("error.with_detail", AppLocalization.text("导入备份失败"), error.localizedDescription))
         }
 
         await refreshCloudSyncStatus()
@@ -316,7 +344,7 @@ final class AppModel: ObservableObject {
             await refreshCloudSyncStatus()
             return true
         } catch {
-            showPersistentStatus("更新提醒失败：\(error.localizedDescription)")
+            showPersistentStatus(AppLocalization.format("error.with_detail", AppLocalization.text("更新提醒失败"), error.localizedDescription))
             return false
         }
     }
@@ -336,7 +364,7 @@ final class AppModel: ObservableObject {
             showTransientStatus("提醒已删除。")
             await refreshCloudSyncStatus()
         } catch {
-            showPersistentStatus("删除提醒失败：\(error.localizedDescription)")
+            showPersistentStatus(AppLocalization.format("error.with_detail", AppLocalization.text("删除提醒失败"), error.localizedDescription))
         }
     }
 
@@ -364,7 +392,7 @@ final class AppModel: ObservableObject {
             )
             await refreshCloudSyncStatus()
         } catch {
-            showPersistentStatus("删除记录失败：\(error.localizedDescription)")
+            showPersistentStatus(AppLocalization.format("error.with_detail", AppLocalization.text("删除记录失败"), error.localizedDescription))
         }
     }
 
@@ -536,12 +564,12 @@ final class AppModel: ObservableObject {
     }
 
     func showPersistentStatus(_ message: String) {
-        presentStatus(message, autoClearAfterNanoseconds: nil)
+        presentStatus(AppLocalization.text(message), autoClearAfterNanoseconds: nil)
     }
 
     func showTransientStatus(_ message: String, seconds: Double = 3.0) {
         let nanoseconds = UInt64(max(1, seconds) * 1_000_000_000)
-        presentStatus(message, autoClearAfterNanoseconds: nanoseconds)
+        presentStatus(AppLocalization.text(message), autoClearAfterNanoseconds: nanoseconds)
     }
 
     func clearStatusMessage() {
@@ -563,7 +591,7 @@ final class AppModel: ObservableObject {
                 logger.error(
                     "scheduleNotification failed reminderID=\(reminder.id.uuidString, privacy: .public) description=\(error.localizedDescription, privacy: .public)"
                 )
-                showPersistentStatus("提醒已保存，但本地通知创建失败：\(error.localizedDescription)")
+                showPersistentStatus(AppLocalization.format("error.with_detail", AppLocalization.text("提醒已保存，但本地通知创建失败"), error.localizedDescription))
             }
         }
     }
@@ -614,7 +642,7 @@ final class AppModel: ObservableObject {
             await refreshCloudSyncStatus()
             return legacyReminders.count
         } catch {
-            showPersistentStatus("清理旧错误提醒失败：\(error.localizedDescription)")
+            showPersistentStatus(AppLocalization.format("error.with_detail", AppLocalization.text("清理旧错误提醒失败"), error.localizedDescription))
             return 0
         }
     }
@@ -651,7 +679,7 @@ final class AppModel: ObservableObject {
             showPersistentStatus(message)
             await refreshCloudSyncStatus()
         } catch {
-            showPersistentStatus("提醒状态更新失败：\(error.localizedDescription)")
+            showPersistentStatus(AppLocalization.format("error.with_detail", AppLocalization.text("提醒状态更新失败"), error.localizedDescription))
         }
     }
 
@@ -669,22 +697,29 @@ final class AppModel: ObservableObject {
         switch status.availability {
         case .available:
             if let lastSuccessfulSyncDate = status.lastSuccessfulSyncDate {
-                cloudSyncStatusDetail = "已连接 iCloud · 上次同步 \(cloudSyncDateFormatter.string(from: lastSuccessfulSyncDate))"
+                cloudSyncStatusDetail = AppLocalization.format(
+                    "cloud.last_sync",
+                    cloudSyncDateFormatter.string(from: lastSuccessfulSyncDate)
+                )
+            } else if let lastErrorDescription = status.lastErrorDescription, !lastErrorDescription.isEmpty {
+                cloudSyncStatusDetail = AppLocalization.format("cloud.backup_failed", lastErrorDescription)
             } else {
-                cloudSyncStatusDetail = "已连接 iCloud · 等待首次同步"
+                cloudSyncStatusDetail = AppLocalization.text("已连接 iCloud · 等待首次同步")
             }
         case .noAccount:
-            cloudSyncStatusDetail = "未登录 iCloud，当前仅保留本机数据"
+            cloudSyncStatusDetail = AppLocalization.text("未登录 iCloud，当前仅保留本机数据")
         case .restricted:
-            cloudSyncStatusDetail = "当前设备无法使用 iCloud，当前仅保留本机数据"
+            cloudSyncStatusDetail = AppLocalization.text("当前设备无法使用 iCloud，当前仅保留本机数据")
         case .temporarilyUnavailable:
-            cloudSyncStatusDetail = "iCloud 暂时不可用，稍后会自动重试"
+            cloudSyncStatusDetail = AppLocalization.text("iCloud 暂时不可用，稍后会自动重试")
         case .unknown:
             if let lastErrorDescription = status.lastErrorDescription, !lastErrorDescription.isEmpty {
-                cloudSyncStatusDetail = "iCloud 同步状态暂时不可用：\(lastErrorDescription)"
+                cloudSyncStatusDetail = AppLocalization.format("cloud.status_failed", lastErrorDescription)
             } else {
-                cloudSyncStatusDetail = "iCloud 同步状态暂时不可用"
+                cloudSyncStatusDetail = AppLocalization.text("iCloud 同步状态暂时不可用")
             }
+        case .disabled:
+            cloudSyncStatusDetail = AppLocalization.text("当前版本使用本机存储与手动备份")
         }
     }
 
@@ -713,7 +748,7 @@ final class AppModel: ObservableObject {
         focusClearTask?.cancel()
         focusClearTask = nil
         focusedRecordID = recordID
-        focusedRecordBadgeText = badgeText
+        focusedRecordBadgeText = AppLocalization.text(badgeText)
 
         focusClearTask = Task { [weak self] in
             do {

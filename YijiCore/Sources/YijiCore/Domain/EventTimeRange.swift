@@ -34,32 +34,38 @@ public extension EventTimeRange {
         case .day:
             return YijiDateFormatter.dayFormatter.string(from: start)
         case .week:
-            return "\(YijiDateFormatter.dayFormatter.string(from: start)) 至 \(YijiDateFormatter.dayFormatter.string(from: end))"
+            return YijiLocalization.format(
+                "date.range",
+                YijiDateFormatter.dayFormatter.string(from: start),
+                YijiDateFormatter.dayFormatter.string(from: end)
+            )
         case .month:
             let components = calendar.dateComponents([.year, .month], from: start)
-            return "\(components.year ?? 0) 年 \(components.month ?? 0) 月"
+            return YijiLocalization.format("date.month", components.year ?? 0, components.month ?? 0)
         case .halfYear:
             let year = calendar.component(.year, from: start)
-            let halfYearText = calendar.component(.month, from: start) <= 6 ? "上半年" : "下半年"
-            return "\(year) 年\(halfYearText)"
+            let halfYearText = calendar.component(.month, from: start) <= 6
+                ? YijiLocalization.text("上半年")
+                : YijiLocalization.text("下半年")
+            return YijiLocalization.format("date.year_period", year, halfYearText)
         case .quarter:
             let components = calendar.dateComponents([.year, .month], from: start)
             let quarter = ((components.month ?? 1) - 1) / 3 + 1
             let quarterText: String
             switch quarter {
             case 1:
-                quarterText = "一季度"
+                quarterText = YijiLocalization.text("一季度")
             case 2:
-                quarterText = "二季度"
+                quarterText = YijiLocalization.text("二季度")
             case 3:
-                quarterText = "三季度"
+                quarterText = YijiLocalization.text("三季度")
             default:
-                quarterText = "四季度"
+                quarterText = YijiLocalization.text("四季度")
             }
-            return "\(components.year ?? 0) 年\(quarterText)"
+            return YijiLocalization.format("date.year_period", components.year ?? 0, quarterText)
         case .year:
             let year = calendar.component(.year, from: start)
-            return "\(year) 年"
+            return YijiLocalization.format("date.year", year)
         }
     }
 }

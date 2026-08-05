@@ -80,6 +80,36 @@ struct RecordParserTests {
     }
 
     @Test
+    func parsesReminderAfterRelativeMinutes() {
+        let parsed = parser.parse(
+            content: "20分钟后提醒我吃药",
+            source: .text,
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(parsed.record.category == .reminder)
+        #expect(parsed.reminder?.title == "吃药")
+        #expect(parsed.reminder?.remindAt == calendar.date(byAdding: .minute, value: 20, to: now))
+        #expect(parsed.warnings.isEmpty)
+    }
+
+    @Test
+    func parsesRelativeDurationAfterReminderKeyword() {
+        let parsed = parser.parse(
+            content: "提醒我两小时后吃药",
+            source: .text,
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(parsed.record.category == .reminder)
+        #expect(parsed.reminder?.title == "吃药")
+        #expect(parsed.reminder?.remindAt == calendar.date(byAdding: .hour, value: 2, to: now))
+        #expect(parsed.warnings.isEmpty)
+    }
+
+    @Test
     func parsesWeekdayReminderSentence() {
         let parsed = parser.parse(
             content: "周五上午十点提醒我提交报销",

@@ -14,12 +14,13 @@ struct YijiApp: App {
         WindowGroup {
             RootTabView()
                 .environmentObject(appModel)
+                .environment(\.locale, appModel.appLanguage.locale)
                 .tint(AppTheme.accent)
                 .task {
                     await appModel.load()
                 }
                 .onChange(of: scenePhase) { newPhase in
-                    guard newPhase == .active else { return }
+                    guard newPhase == .active, AppReleaseConfiguration.cloudSyncEnabled else { return }
                     Task {
                         await appModel.refreshCloudSnapshot()
                     }

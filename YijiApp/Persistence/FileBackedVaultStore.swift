@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 import YijiCore
 
 struct PersistedVault: Codable, Equatable, Sendable {
@@ -47,6 +48,14 @@ struct PersistedVault: Codable, Equatable, Sendable {
         modifiedAt ?? .distantPast
     }
 
+    var syncDebugSummary: String {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let timestamp = modifiedAt.map(formatter.string(from:)) ?? "nil"
+        let deviceID = lastWriterDeviceID ?? "nil"
+        return "records=\(records.count), reminders=\(reminders.count), searches=\(searchHistory.count), hasContent=\(hasUserContent), modifiedAt=\(timestamp), device=\(deviceID)"
+    }
+
     mutating func touch(now: Date = Date(), deviceID: String = SyncDeviceIdentity.current) {
         modifiedAt = now
         lastWriterDeviceID = deviceID
@@ -76,11 +85,11 @@ actor FileBackedVaultStore {
         var errorDescription: String? {
             switch self {
             case .emptyBackupFile:
-                "备份文件是空的，请选择易记导出的 JSON 备份文件。"
+                AppLocalization.text("备份文件是空的，请选择易记导出的 JSON 备份文件。")
             case .invalidBackupFormat:
-                "备份文件格式不正确，请确认选择的是易记导出的 JSON 备份文件。"
+                AppLocalization.text("备份文件格式不正确，请确认选择的是易记导出的 JSON 备份文件。")
             case .unreadableBackupFile:
-                "备份文件无法读取，请重新选择文件或检查文件权限。"
+                AppLocalization.text("备份文件无法读取，请重新选择文件或检查文件权限。")
             }
         }
     }
@@ -89,12 +98,18 @@ actor FileBackedVaultStore {
     private let fileManager: FileManager
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
-    private let cloudSync: CloudKitVaultSyncCoordinator
+    private let cloudSync: CloudKitVaultSyncCoordinator?
+    private let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier ?? "com.blizzard1311.yiji",
+        category: "FileBackedVaultStore"
+    )
 
     init(
         fileURL: URL? = nil,
         fileManager: FileManager = .default,
-        cloudSync: CloudKitVaultSyncCoordinator = CloudKitVaultSyncCoordinator()
+        cloudSync: CloudKitVaultSyncCoordinator? = AppReleaseConfiguration.cloudSyncEnabled
+            ? CloudKitVaultSyncCoordinator()
+            : nil
     ) {
         self.fileManager = fileManager
         self.fileURL = fileURL ?? Self.defaultFileURL(fileManager: fileManager)
@@ -115,7 +130,14 @@ actor FileBackedVaultStore {
     }
 
     func cloudSyncStatus() async -> CloudSyncStatusSnapshot {
-        await cloudSync.refreshStatus()
+        guard let cloudSync else {
+            return CloudSyncStatusSnapshot(
+                availability: .disabled,
+                lastSuccessfulSyncDate: nil,
+                lastErrorDescription: nil
+            )
+        }
+        return await cloudSync.refreshStatus()
     }
 
     func save(_ parsedCapture: ParsedCapture) async throws -> VaultSnapshot {
@@ -216,9 +238,16 @@ actor FileBackedVaultStore {
 
     private func synchronizeCurrentVault() async throws -> PersistedVault {
         let localVault = try readVault()
+        guard let cloudSync else {
+            return localVault
+        }
+        logger.info("[CloudRestore] local-before-sync \(localVault.syncDebugSummary, privacy: .public)")
         let syncedVault = await cloudSync.synchronize(localVault: localVault)
         if syncedVault != localVault {
+            logger.info("[CloudRestore] local-updated-after-sync before=[\(localVault.syncDebugSummary, privacy: .public)] after=[\(syncedVault.syncDebugSummary, privacy: .public)]")
             try writeVault(syncedVault)
+        } else {
+            logger.info("[CloudRestore] local-kept-after-sync \(syncedVault.syncDebugSummary, privacy: .public)")
         }
         return syncedVault
     }
@@ -226,11 +255,18 @@ actor FileBackedVaultStore {
     private func persistAndSynchronize(_ vault: PersistedVault) async throws -> PersistedVault {
         var localVault = vault
         localVault.touch()
+        logger.info("[CloudSync] local-write-before-cloud \(localVault.syncDebugSummary, privacy: .public)")
         try writeVault(localVault)
 
+        guard let cloudSync else {
+            return localVault
+        }
         let syncedVault = await cloudSync.synchronize(localVault: localVault)
         if syncedVault != localVault {
+            logger.info("[CloudSync] local-write-adjusted-by-cloud before=[\(localVault.syncDebugSummary, privacy: .public)] after=[\(syncedVault.syncDebugSummary, privacy: .public)]")
             try writeVault(syncedVault)
+        } else {
+            logger.info("[CloudSync] local-write-kept \(syncedVault.syncDebugSummary, privacy: .public)")
         }
         return syncedVault
     }

@@ -10,9 +10,9 @@ struct HomeView: View {
         var title: String {
             switch self {
             case .storage:
-                "收纳"
+                AppLocalization.text("收纳")
             case .calendar:
-                "计划"
+                AppLocalization.text("计划")
             }
         }
 
@@ -81,7 +81,7 @@ struct HomeView: View {
                                         Spacer(minLength: 8)
 
                                         Image(systemName: "plus.circle.fill")
-                                            .foregroundStyle(.blue)
+                                            .foregroundStyle(AppTheme.accent)
                                     }
                                 }
                                 .buttonStyle(.plain)
@@ -316,15 +316,7 @@ struct HomeView: View {
     }
 
     private var screenBackground: some View {
-        LinearGradient(
-            colors: [
-                Color(red: 0.94, green: 0.95, blue: 0.98),
-                Color(red: 0.97, green: 0.98, blue: 0.99)
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-        .ignoresSafeArea()
+        AppTheme.canvas.ignoresSafeArea()
     }
 
     private var sceneTabsSection: some View {
@@ -443,10 +435,10 @@ struct HomeView: View {
 
                 LazyVGrid(
                     columns: [
-                        GridItem(.flexible(), spacing: 10, alignment: .top),
-                        GridItem(.flexible(), spacing: 10, alignment: .top)
+                        GridItem(.flexible(), spacing: 12, alignment: .top),
+                        GridItem(.flexible(), spacing: 12, alignment: .top)
                     ],
-                    spacing: 10
+                    spacing: 12
                 ) {
                     ForEach(allStorageGroups) { group in
                         Button {
@@ -458,34 +450,31 @@ struct HomeView: View {
                     }
                 }
             }
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(.white.opacity(0.92))
-            )
+            .padding(.horizontal, 2)
+            .padding(.vertical, 12)
         }
-        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+        .listRowInsets(EdgeInsets(top: 6, leading: 20, bottom: 6, trailing: 20))
         .listRowBackground(Color.clear)
     }
 
     private var storageContainersHeader: some View {
         HStack(spacing: 10) {
             Text("收纳")
-                .font(.headline.weight(.semibold))
+                .font(.title2.weight(.bold))
             Spacer(minLength: 10)
 
             Button {
                 showingStorageContainerPicker = true
             } label: {
                 Label("管理", systemImage: "slider.horizontal.3")
-                    .font(.caption2.weight(.semibold))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 5)
+                    .font(.caption.weight(.semibold))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 9)
                     .background(
                         Capsule()
-                            .fill(Color.blue.opacity(0.10))
+                            .fill(AppTheme.surfaceMuted)
                     )
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(AppTheme.accent)
             }
             .buttonStyle(.plain)
         }
@@ -497,7 +486,7 @@ struct HomeView: View {
                 sectionHeader(
                     title: title,
                     subtitle: reminderSectionSubtitle,
-                    countText: "\(reminders.count) 条"
+                    countText: AppLocalization.format("reminder_count", reminders.count)
                 )
 
                 ForEach(Array(reminders.enumerated()), id: \.element.id) { index, reminder in
@@ -651,7 +640,7 @@ struct HomeView: View {
                 .fill(color)
                 .frame(width: 6, height: 6)
 
-            Text(title)
+            Text(AppLocalization.text(title))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -712,14 +701,14 @@ struct HomeView: View {
                 }
                 .buttonStyle(.plain)
                 .font(.caption2.weight(.semibold))
-                .foregroundStyle(.blue)
+                .foregroundStyle(AppTheme.accent)
             } else if let actionTitle = calendarWeatherModel.actionTitle {
                 Button(actionTitle) {
                     calendarWeatherModel.refresh()
                 }
                 .buttonStyle(.plain)
                 .font(.caption2.weight(.semibold))
-                .foregroundStyle(.blue)
+                .foregroundStyle(AppTheme.accent)
             }
         }
         .padding(.horizontal, 4)
@@ -733,15 +722,15 @@ struct HomeView: View {
                 Image(systemName: storageContainerIcon(for: group))
                     .font(.headline.weight(.semibold))
                     .foregroundStyle(tint)
-                    .frame(width: 30, height: 30)
+                    .frame(width: 36, height: 36)
                     .background(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
                             .fill(tint.opacity(0.13))
                     )
 
                 Spacer(minLength: 8)
 
-                countBadge("\(group.records.count) 件")
+                countBadge(AppLocalization.format("item_count", group.records.count))
             }
 
             VStack(alignment: .leading, spacing: 3) {
@@ -794,7 +783,7 @@ struct HomeView: View {
                     }
 
                     if group.records.count > 3 {
-                        Text("还有 \(group.records.count - 3) 件")
+                        Text(AppLocalization.format("more_item_count", group.records.count - 3))
                             .font(.caption2.weight(.medium))
                             .foregroundStyle(tint)
                     }
@@ -805,11 +794,11 @@ struct HomeView: View {
         .padding(14)
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(tint.opacity(0.08))
+                .fill(AppTheme.surface)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(tint.opacity(0.14), lineWidth: 1)
+                .stroke(AppTheme.line, lineWidth: 1)
         )
     }
 
@@ -827,13 +816,13 @@ struct HomeView: View {
                     .padding(18)
                     .background(
                         RoundedRectangle(cornerRadius: 22, style: .continuous)
-                            .fill(.white.opacity(0.92))
+                            .fill(AppTheme.surface)
                     )
                 } else {
                     VStack(alignment: .leading, spacing: 10) {
                         sectionHeader(
                             title: "记录详情",
-                            countText: "\(group.records.count) 件"
+                            countText: AppLocalization.format("item_count", group.records.count)
                         )
 
                         ForEach(Array(group.records.enumerated()), id: \.element.id) { index, record in
@@ -847,7 +836,7 @@ struct HomeView: View {
                     .padding(16)
                     .background(
                         RoundedRectangle(cornerRadius: 24, style: .continuous)
-                            .fill(.white.opacity(0.92))
+                            .fill(AppTheme.surface)
                     )
                 }
             }
@@ -875,21 +864,27 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(group.displayName)
                         .font(.title2.weight(.semibold))
-                    Text("\(group.records.count) 件物品")
+                    Text(AppLocalization.format("item_count", group.records.count))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
             }
 
             if let latestRecordDate = group.records.map(\.createdAt).max() {
-                infoChip("最近记录 \(YijiDateFormatter.dayFormatter.string(from: latestRecordDate))", icon: "calendar")
+                infoChip(
+                    AppLocalization.format(
+                        "record.latest_date",
+                        YijiDateFormatter.dayFormatter.string(from: latestRecordDate)
+                    ),
+                    icon: "calendar"
+                )
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(18)
         .background(
             RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(.white.opacity(0.92))
+                .fill(AppTheme.surface)
         )
     }
 
@@ -919,7 +914,9 @@ struct HomeView: View {
                             Image(systemName: reminder.status == .pending ? "bell.fill" : "bell")
                                 .font(.caption2.weight(.semibold))
                                 .foregroundStyle(reminderStatusColor(reminder.status))
-                                .accessibilityLabel("有关联提醒：\(reminder.status.displayName)")
+                                .accessibilityLabel(
+                                    AppLocalization.format("record.related_reminder", reminder.status.displayName)
+                                )
                         }
                     }
 
@@ -959,15 +956,21 @@ struct HomeView: View {
 
                 Spacer(minLength: 10)
 
-                Text(reminder.status.displayName)
-                    .font(.caption2.weight(.medium))
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 3)
-                    .background(
-                        Capsule()
-                            .fill(reminderStatusColor(reminder.status).opacity(0.14))
-                    )
-                    .foregroundStyle(reminderStatusColor(reminder.status))
+                HStack(spacing: 6) {
+                    Image(systemName: "alarm.fill")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(reminderStatusColor(reminder.status))
+
+                    Text(reminder.status.displayName)
+                        .font(.caption2.weight(.medium))
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(
+                            Capsule()
+                                .fill(reminderStatusColor(reminder.status).opacity(0.14))
+                        )
+                        .foregroundStyle(reminderStatusColor(reminder.status))
+                }
             }
 
             HStack(spacing: 8) {
@@ -981,7 +984,7 @@ struct HomeView: View {
                 } label: {
                     Label("查看关联记录", systemImage: "doc.text")
                         .font(.caption)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(AppTheme.accent)
                 }
                 .buttonStyle(.plain)
             }
@@ -995,7 +998,7 @@ struct HomeView: View {
             if isFocused {
                 Label(appModel.focusedRecordBadgeText ?? "刚更新", systemImage: "checkmark.circle.fill")
                     .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(AppTheme.accent)
             }
 
             RecordRowView(record: record, style: .stream)
@@ -1004,17 +1007,17 @@ struct HomeView: View {
         .padding(.vertical, 8)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(isFocused ? Color(red: 0.93, green: 0.96, blue: 1.0).opacity(0.96) : Color.white.opacity(0.48))
+                .fill(isFocused ? AppTheme.surfaceMuted : AppTheme.surface.opacity(0.48))
         )
     }
 
     private func sectionHeader(title: String, subtitle: String = "", countText: String) -> some View {
         HStack(alignment: .top, spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(title)
+                Text(AppLocalization.text(title))
                     .font(.headline.weight(.semibold))
                 if !subtitle.isEmpty {
-                    Text(subtitle)
+                    Text(AppLocalization.text(subtitle))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -1160,17 +1163,17 @@ struct HomeView: View {
     private func storageContainerTint(_ container: StorageContainer?) -> Color {
         switch container {
         case .medicineKit:
-            Color(red: 0.86, green: 0.44, blue: 0.40)
+            Color(red: 0.82, green: 0.50, blue: 0.34)
         case .documentPouch:
-            Color(red: 0.28, green: 0.55, blue: 0.92)
+            AppTheme.accent
         case .jewelryBox:
-            Color(red: 0.70, green: 0.48, blue: 0.80)
+            Color(red: 0.56, green: 0.52, blue: 0.60)
         case .digitalBox:
-            Color(red: 0.25, green: 0.65, blue: 0.72)
+            Color(red: 0.40, green: 0.54, blue: 0.60)
         case .wardrobe:
             Color(red: 0.47, green: 0.59, blue: 0.40)
         case .storageBox:
-            Color(red: 0.71, green: 0.53, blue: 0.36)
+            Color(red: 0.65, green: 0.56, blue: 0.45)
         case .drawer:
             Color(red: 0.58, green: 0.50, blue: 0.42)
         case .bag:
@@ -1196,7 +1199,7 @@ struct HomeView: View {
         case .builtIn(let container):
             return storageContainerTint(container)
         case .custom:
-            return Color(red: 0.42, green: 0.49, blue: 0.78)
+            return AppTheme.accent
         case .uncategorized:
             return Color(red: 0.55, green: 0.58, blue: 0.64)
         }
@@ -1274,14 +1277,19 @@ struct HomeView: View {
         }
 
         guard let first = queryResults.first else {
-            return "没有找到与“\(trimmedSearchText)”相关的历史记录。"
+            return AppLocalization.format("search.no_history", trimmedSearchText)
         }
 
         if queryResults.count == 1 {
             return first.answerSummary
         }
 
-        return "我找到了 \(queryResults.count) 条与“\(trimmedSearchText)”相关的记录，最近一条是: \(first.answerSummary)"
+        return AppLocalization.format(
+            "search.found_summary",
+            queryResults.count,
+            trimmedSearchText,
+            first.answerSummary
+        )
     }
 
     private var selectedDateRecords: [Record] {
@@ -1453,7 +1461,21 @@ struct HomeView: View {
 }
 
 struct CalendarView: View {
-    private let monthCalendarHeight: CGFloat = 500
+    private struct DayEntry: Identifiable {
+        let record: Record?
+        let reminder: Reminder?
+        let date: Date
+
+        var id: String {
+            if let record {
+                return "record-\(record.id.uuidString)"
+            }
+            if let reminder {
+                return "reminder-\(reminder.id.uuidString)"
+            }
+            return "empty-\(date.timeIntervalSinceReferenceDate)"
+        }
+    }
 
     @EnvironmentObject private var appModel: AppModel
     @Environment(\.openURL) private var openURL
@@ -1465,22 +1487,20 @@ struct CalendarView: View {
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 12) {
+                Text("日历")
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(AppTheme.ink)
+
                 if let statusMessage = appModel.statusMessage {
                     statusCard(statusMessage)
                 }
 
                 calendarCard
 
-                if selectedDateRecords.isEmpty && selectedDateReminders.isEmpty {
+                if selectedDateEntries.isEmpty {
                     emptyDayCard
                 } else {
-                    if !selectedDateRecords.isEmpty {
-                        recordsCard
-                    }
-
-                    if !selectedDateReminders.isEmpty {
-                        remindersCard
-                    }
+                    dayEntriesCard
                 }
             }
             .padding(16)
@@ -1502,9 +1522,6 @@ struct CalendarView: View {
 
     private var calendarCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("日历")
-                .font(.headline.weight(.semibold))
-
             CalendarMonthView(
                 selectedDate: selectedDate,
                 visibleMonth: visibleMonth,
@@ -1513,6 +1530,7 @@ struct CalendarView: View {
                 notifiedDates: notifiedReminderDateSet,
                 weatherByDate: weatherModel.weatherByDate,
                 calendar: filterCalendar,
+                inlineItems: calendarInlineItems,
                 onDateSelected: { date in
                     selectedDate = filterCalendar.startOfDay(for: date)
                 },
@@ -1520,13 +1538,8 @@ struct CalendarView: View {
                     visibleMonth = filterCalendar.startOfDay(for: date)
                 }
             )
-            .frame(height: monthCalendarHeight)
 
             calendarLegend
-
-            if let selectedDateWeather {
-                selectedDateWeatherCard(selectedDateWeather)
-            }
 
             weatherStatusRow
         }
@@ -1535,46 +1548,27 @@ struct CalendarView: View {
         .padding(.bottom, 14)
         .background(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(.white.opacity(0.92))
+                .fill(AppTheme.surface)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(Color.white.opacity(0.62), lineWidth: 1)
+                .stroke(AppTheme.line, lineWidth: 1)
         )
     }
 
-    private var recordsCard: some View {
+    private var dayEntriesCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            sectionHeader(title: "记录", countText: "\(selectedDateRecords.count) 条")
+            sectionHeader(
+                title: "当天记录",
+                countText: AppLocalization.format("record_count", selectedDateEntries.count)
+            )
 
-            ForEach(Array(selectedDateRecords.enumerated()), id: \.element.id) { index, record in
+            ForEach(Array(selectedDateEntries.enumerated()), id: \.element.id) { index, entry in
                 if index > 0 {
                     Divider()
                 }
 
-                NavigationLink {
-                    RecordDetailView(recordID: record.id)
-                } label: {
-                    RecordRowView(record: record, style: .stream)
-                        .padding(.vertical, 6)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(16)
-        .background(cardBackground)
-    }
-
-    private var remindersCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            sectionHeader(title: "提醒", countText: "\(selectedDateReminders.count) 条")
-
-            ForEach(Array(selectedDateReminders.enumerated()), id: \.element.id) { index, reminder in
-                if index > 0 {
-                    Divider()
-                }
-
-                reminderRow(reminder)
+                dayEntryRow(entry)
             }
         }
         .padding(16)
@@ -1582,15 +1576,16 @@ struct CalendarView: View {
     }
 
     @ViewBuilder
-    private func reminderRow(_ reminder: Reminder) -> some View {
-        if let record = appModel.record(for: reminder) {
+    private func dayEntryRow(_ entry: DayEntry) -> some View {
+        if let record = entry.record {
             NavigationLink {
                 RecordDetailView(recordID: record.id)
             } label: {
-                reminderContent(reminder)
+                RecordRowView(record: record, style: .stream, reminder: entry.reminder)
+                    .padding(.vertical, 6)
             }
             .buttonStyle(.plain)
-        } else {
+        } else if let reminder = entry.reminder {
             reminderContent(reminder)
         }
     }
@@ -1660,21 +1655,23 @@ struct CalendarView: View {
     }
 
     private var calendarLegend: some View {
-        HStack(spacing: 16) {
-            legendItem(title: "记录", color: .blue)
-            legendItem(title: "待提醒", color: .orange)
-            legendItem(title: "已提醒", color: .green)
+        VStack(spacing: 12) {
+            Divider()
 
-            HStack(spacing: 6) {
-                Image(systemName: "cloud.sun.fill")
-                    .font(.caption)
-                    .foregroundStyle(.teal)
-                Text("天气")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            HStack(spacing: 10) {
+                legendItem(title: "记录", color: AppTheme.accent)
+                legendItem(title: "待提醒", color: AppTheme.reminder)
+                legendItem(title: "已提醒", color: AppTheme.completed)
+                legendItem(title: "天气", color: Color(red: 0.40, green: 0.54, blue: 0.60))
+
+                Spacer(minLength: 4)
+
+                Text("点击日期查看详情")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(AppTheme.accent)
+                    .lineLimit(1)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 4)
     }
 
@@ -1682,10 +1679,10 @@ struct CalendarView: View {
         HStack(spacing: 6) {
             Circle()
                 .fill(color)
-                .frame(width: 6, height: 6)
+                .frame(width: 5, height: 5)
 
-            Text(title)
-                .font(.caption)
+            Text(AppLocalization.text(title))
+                .font(.caption2)
                 .foregroundStyle(.secondary)
         }
     }
@@ -1745,14 +1742,14 @@ struct CalendarView: View {
                 }
                 .buttonStyle(.plain)
                 .font(.caption2.weight(.semibold))
-                .foregroundStyle(.blue)
+                .foregroundStyle(AppTheme.accent)
             } else if let actionTitle = weatherModel.actionTitle {
                 Button(actionTitle) {
                     weatherModel.refresh()
                 }
                 .buttonStyle(.plain)
                 .font(.caption2.weight(.semibold))
-                .foregroundStyle(.blue)
+                .foregroundStyle(AppTheme.accent)
             }
         }
         .padding(.horizontal, 4)
@@ -1760,7 +1757,7 @@ struct CalendarView: View {
 
     private func sectionHeader(title: String, countText: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 10) {
-            Text(title)
+            Text(AppLocalization.text(title))
                 .font(.headline.weight(.semibold))
 
             Spacer(minLength: 10)
@@ -1814,8 +1811,7 @@ struct CalendarView: View {
             return
         }
 
-        guard selectedDateRecords.isEmpty,
-              selectedDateReminders.isEmpty,
+        guard selectedDateEntries.isEmpty,
               let firstDate = allTimelineDates.sorted(by: >).first else {
             return
         }
@@ -1835,15 +1831,97 @@ struct CalendarView: View {
         Calendar(identifier: .gregorian)
     }
 
-    private var selectedDateRecords: [Record] {
-        appModel.records
-            .filter { filterCalendar.isDate($0.recordDate, inSameDayAs: selectedDate) }
-            .sorted { lhs, rhs in
-                if lhs.recordDate == rhs.recordDate {
-                    return lhs.createdAt > rhs.createdAt
+    private var selectedDateEntries: [DayEntry] {
+        let remindersForSelectedDate = selectedDateReminders
+        let remindersByRecordID = Dictionary(
+            grouping: remindersForSelectedDate.compactMap { reminder -> (UUID, Reminder)? in
+                guard let recordID = reminder.recordID else {
+                    return nil
                 }
-                return lhs.recordDate > rhs.recordDate
+                return (recordID, reminder)
+            },
+            by: \.0
+        )
+        .mapValues { matches in
+            matches.map(\.1).sorted { $0.remindAt < $1.remindAt }
+        }
+
+        var representedRecordIDs = Set<UUID>()
+        var entries: [DayEntry] = []
+
+        for record in appModel.records {
+            let remindersOnSelectedDate = remindersByRecordID[record.id] ?? []
+            let hasLinkedReminder = appModel.reminders.contains { $0.recordID == record.id }
+            let recordIsOnSelectedDate = filterCalendar.isDate(record.recordDate, inSameDayAs: selectedDate)
+            let shouldShowRecordDate = record.category != .reminder || !hasLinkedReminder
+
+            guard (recordIsOnSelectedDate && shouldShowRecordDate) || !remindersOnSelectedDate.isEmpty else {
+                continue
             }
+
+            let reminder = remindersOnSelectedDate.first
+            entries.append(
+                DayEntry(
+                    record: record,
+                    reminder: reminder,
+                    date: reminder?.remindAt ?? record.recordDate
+                )
+            )
+            representedRecordIDs.insert(record.id)
+        }
+
+        for reminder in remindersForSelectedDate {
+            if let recordID = reminder.recordID, representedRecordIDs.contains(recordID) {
+                continue
+            }
+
+            entries.append(
+                DayEntry(
+                    record: appModel.record(for: reminder),
+                    reminder: reminder,
+                    date: reminder.remindAt
+                )
+            )
+
+            if let recordID = reminder.recordID {
+                representedRecordIDs.insert(recordID)
+            }
+        }
+
+        return entries.sorted { lhs, rhs in
+            if lhs.date == rhs.date {
+                return lhs.id < rhs.id
+            }
+            return lhs.date < rhs.date
+        }
+    }
+
+    private var calendarInlineItems: [CalendarInlineItem] {
+        selectedDateEntries.map { entry in
+            let title = entry.record?.objectName
+                ?? entry.record?.content
+                ?? entry.reminder?.title
+                ?? "记录"
+            let status = entry.reminder?.status.displayName ?? "记录"
+            let tone: CalendarInlineItem.Tone
+
+            switch entry.reminder?.status {
+            case .pending:
+                tone = .pending
+            case .notified, .done:
+                tone = .completed
+            case .cancelled, .failed, nil:
+                tone = .record
+            }
+
+            return CalendarInlineItem(
+                id: entry.id,
+                time: YijiDateFormatter.timeFormatter.string(from: entry.date),
+                title: title,
+                status: status,
+                tone: tone
+            )
+        }
     }
 
     private var selectedDateReminders: [Reminder] {
@@ -1853,7 +1931,21 @@ struct CalendarView: View {
     }
 
     private var recordDateSet: Set<Date> {
-        Set(appModel.records.map { filterCalendar.startOfDay(for: $0.recordDate) })
+        Set(
+            appModel.records.compactMap { record in
+                guard record.category == .reminder,
+                      let linkedReminder = appModel.reminders.first(where: { $0.recordID == record.id }) else {
+                    return filterCalendar.startOfDay(for: record.recordDate)
+                }
+
+                switch linkedReminder.status {
+                case .pending, .notified:
+                    return nil
+                case .done, .cancelled, .failed:
+                    return filterCalendar.startOfDay(for: linkedReminder.remindAt)
+                }
+            }
+        )
     }
 
     private var pendingReminderDateSet: Set<Date> {
@@ -1883,20 +1975,12 @@ struct CalendarView: View {
     }
 
     private var cardBackground: some View {
-        RoundedRectangle(cornerRadius: 24, style: .continuous)
-            .fill(.white.opacity(0.92))
+        RoundedRectangle(cornerRadius: 20, style: .continuous)
+            .fill(AppTheme.surface)
     }
 
     private var screenBackground: some View {
-        LinearGradient(
-            colors: [
-                Color(red: 0.94, green: 0.95, blue: 0.98),
-                Color(red: 0.97, green: 0.98, blue: 0.99)
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-        .ignoresSafeArea()
+        AppTheme.canvas.ignoresSafeArea()
     }
 }
 

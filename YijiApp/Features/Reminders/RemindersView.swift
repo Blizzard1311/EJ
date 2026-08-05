@@ -193,7 +193,7 @@ struct RemindersView: View {
             Text(value)
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(color)
-            Text(title)
+            Text(AppLocalization.text(title))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -242,36 +242,36 @@ struct RemindersView: View {
 
     private func notificationDescriptor(for reminder: Reminder) -> (text: String, icon: String, color: Color) {
         if reminder.status == .failed {
-            return ("提醒失败", "exclamationmark.triangle.fill", .red)
+            return (AppLocalization.text("提醒失败"), "exclamationmark.triangle.fill", .red)
         }
 
         if reminder.status == .notified {
-            return ("已送达", "checkmark.bell.fill", .blue)
+            return (AppLocalization.text("已送达"), "checkmark.bell.fill", .blue)
         }
 
         if reminder.status != .pending {
-            return ("未启用通知", "bell.slash", .gray)
+            return (AppLocalization.text("未启用通知"), "bell.slash", .gray)
         }
 
         switch appModel.notifications.authorizationStatus {
         case .granted:
             if appModel.notifications.isScheduled(reminderID: reminder.id) {
-                return ("已开启", "bell.badge.fill", .green)
+                return (AppLocalization.text("已开启"), "bell.badge.fill", .green)
             }
-            return ("待同步", "clock.badge", .orange)
+            return (AppLocalization.text("待同步"), "clock.badge", .orange)
         case .denied:
-            return ("未开启", "bell.slash.fill", .red)
+            return (AppLocalization.text("未开启"), "bell.slash.fill", .red)
         case .unknown:
-            return ("待开启", "bell.badge", .orange)
+            return (AppLocalization.text("待开启"), "bell.badge", .orange)
         }
     }
 
     private func sectionTitle(_ title: String, subtitle: String = "") -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title)
+            Text(AppLocalization.text(title))
                 .font(.headline.weight(.semibold))
             if !subtitle.isEmpty {
-                Text(subtitle)
+                Text(AppLocalization.text(subtitle))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

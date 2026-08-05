@@ -152,7 +152,10 @@ struct SearchView: View {
                     .font(.body)
 
                 HStack {
-                    summaryPill("\(filteredResults.count) 条结果", systemImage: "tray.full")
+                    summaryPill(
+                        AppLocalization.format("result_count", filteredResults.count),
+                        systemImage: "tray.full"
+                    )
                     summaryPill(selectedFilter.title, systemImage: "line.3.horizontal.decrease.circle")
                 }
             }
@@ -276,10 +279,10 @@ struct SearchView: View {
 
     private func sectionTitle(_ title: String, subtitle: String = "") -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title)
+            Text(AppLocalization.text(title))
                 .font(.headline.weight(.semibold))
             if !subtitle.isEmpty {
-                Text(subtitle)
+                Text(AppLocalization.text(subtitle))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -315,36 +318,41 @@ struct SearchView: View {
             if filteredResults.count == 1 {
                 return first.answerSummary
             }
-            return "我找到了 \(filteredResults.count) 条与“\(keyword)”相关的记录，最近一条是：\(first.answerSummary)"
+            return AppLocalization.format(
+                "search.found_summary",
+                filteredResults.count,
+                keyword,
+                first.answerSummary
+            )
         }
 
-        return "没有找到与“\(keyword)”相关的历史记录。"
+        return AppLocalization.format("search.no_history", keyword)
     }
 
     private var resultsTitle: String {
         if isSearching {
-            return "搜索结果"
+            return AppLocalization.text("搜索结果")
         }
-        return "全部记录"
+        return AppLocalization.text("全部记录")
     }
 
     private var emptyTitle: String {
         if isSearching {
-            return "没有找到结果"
+            return AppLocalization.text("没有找到结果")
         }
-        return "还没有可搜索的记录"
+        return AppLocalization.text("还没有可搜索的记录")
     }
 
     private var emptyDescription: String {
         if isSearching {
-            return "换个关键词试试"
+            return AppLocalization.text("换个关键词试试")
         }
-        return "暂无记录"
+        return AppLocalization.text("暂无记录")
     }
 
     private var voiceSearchHint: String? {
         if voiceSearch.isRecording {
-            return "录音中"
+            return AppLocalization.text("录音中")
         }
 
         guard let message = voiceSearch.errorMessage?.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -352,8 +360,8 @@ struct SearchView: View {
             return nil
         }
 
-        if message.localizedCaseInsensitiveContains("权限已开启") {
-            return "权限已开启"
+        if message.localizedCaseInsensitiveContains(AppLocalization.text("权限已开启")) {
+            return AppLocalization.text("权限已开启")
         }
 
         return message
@@ -393,15 +401,15 @@ private enum SearchFilter: CaseIterable {
     var title: String {
         switch self {
         case .all:
-            "全部"
+            AppLocalization.text("全部")
         case .storage:
-            "位置"
+            AppLocalization.text("位置")
         case .reminder:
-            "提醒"
+            AppLocalization.text("提醒")
         case .note:
-            "笔记"
+            AppLocalization.text("笔记")
         case .other:
-            "其他"
+            AppLocalization.text("其他")
         }
     }
 }

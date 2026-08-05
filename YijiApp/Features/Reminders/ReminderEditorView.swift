@@ -70,13 +70,13 @@ struct ReminderEditorView: View {
                                 Image(systemName: editorHint.icon)
                                     .foregroundStyle(editorHint.color)
                                     .frame(width: 24)
-                                Text(editorHint.text)
+                                Text(AppLocalization.text(editorHint.text))
                                     .font(.subheadline.weight(.medium))
                                     .foregroundStyle(editorHint.color)
                             }
 
                             if let detail = editorHint.detail {
-                                Text(detail)
+                                Text(AppLocalization.text(detail))
                                     .font(.footnote)
                                     .foregroundStyle(.secondary)
                             }
@@ -165,10 +165,10 @@ struct ReminderEditorView: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(title)
+                Text(AppLocalization.text(title))
                     .font(.headline.weight(.semibold))
                 if !subtitle.isEmpty {
-                    Text(subtitle)
+                    Text(AppLocalization.text(subtitle))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -185,7 +185,7 @@ struct ReminderEditorView: View {
 
     private func fieldGroup<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title)
+            Text(AppLocalization.text(title))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             content()
@@ -210,7 +210,7 @@ struct ReminderEditorView: View {
         } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(title)
+                    Text(AppLocalization.text(title))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Text(selectionText)
@@ -253,7 +253,7 @@ struct ReminderEditorView: View {
                     if didSave {
                         dismiss()
                     } else {
-                        saveErrorMessage = "保存失败，请稍后再试。"
+                        saveErrorMessage = AppLocalization.text("保存失败，请稍后再试。")
                     }
                 }
             } label: {
@@ -284,7 +284,7 @@ struct ReminderEditorView: View {
     }
 
     private func statusBadge(title: String, color: Color) -> some View {
-        Text(title)
+        Text(AppLocalization.text(title))
             .font(.caption.weight(.medium))
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
@@ -351,7 +351,7 @@ struct ReminderEditorView: View {
         guard reminder.status == .pending else { return nil }
         guard reminder.repeatRule == .none else { return nil }
         guard reminder.remindAt <= Date() else { return nil }
-        return "提醒时间已过，请调整后再保存。"
+        return AppLocalization.text("提醒时间已过，请调整后再保存。")
     }
 }
 

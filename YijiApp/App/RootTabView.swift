@@ -38,6 +38,7 @@ struct RootTabView: View {
                 Label(AppTab.settings.title, systemImage: AppTab.settings.systemImage)
             }
         }
+        .tint(AppTheme.accent)
         .toolbarBackground(.visible, for: .tabBar)
         .toolbarColorScheme(.light, for: .tabBar)
     }
@@ -52,26 +53,26 @@ enum AppTab: Hashable {
     var title: String {
         switch self {
         case .home:
-            "记录"
+            AppLocalization.text("记录")
         case .capture:
-            "收纳"
+            AppLocalization.text("收纳")
         case .calendar:
-            "日历"
+            AppLocalization.text("日历")
         case .settings:
-            "设置"
+            AppLocalization.text("设置")
         }
     }
 
     var systemImage: String {
         switch self {
         case .home:
-            "waveform.circle.fill"
+            "mic"
         case .capture:
-            "square.stack.3d.up.fill"
+            "square.stack.3d.up"
         case .calendar:
-            "calendar.circle.fill"
+            "calendar"
         case .settings:
-            "gearshape.fill"
+            "gearshape"
         }
     }
 }
