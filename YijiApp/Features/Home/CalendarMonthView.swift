@@ -191,25 +191,11 @@ struct CalendarMonthView: View {
 
     private func expandedDetails(for date: Date) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(detailDateFormatter.string(from: date))
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(AppTheme.ink)
-
-                    Text(AppLocalization.format("records_for_day_count", inlineItems.count))
-                        .font(.caption2)
-                        .foregroundStyle(AppTheme.muted)
-                }
-
-                Spacer()
-
-                if let weather = weatherByDate[displayCalendar.startOfDay(for: date)] {
-                    Label(weatherSummary(weather), systemImage: weather.symbolName)
-                        .font(.caption2.weight(.medium))
-                        .foregroundStyle(AppTheme.accent)
-                        .lineLimit(1)
-                }
+            if let weather = weatherByDate[displayCalendar.startOfDay(for: date)] {
+                Label(weatherSummary(weather), systemImage: weather.symbolName)
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(AppTheme.accent)
+                    .lineLimit(1)
             }
 
             if inlineItems.isEmpty {
@@ -333,13 +319,6 @@ struct CalendarMonthView: View {
         let formatter = DateFormatter()
         formatter.locale = calendarLocale
         formatter.dateFormat = usesEnglish ? "MMMM yyyy" : "yyyy 年 M 月"
-        return formatter
-    }
-
-    private var detailDateFormatter: DateFormatter {
-        let formatter = DateFormatter()
-        formatter.locale = calendarLocale
-        formatter.dateFormat = usesEnglish ? "MMMM d" : "M 月 d 日"
         return formatter
     }
 

@@ -5,6 +5,10 @@
 "日历" = "Calendar";
 "设置" = "Settings";
 "语言" = "Language";
+"偏好设置" = "Preferences";
+"记录数量" = "Records";
+"已选择" = "Selected";
+"界面语言更改后立即生效。语音识别语言可以跟随 App，也可以单独选择。" = "Interface changes apply immediately. Speech recognition can follow the app or use a different language.";
 "支持" = "Support";
 "联系支持" = "Contact Support";
 "隐私政策" = "Privacy Policy";
@@ -12,7 +16,13 @@
 "App 语言" = "App Language";
 "跟随系统" = "Follow System";
 "简体中文" = "Simplified Chinese";
-"更改后立即应用，并同步调整语音识别语言" = "Applies immediately and updates the speech recognition language";
+"繁体中文" = "Traditional Chinese";
+"更改后立即应用" = "Applies immediately";
+"语音识别语言" = "Speech Recognition Language";
+"可独立于界面语言选择" = "Can be selected independently from the app language";
+"跟随 App 语言" = "Follow App Language";
+"普通话（中国大陆）" = "Mandarin (China mainland)";
+"中文（台湾）" = "Chinese (Taiwan)";
 "计划" = "Plans";
 "管理" = "Manage";
 "完成" = "Done";
@@ -33,7 +43,7 @@
 "其他" = "Other";
 
 /* Capture and speech */
-"想记什么，直接说出来" = "Say what you want to remember";
+"想记什么、找什么，直接说出来" = "Say what you want to remember or find";
 "记录优先保存在本机" = "Records are saved on this device first";
 "按住说话" = "Hold to speak";
 "编辑后保存" = "Edit, then save";

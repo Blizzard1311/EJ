@@ -9,7 +9,10 @@
 	<key>CFBundleLocalizations</key>
 	<array>
 		<string>zh-Hans</string>
+		<string>zh-Hant</string>
 		<string>en</string>
+		<string>es</string>
+		<string>ja</string>
 	</array>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>

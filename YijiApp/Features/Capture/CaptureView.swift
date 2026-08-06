@@ -19,11 +19,6 @@ struct CaptureView: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
-                        Text("易记")
-                            .font(.headline.weight(.semibold))
-                            .foregroundStyle(AppTheme.ink)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-
                         Spacer(minLength: 96)
                         microphoneStage
                         Spacer(minLength: 64)
@@ -55,7 +50,7 @@ struct CaptureView: View {
 
     private var microphoneStage: some View {
         VStack(spacing: 18) {
-            Text("想记什么，直接说出来")
+            Text("想记什么、找什么，直接说出来")
                 .font(.subheadline)
                 .foregroundStyle(AppTheme.muted)
 

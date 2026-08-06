@@ -787,4 +787,237 @@ struct RecordParserTests {
                 == "2026 年 6 月 8 日 至 2026 年 6 月 14 日 的商务事项里，你有 1 项安排：下周三见客户。"
         )
     }
+
+    @Test
+    func parsesSpanishReminderWithRelativeDayAndTime() {
+        let parsed = parser.parse(
+            content: "Recuérdame mañana a las tres de la tarde pagar la factura",
+            source: .voice,
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(parsed.record.category == .reminder)
+        #expect(parsed.record.source == .voice)
+        #expect(parsed.reminder?.title == "pagar la factura")
+        #expect(parsed.reminder?.repeatRule == ReminderRepeatRule.none)
+        #expect(dateComponents(parsed.reminder?.remindAt) == [2026, 6, 8, 15, 0])
+        #expect(parsed.warnings.isEmpty)
+    }
+
+    @Test
+    func parsesSpanishRelativeDurationAndDailyReminder() {
+        let relative = parser.parse(
+            content: "Recuérdame en treinta minutos llamar a Ana",
+            source: .voice,
+            now: now,
+            calendar: calendar
+        )
+        let daily = parser.parse(
+            content: "Todos los días a las ocho de la mañana recuérdame tomar la medicina",
+            source: .text,
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(relative.reminder?.title == "llamar a Ana")
+        #expect(relative.reminder?.remindAt == calendar.date(byAdding: .minute, value: 30, to: now))
+        #expect(daily.reminder?.title == "tomar la medicina")
+        #expect(daily.reminder?.repeatRule == .daily)
+        #expect(dateComponents(daily.reminder?.remindAt) == [2026, 6, 8, 8, 0])
+    }
+
+    @Test
+    func parsesSpanishExplicitDateReminder() {
+        let parsed = parser.parse(
+            content: "Recuérdame el quince de agosto a las diez renovar el pasaporte",
+            source: .text,
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(parsed.reminder?.title == "renovar el pasaporte")
+        #expect(dateComponents(parsed.reminder?.remindAt) == [2026, 8, 15, 10, 0])
+    }
+
+    @Test
+    func parsesSpanishWeeklyMonthlyAndYearlyReminders() {
+        let weekly = parser.parse(
+            content: "Cada semana el lunes a las 9 recuérdame revisar el informe",
+            now: now,
+            calendar: calendar
+        )
+        let monthly = parser.parse(
+            content: "Cada mes el 15 a las 10 recuérdame pagar el alquiler",
+            now: now,
+            calendar: calendar
+        )
+        let yearly = parser.parse(
+            content: "Cada año el 15 de agosto a las 10 recuérdame renovar el pasaporte",
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(weekly.reminder?.title == "revisar el informe")
+        #expect(weekly.reminder?.repeatRule == .weekly)
+        #expect(dateComponents(weekly.reminder?.remindAt) == [2026, 6, 8, 9, 0])
+        #expect(monthly.reminder?.title == "pagar el alquiler")
+        #expect(monthly.reminder?.repeatRule == .monthly)
+        #expect(dateComponents(monthly.reminder?.remindAt) == [2026, 6, 15, 10, 0])
+        #expect(yearly.reminder?.title == "renovar el pasaporte")
+        #expect(yearly.reminder?.repeatRule == .yearly)
+        #expect(dateComponents(yearly.reminder?.remindAt) == [2026, 8, 15, 10, 0])
+    }
+
+    @Test
+    func parsesJapaneseReminderWithRelativeDayAndTime() {
+        let parsed = parser.parse(
+            content: "明日の午後三時に請求書を支払うようにリマインドして",
+            source: .voice,
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(parsed.record.category == .reminder)
+        #expect(parsed.record.source == .voice)
+        #expect(parsed.reminder?.title == "請求書を支払う")
+        #expect(parsed.reminder?.repeatRule == ReminderRepeatRule.none)
+        #expect(dateComponents(parsed.reminder?.remindAt) == [2026, 6, 8, 15, 0])
+        #expect(parsed.warnings.isEmpty)
+    }
+
+    @Test
+    func parsesJapaneseRelativeDurationAndDailyReminder() {
+        let relative = parser.parse(
+            content: "三十分後に薬を飲むことをリマインドして",
+            source: .voice,
+            now: now,
+            calendar: calendar
+        )
+        let daily = parser.parse(
+            content: "毎日午前八時に薬を飲むことをリマインドして",
+            source: .text,
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(relative.reminder?.title == "薬を飲む")
+        #expect(relative.reminder?.remindAt == calendar.date(byAdding: .minute, value: 30, to: now))
+        #expect(daily.reminder?.title == "薬を飲む")
+        #expect(daily.reminder?.repeatRule == .daily)
+        #expect(dateComponents(daily.reminder?.remindAt) == [2026, 6, 8, 8, 0])
+    }
+
+    @Test
+    func parsesJapaneseExplicitDateReminder() {
+        let parsed = parser.parse(
+            content: "八月十五日午前十時にパスポートを更新するようにリマインドして",
+            source: .text,
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(parsed.reminder?.title == "パスポートを更新する")
+        #expect(dateComponents(parsed.reminder?.remindAt) == [2026, 8, 15, 10, 0])
+    }
+
+    @Test
+    func parsesJapaneseWeeklyMonthlyAndYearlyReminders() {
+        let weekly = parser.parse(
+            content: "毎週月曜日午前9時に週報を確認するようにリマインドして",
+            now: now,
+            calendar: calendar
+        )
+        let monthly = parser.parse(
+            content: "毎月15日午前10時に家賃を払うようにリマインドして",
+            now: now,
+            calendar: calendar
+        )
+        let yearly = parser.parse(
+            content: "毎年8月15日午前10時にパスポートを更新するようにリマインドして",
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(weekly.reminder?.title == "週報を確認する")
+        #expect(weekly.reminder?.repeatRule == .weekly)
+        #expect(dateComponents(weekly.reminder?.remindAt) == [2026, 6, 8, 9, 0])
+        #expect(monthly.reminder?.title == "家賃を払う")
+        #expect(monthly.reminder?.repeatRule == .monthly)
+        #expect(dateComponents(monthly.reminder?.remindAt) == [2026, 6, 15, 10, 0])
+        #expect(yearly.reminder?.title == "パスポートを更新する")
+        #expect(yearly.reminder?.repeatRule == .yearly)
+        #expect(dateComponents(yearly.reminder?.remindAt) == [2026, 8, 15, 10, 0])
+    }
+
+    @Test
+    func returnsInputLanguageWarningWhenMultilingualReminderHasNoTime() {
+        let spanish = parser.parse(
+            content: "Recuérdame llamar a Ana",
+            now: now,
+            calendar: calendar
+        )
+        let japanese = parser.parse(
+            content: "薬を飲むことをリマインドして",
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(spanish.record.category == .reminder)
+        #expect(spanish.reminder == nil)
+        #expect(spanish.warnings == ["Se detectó un recordatorio, pero falta una fecha u hora válida."])
+        #expect(japanese.record.category == .reminder)
+        #expect(japanese.reminder == nil)
+        #expect(japanese.warnings == ["リマインダーを認識しましたが、有効な日時が見つかりません。"])
+    }
+
+    @Test
+    func parsesSpanishAndJapaneseStorageSentences() {
+        let spanish = parser.parse(
+            content: "Guardé el pasaporte en el cajón derecho del estudio",
+            source: .voice,
+            now: now,
+            calendar: calendar
+        )
+        let japanese = parser.parse(
+            content: "パスポートを書斎の右の引き出しに入れた",
+            source: .voice,
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(spanish.record.category == .storage)
+        #expect(spanish.record.objectName == "pasaporte")
+        #expect(spanish.record.location == "cajón derecho del estudio")
+        #expect(spanish.record.resolvedStorageContainer == .drawer)
+        #expect(japanese.record.category == .storage)
+        #expect(japanese.record.objectName == "パスポート")
+        #expect(japanese.record.location == "書斎の右の引き出し")
+        #expect(japanese.record.resolvedStorageContainer == .drawer)
+    }
+
+    @Test
+    func searchesSpanishAndJapaneseStorageNaturally() {
+        let spanish = parser.parse(
+            content: "Guardé el pasaporte en el cajón derecho del estudio",
+            now: now,
+            calendar: calendar
+        ).record
+        let japanese = parser.parse(
+            content: "鍵を玄関の引き出しに入れた",
+            now: now,
+            calendar: calendar
+        ).record
+
+        #expect(SearchIntentClassifier.isSearchQuery("¿Dónde está mi pasaporte?"))
+        #expect(SearchIntentClassifier.isSearchQuery("鍵はどこにある？"))
+        #expect(RecordSearch.query("¿Dónde está mi pasaporte?", in: [japanese, spanish]).first?.id == spanish.id)
+        #expect(RecordSearch.query("鍵はどこにある？", in: [spanish, japanese]).first?.id == japanese.id)
+    }
+
+    private func dateComponents(_ date: Date?) -> [Int] {
+        guard let date else { return [] }
+        let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date)
+        return [components.year, components.month, components.day, components.hour, components.minute].compactMap { $0 }
+    }
 }

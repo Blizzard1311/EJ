@@ -1,0 +1,4 @@
+"CFBundleDisplayName" = "Yiji";
+"NSLocationWhenInUseUsageDescription" = "Yiji usa tu ubicación actual para mostrar el pronóstico del tiempo de los próximos 10 días en el calendario.";
+"NSMicrophoneUsageDescription" = "Yiji necesita acceso al micrófono para registrar contenido por voz.";
+"NSSpeechRecognitionUsageDescription" = "Yiji usa el reconocimiento de voz para ayudarte a registrar información rápidamente.";

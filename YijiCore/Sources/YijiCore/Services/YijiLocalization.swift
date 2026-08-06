@@ -10,6 +10,28 @@ enum YijiLocalization {
         return languageCode.lowercased().hasPrefix("en")
     }
 
+    static var isTraditionalChinese: Bool {
+        guard Bundle.main.bundleIdentifier == "com.blizzard1311.yiji" else {
+            return false
+        }
+        let code = languageCode.lowercased()
+        return code.hasPrefix("zh-hant") || code.hasPrefix("zh-tw") || code.hasPrefix("zh-hk") || code.hasPrefix("zh-mo")
+    }
+
+    static var isSpanish: Bool {
+        guard Bundle.main.bundleIdentifier == "com.blizzard1311.yiji" else {
+            return false
+        }
+        return languageCode.lowercased().hasPrefix("es")
+    }
+
+    static var isJapanese: Bool {
+        guard Bundle.main.bundleIdentifier == "com.blizzard1311.yiji" else {
+            return false
+        }
+        return languageCode.lowercased().hasPrefix("ja")
+    }
+
     static func text(_ key: String) -> String {
         let localized = localizedBundle.localizedString(forKey: key, value: key, table: nil)
         if localized != key {
@@ -42,8 +64,17 @@ enum YijiLocalization {
             if storedLanguage == "en" {
                 return "en"
             }
+            if storedLanguage == "zh-Hant" {
+                return "zh-Hant"
+            }
             if storedLanguage == "zh-Hans" {
                 return "zh-Hans"
+            }
+            if storedLanguage == "es" {
+                return "es"
+            }
+            if storedLanguage == "ja" {
+                return "ja"
             }
         }
         return Bundle.main.preferredLocalizations.first
@@ -52,8 +83,21 @@ enum YijiLocalization {
     }
 
     private static var localizedBundle: Bundle {
+        let rawCode = languageCode.lowercased()
+        let resourceCode: String
+        if rawCode.hasPrefix("zh-hant") || rawCode.hasPrefix("zh-tw") || rawCode.hasPrefix("zh-hk") || rawCode.hasPrefix("zh-mo") {
+            resourceCode = "zh-Hant"
+        } else if rawCode.hasPrefix("en") {
+            resourceCode = "en"
+        } else if rawCode.hasPrefix("es") {
+            resourceCode = "es"
+        } else if rawCode.hasPrefix("ja") {
+            resourceCode = "ja"
+        } else {
+            resourceCode = "zh-Hans"
+        }
         guard Bundle.main.bundleIdentifier == "com.blizzard1311.yiji",
-              let path = Bundle.main.path(forResource: languageCode, ofType: "lproj"),
+              let path = Bundle.main.path(forResource: resourceCode, ofType: "lproj"),
               let bundle = Bundle(path: path) else {
             return Bundle.main
         }

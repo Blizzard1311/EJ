@@ -1,0 +1,4 @@
+"CFBundleDisplayName" = "易記";
+"NSLocationWhenInUseUsageDescription" = "易記需要使用你目前的位置，為日曆顯示未來 10 天的天氣提示。";
+"NSMicrophoneUsageDescription" = "易記需要麥克風權限來錄入語音內容。";
+"NSSpeechRecognitionUsageDescription" = "易記需要語音辨識來快速記錄生活資訊。";

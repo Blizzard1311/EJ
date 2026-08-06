@@ -81,6 +81,8 @@ final class AppModel: ObservableObject {
             return .capture
         case "calendar":
             return .calendar
+        case "settings":
+            return .settings
         default:
             return .home
         }
@@ -88,6 +90,7 @@ final class AppModel: ObservableObject {
     @Published var searchText = ""
     @Published var searchHistory: [String] = []
     @Published private(set) var appLanguage = AppLocalization.selectedLanguage
+    @Published private(set) var speechLanguage = AppLocalization.selectedSpeechLanguage
     @Published var exportURL: URL?
     @Published var statusMessage: String?
     @Published var focusedRecordID: UUID?
@@ -134,6 +137,14 @@ final class AppModel: ObservableObject {
         Task { [weak self] in
             await self?.refreshCloudSyncStatus()
         }
+    }
+
+    func selectSpeechLanguage(_ language: SpeechLanguage) {
+        guard speechLanguage != language else { return }
+        AppLocalization.selectedSpeechLanguage = language
+        speechLanguage = language
+        statusMessage = nil
+        speech.refreshRecognitionLanguage()
     }
 
     func load() async {

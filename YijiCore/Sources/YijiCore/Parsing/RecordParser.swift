@@ -107,6 +107,10 @@ public struct RecordParser: Sendable {
     }
 
     private func parseStorage(content: String) -> (objectName: String, location: String)? {
+        if let multilingual = MultilingualInputParser.parseStorage(content: content) {
+            return (multilingual.objectName, multilingual.location)
+        }
+
         let patterns = [
             #"^我把(.+?)放在(.+)$"#,
             #"^我把(.+?)放进(.+)$"#,
@@ -137,6 +141,28 @@ public struct RecordParser: Sendable {
     }
 
     private func parseReminder(content: String, now: Date, calendar: Calendar) -> ParsedReminderIntent? {
+        if let multilingual = MultilingualInputParser.parseReminder(
+            content: content,
+            now: now,
+            calendar: calendar
+        ) {
+            let reminder = multilingual.remindAt.map {
+                Reminder(
+                    title: multilingual.title,
+                    body: content,
+                    remindAt: $0,
+                    repeatRule: multilingual.repeatRule,
+                    status: .pending,
+                    createdAt: now
+                )
+            }
+            return ParsedReminderIntent(
+                title: multilingual.title,
+                reminder: reminder,
+                warnings: multilingual.warning.map { [$0] } ?? []
+            )
+        }
+
         let reminderKeywords = ["提醒我", "记得提醒我", "到时候提醒我", "别忘了"]
         guard reminderKeywords.contains(where: content.contains) else {
             return nil

@@ -110,7 +110,10 @@ private let medicineKitLocationKeywords = [
     "医药箱",
     "药箱",
     "药盒",
-    "急救包"
+    "急救包",
+    "botiquín",
+    "botiquin",
+    "薬箱"
 ]
 
 private let documentPouchLocationKeywords = [
@@ -118,27 +121,38 @@ private let documentPouchLocationKeywords = [
     "文件袋",
     "资料袋",
     "文件夹",
-    "证件夹"
+    "证件夹",
+    "carpeta de documentos",
+    "portadocumentos",
+    "書類ケース",
+    "書類入れ"
 ]
 
 private let jewelryBoxLocationKeywords = [
     "首饰盒",
     "珠宝盒",
-    "饰品盒"
+    "饰品盒",
+    "joyero",
+    "宝石箱"
 ]
 
 private let digitalBoxLocationKeywords = [
     "数码盒",
     "设备盒",
     "充电线盒",
-    "电子配件盒"
+    "电子配件盒",
+    "caja de electrónica",
+    "caja de electronica",
+    "電子機器ボックス"
 ]
 
 private let wardrobeLocationKeywords = [
     "衣柜",
     "衣橱",
     "衣帽间",
-    "挂衣区"
+    "挂衣区",
+    "armario",
+    "クローゼット"
 ]
 
 private let drawerLocationKeywords = [
@@ -147,7 +161,10 @@ private let drawerLocationKeywords = [
     "柜子第一层",
     "柜子最上层",
     "床头柜",
-    "边柜"
+    "边柜",
+    "cajón",
+    "cajon",
+    "引き出し"
 ]
 
 private let bagLocationKeywords = [
@@ -156,7 +173,12 @@ private let bagLocationKeywords = [
     "背包",
     "手提袋",
     "托特包",
-    "公文包"
+    "公文包",
+    "bolso",
+    "mochila",
+    "バッグ",
+    "かばん",
+    "鞄"
 ]
 
 private let storageBoxLocationKeywords = [
@@ -165,7 +187,13 @@ private let storageBoxLocationKeywords = [
     "箱子",
     "盒子",
     "篮子",
-    "置物架"
+    "置物架",
+    "caja",
+    "estantería",
+    "estanteria",
+    "収納ボックス",
+    "箱",
+    "棚"
 ]
 
 private let medicineKitObjectKeywords = [
@@ -178,7 +206,12 @@ private let medicineKitObjectKeywords = [
     "耳温枪",
     "维生素",
     "药膏",
-    "口罩"
+    "口罩",
+    "medicina",
+    "termómetro",
+    "termometro",
+    "薬",
+    "体温計"
 ]
 
 private let documentPouchObjectKeywords = [
@@ -197,7 +230,11 @@ private let documentPouchObjectKeywords = [
     "社保卡",
     "银行卡",
     "票据",
-    "发票"
+    "发票",
+    "pasaporte",
+    "documento de identidad",
+    "パスポート",
+    "身分証明書"
 ]
 
 private let jewelryBoxObjectKeywords = [

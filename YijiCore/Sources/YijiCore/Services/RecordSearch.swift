@@ -138,6 +138,21 @@ private let commonQueryPhrases = [
     "记录过",
     "记得",
     "请问"
+    ,"dónde está"
+    ,"donde está"
+    ,"donde esta"
+    ,"dónde guardé"
+    ,"donde guardé"
+    ,"donde guarde"
+    ,"búscame"
+    ,"buscame"
+    ,"encuéntrame"
+    ,"encuentrame"
+    ,"どこにある"
+    ,"どこに置いた"
+    ,"どこ"
+    ,"探して"
+    ,"検索して"
 ]
 
 private extension Array {

@@ -52,4 +52,13 @@ private let queryPhrases = [
     "列出",
     "帮我看",
     "帮我列"
+    ,"dónde está"
+    ,"donde está"
+    ,"donde esta"
+    ,"buscar"
+    ,"encuentra"
+    ,"encuéntrame"
+    ,"どこ"
+    ,"探して"
+    ,"検索"
 ]

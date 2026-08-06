@@ -41,6 +41,12 @@
 		A11C4E9D4E9A4B4A9F2D1027 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		A11C4E9D4E9A4B4A9F2D1028 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		A11C4E9D4E9A4B4A9F2D1029 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		A11C4E9D4E9A4B4A9F2D1030 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/Localizable.strings"; sourceTree = "<group>"; };
+		A11C4E9D4E9A4B4A9F2D1031 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		A11C4E9D4E9A4B4A9F2D1032 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/Localizable.strings; sourceTree = "<group>"; };
+		A11C4E9D4E9A4B4A9F2D1033 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		A11C4E9D4E9A4B4A9F2D1034 /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ja.lproj/Localizable.strings; sourceTree = "<group>"; };
+		A11C4E9D4E9A4B4A9F2D1035 /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ja.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		0209B8EBF57A23214D300167 /* ReminderEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderEditorView.swift; sourceTree = "<group>"; };
 		06982B2E73493E9D1A75DB60 /* RecordDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordDetailView.swift; sourceTree = "<group>"; };
 		1D273F4EB9A2E7EE7405A5CD /* FileBackedVaultStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileBackedVaultStore.swift; sourceTree = "<group>"; };
@@ -304,7 +310,10 @@
 			knownRegions = (
 				Base,
 				en,
+				es,
+				ja,
 				zh-Hans,
+				"zh-Hant",
 			);
 			mainGroup = 98A485684807419FB64CEE5E;
 			minimizedProjectReferenceProxies = 1;
@@ -387,6 +396,9 @@
 			children = (
 				A11C4E9D4E9A4B4A9F2D1025 /* en */,
 				A11C4E9D4E9A4B4A9F2D1028 /* zh-Hans */,
+				A11C4E9D4E9A4B4A9F2D1030 /* zh-Hant */,
+				A11C4E9D4E9A4B4A9F2D1032 /* es */,
+				A11C4E9D4E9A4B4A9F2D1034 /* ja */,
 			);
 			name = Localizable.strings;
 			sourceTree = "<group>";
@@ -396,6 +408,9 @@
 			children = (
 				A11C4E9D4E9A4B4A9F2D1027 /* en */,
 				A11C4E9D4E9A4B4A9F2D1029 /* zh-Hans */,
+				A11C4E9D4E9A4B4A9F2D1031 /* zh-Hant */,
+				A11C4E9D4E9A4B4A9F2D1033 /* es */,
+				A11C4E9D4E9A4B4A9F2D1035 /* ja */,
 			);
 			name = InfoPlist.strings;
 			sourceTree = "<group>";
@@ -411,7 +426,7 @@
 					CODE_SIGN_ENTITLEMENTS = "YijiApp/YijiApp-Release.entitlements";
 					CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 11;
 				DEVELOPMENT_TEAM = AWQP33QVBW;
 				INFOPLIST_FILE = YijiApp/Resources/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -437,7 +452,7 @@
 					CODE_SIGN_ENTITLEMENTS = YijiApp/YijiApp.entitlements;
 					CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 11;
 				DEVELOPMENT_TEAM = AWQP33QVBW;
 				INFOPLIST_FILE = YijiApp/Resources/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;

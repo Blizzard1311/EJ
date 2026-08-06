@@ -222,6 +222,13 @@ final class SpeechTranscriber: ObservableObject {
         guard speechRecognizer == nil || speechRecognizerLocaleIdentifier != locale.identifier else {
             return
         }
+        guard SFSpeechRecognizer.supportedLocales().contains(where: {
+            $0.identifier.caseInsensitiveCompare(locale.identifier) == .orderedSame
+        }) else {
+            speechRecognizer = nil
+            speechRecognizerLocaleIdentifier = locale.identifier
+            return
+        }
         speechRecognizer = SFSpeechRecognizer(locale: locale)
         speechRecognizerLocaleIdentifier = locale.identifier
     }
