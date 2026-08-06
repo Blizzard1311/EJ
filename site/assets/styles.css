@@ -231,6 +231,92 @@ a {
   text-transform: uppercase;
 }
 
+body.simple-page {
+  background: #f7f7f5;
+}
+
+.simple-page .page {
+  width: min(820px, calc(100% - 32px));
+  padding: 28px 0 56px;
+}
+
+.doc-header {
+  padding: 8px 0 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.doc-header h1 {
+  margin: 0 0 8px;
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  line-height: 1.15;
+  font-family: "Iowan Old Style", "Palatino Linotype", "Times New Roman", serif;
+  letter-spacing: -0.02em;
+}
+
+.doc-header p {
+  margin: 10px 0 0;
+  color: var(--muted);
+  line-height: 1.75;
+}
+
+.doc-meta {
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.doc-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.doc-nav a {
+  text-decoration: none;
+}
+
+.doc-section {
+  margin-top: 28px;
+}
+
+.doc-section h2 {
+  margin: 0 0 14px;
+  font-size: 1.4rem;
+  font-family: "Iowan Old Style", "Palatino Linotype", "Times New Roman", serif;
+  letter-spacing: -0.02em;
+}
+
+.doc-section h3 {
+  margin: 24px 0 10px;
+  font-size: 1.05rem;
+}
+
+.doc-section p,
+.doc-section li {
+  color: var(--muted);
+  line-height: 1.8;
+}
+
+.doc-section ul,
+.doc-section ol {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.doc-divider {
+  margin-top: 28px;
+  border-top: 1px solid var(--line);
+}
+
+.doc-note {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--muted);
+}
+
 @media (min-width: 760px) {
   .card.span-6 {
     grid-column: span 6;
