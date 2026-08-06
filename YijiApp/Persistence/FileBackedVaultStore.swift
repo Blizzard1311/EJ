@@ -85,9 +85,9 @@ actor FileBackedVaultStore {
         var errorDescription: String? {
             switch self {
             case .emptyBackupFile:
-                AppLocalization.text("备份文件是空的，请选择易记导出的 JSON 备份文件。")
+                AppLocalization.text("备份文件是空的，请选择 Mind U 导出的 JSON 备份文件。")
             case .invalidBackupFormat:
-                AppLocalization.text("备份文件格式不正确，请确认选择的是易记导出的 JSON 备份文件。")
+                AppLocalization.text("备份文件格式不正确，请确认选择的是 Mind U 导出的 JSON 备份文件。")
             case .unreadableBackupFile:
                 AppLocalization.text("备份文件无法读取，请重新选择文件或检查文件权限。")
             }

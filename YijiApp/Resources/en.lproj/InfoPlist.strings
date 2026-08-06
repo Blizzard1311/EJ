@@ -1,4 +1,4 @@
-"CFBundleDisplayName" = "Yiji";
-"NSLocationWhenInUseUsageDescription" = "Yiji uses your current location to show a 10-day weather outlook in the calendar.";
-"NSMicrophoneUsageDescription" = "Yiji needs microphone access for voice capture.";
-"NSSpeechRecognitionUsageDescription" = "Yiji uses speech recognition to help you capture information quickly.";
+"CFBundleDisplayName" = "Mind U";
+"NSLocationWhenInUseUsageDescription" = "Mind U uses your current location to show a 10-day weather outlook in the calendar.";
+"NSMicrophoneUsageDescription" = "Mind U needs microphone access for voice capture.";
+"NSSpeechRecognitionUsageDescription" = "Mind U uses speech recognition to help you capture information quickly.";

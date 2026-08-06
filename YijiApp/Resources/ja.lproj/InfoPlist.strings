@@ -1,4 +1,4 @@
-"CFBundleDisplayName" = "Yiji";
-"NSLocationWhenInUseUsageDescription" = "Yijiは、カレンダーに今後10日間の天気予報を表示するために現在地を使用します。";
-"NSMicrophoneUsageDescription" = "Yijiは音声入力のためにマイクへのアクセスを必要とします。";
-"NSSpeechRecognitionUsageDescription" = "Yijiは情報をすばやく記録するために音声認識を使用します。";
+"CFBundleDisplayName" = "Mind U";
+"NSLocationWhenInUseUsageDescription" = "Mind Uは、カレンダーに今後10日間の天気予報を表示するために現在地を使用します。";
+"NSMicrophoneUsageDescription" = "Mind Uは音声入力のためにマイクへのアクセスを必要とします。";
+"NSSpeechRecognitionUsageDescription" = "Mind Uは情報をすばやく記録するために音声認識を使用します。";

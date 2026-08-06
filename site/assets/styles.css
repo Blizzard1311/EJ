@@ -232,48 +232,51 @@ a {
 }
 
 body.simple-page {
-  background: #f7f7f5;
+  background: #ffffff;
 }
 
 .simple-page .page {
-  width: min(820px, calc(100% - 32px));
-  padding: 28px 0 56px;
+  width: min(820px, calc(100% - 40px));
+  padding: 32px 0 56px;
 }
 
 .doc-header {
-  padding: 8px 0 20px;
-  border-bottom: 1px solid var(--line);
+  padding: 0 0 18px;
+  border-bottom: 1px solid #d9d9d9;
 }
 
 .doc-header h1 {
   margin: 0 0 8px;
-  font-size: clamp(2rem, 4vw, 2.8rem);
-  line-height: 1.15;
-  font-family: "Iowan Old Style", "Palatino Linotype", "Times New Roman", serif;
-  letter-spacing: -0.02em;
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  line-height: 1.2;
+  font-family: "PingFang SC", "SF Pro Display", "Helvetica Neue", sans-serif;
+  letter-spacing: 0;
+  color: #111111;
 }
 
 .doc-header p {
   margin: 10px 0 0;
-  color: var(--muted);
-  line-height: 1.75;
+  color: #111111;
+  line-height: 1.8;
 }
 
 .doc-meta {
   margin-top: 14px;
-  color: var(--muted);
+  color: #444444;
   font-size: 0.95rem;
 }
 
 .doc-nav {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 14px;
   margin-top: 14px;
 }
 
 .doc-nav a {
   text-decoration: none;
+  color: #111111;
+  border-bottom: 1px solid #111111;
 }
 
 .doc-section {
@@ -282,19 +285,21 @@ body.simple-page {
 
 .doc-section h2 {
   margin: 0 0 14px;
-  font-size: 1.4rem;
-  font-family: "Iowan Old Style", "Palatino Linotype", "Times New Roman", serif;
-  letter-spacing: -0.02em;
+  font-size: 1.3rem;
+  font-family: "PingFang SC", "SF Pro Display", "Helvetica Neue", sans-serif;
+  letter-spacing: 0;
+  color: #111111;
 }
 
 .doc-section h3 {
   margin: 24px 0 10px;
   font-size: 1.05rem;
+  color: #111111;
 }
 
 .doc-section p,
 .doc-section li {
-  color: var(--muted);
+  color: #111111;
   line-height: 1.8;
 }
 
@@ -306,15 +311,15 @@ body.simple-page {
 
 .doc-divider {
   margin-top: 28px;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid #d9d9d9;
 }
 
 .doc-note {
   margin-top: 14px;
   padding: 14px 16px;
-  border: 1px solid var(--line);
-  background: #fff;
-  color: var(--muted);
+  border: 1px solid #d9d9d9;
+  background: #ffffff;
+  color: #111111;
 }
 
 @media (min-width: 760px) {

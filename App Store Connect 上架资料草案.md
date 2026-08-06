@@ -1,4 +1,4 @@
-# 易记 App Store Connect 上架资料
+# Mind U App Store Connect 上架资料
 
 更新日期：2026 年 8 月 6 日
 
@@ -24,14 +24,14 @@ App 名称最终能否使用，必须以 App Store Connect 创建 App 记录时�
 
 ### 简体中文
 
-- 名称：`易记`
+- 名称：`Mind U`
 - 副标题：`一句话记住位置、提醒和想法`
 - Promotional Text：`用一句话记住物品位置、提醒事项和临时想法。数据保存在本机，并可随时导出或恢复 JSON 备份。`
 - 关键词：`语音记录,物品收纳,备忘,生活记录,日历,搜索,本地笔记,到期,清单`
 
 描述：
 
-易记是一款面向个人生活场景的轻量记录工具。用一句中文自然语言，就能快速记下物品放在哪里、什么时候要提醒，以及临时想到的事项。
+Mind U是一款面向个人生活场景的轻量记录工具。用一句中文自然语言，就能快速记下物品放在哪里、什么时候要提醒，以及临时想到的事项。
 
 主要功能：
 
@@ -49,18 +49,18 @@ App 名称最终能否使用，必须以 App Store Connect 创建 App 记录时�
 - 明天下午三点提醒我交物业费
 - 记一下，下周要给孩子准备报名材料
 
-易记不需要账号，不含广告或第三方营销跟踪。核心记录先保存在本机；拒绝定位只会关闭天气提示，不影响记录、搜索、提醒或备份。
+Mind U不需要账号，不含广告或第三方营销跟踪。核心记录先保存在本机；拒绝定位只会关闭天气提示，不影响记录、搜索、提醒或备份。
 
 ### 繁體中文
 
-- 名稱：`易記`
+- 名稱：`Mind U`
 - 副標題：`一句話記住位置、提醒與想法`
 - Promotional Text：`用一句話記住物品位置、提醒事項和臨時想法。資料儲存在本機，並可隨時匯出或還原 JSON 備份。`
 - 關鍵字：`語音記錄,物品收納,備忘,生活記錄,日曆,搜尋,本機筆記,到期,清單`
 
 描述：
 
-易記是一款面向個人生活情境的輕量記錄工具。你可以用語音或文字快速記下物品放在哪裡、什麼時候需要提醒，以及臨時想到的事項。
+Mind U 是一款面向個人生活情境的輕量記錄工具。你可以用語音或文字快速記下物品放在哪裡、什麼時候需要提醒，以及臨時想到的事項。
 
 主要功能：
 
@@ -78,18 +78,18 @@ App 名称最终能否使用，必须以 App Store Connect 创建 App 记录时�
 - 明天下午三點提醒我繳管理費
 - 記一下，下週要幫孩子準備報名資料
 
-易記不需要帳號，不含廣告或第三方行銷追蹤。核心記錄先儲存在本機；拒絕定位只會關閉天氣提示，不影響記錄、搜尋、提醒或備份。
+Mind U 不需要帳號，不含廣告或第三方行銷追蹤。核心記錄先儲存在本機；拒絕定位只會關閉天氣提示，不影響記錄、搜尋、提醒或備份。
 
 ### English (U.S.)
 
-- Name: `Yiji: Life Memory`（仍需在 App Store Connect 校验可用性）
+- Name: `Mind U`（仍需在 App Store Connect 校验可用性）
 - Subtitle: `Voice Notes & Reminders`
 - Promotional Text: `Capture everyday details by voice or text in English or Chinese. Keep records on your iPhone and export or restore a JSON backup anytime.`
 - Keywords: `voice memo,item location,memory,organizer,calendar,search,storage,task`
 
 Description:
 
-Yiji is a local-first personal memory app with English, Simplified Chinese, Traditional Chinese, Spanish, and Japanese interfaces. Capture everyday details by voice or text, keep them organized on your iPhone, and find them again when you need them.
+Mind U is a local-first personal memory app with English, Simplified Chinese, Traditional Chinese, Spanish, and Japanese interfaces. Capture everyday details by voice or text, keep them organized on your iPhone, and find them again when you need them.
 
 Key features:
 
@@ -109,7 +109,7 @@ Examples:
 - “我把护照放在书房右边抽屉” — I put my passport in the right drawer in the study.
 - “明天下午三点提醒我交物业费” — Remind me at 3 PM tomorrow to pay the property fee.
 
-No account is required. Yiji contains no ads or third-party marketing trackers. Core data is stored locally first. If you deny location access, only calendar weather is unavailable; capture, search, reminders, and backups continue to work.
+No account is required. Mind U contains no ads or third-party marketing trackers. Core data is stored locally first. If you deny location access, only calendar weather is unavailable; capture, search, reminders, and backups continue to work.
 
 ## 3. 分类与年龄分级
 
@@ -120,7 +120,7 @@ No account is required. Yiji contains no ads or third-party marketing trackers. 
 ## 4. App Review Notes 模板
 
 ```text
-Yiji is a local-first personal memory app with English, Simplified Chinese, Traditional Chinese, Spanish, and Japanese interfaces. No account or login is required.
+Mind U is a local-first personal memory app with English, Simplified Chinese, Traditional Chinese, Spanish, and Japanese interfaces. No account or login is required.
 
 Core review path:
 1. The app includes separate settings for app language and speech recognition language. App language options are Follow System, Simplified Chinese, Traditional Chinese, English, Spanish, and Japanese.
