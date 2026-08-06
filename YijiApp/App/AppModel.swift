@@ -70,6 +70,7 @@ final class AppModel: ObservableObject {
 
     let speech = SpeechTranscriber()
     let notifications = LocalNotificationScheduler()
+    let calendarWeather = CalendarWeatherModel()
 
     @Published var records: [YijiCore.Record] = []
     @Published var reminders: [Reminder] = []
@@ -823,6 +824,12 @@ final class AppModel: ObservableObject {
             .store(in: &cancellables)
 
         notifications.objectWillChange
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
+
+        calendarWeather.objectWillChange
             .sink { [weak self] _ in
                 self?.objectWillChange.send()
             }

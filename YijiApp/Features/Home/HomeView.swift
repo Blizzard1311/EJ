@@ -3,29 +3,6 @@ import Foundation
 import YijiCore
 
 struct HomeView: View {
-    private enum BrowseScene: Hashable {
-        case storage
-        case calendar
-
-        var title: String {
-            switch self {
-            case .storage:
-                AppLocalization.text("收纳")
-            case .calendar:
-                AppLocalization.text("计划")
-            }
-        }
-
-        var systemImage: String {
-            switch self {
-            case .storage:
-                "folder"
-            case .calendar:
-                "calendar"
-            }
-        }
-    }
-
     private struct StorageContainerPickerView: View {
         @EnvironmentObject private var appModel: AppModel
         @Environment(\.dismiss) private var dismiss
@@ -195,66 +172,10 @@ struct HomeView: View {
         let kind: Kind
         let records: [Record]
     }
-
-    private struct FolderTabShape: Shape {
-        func path(in rect: CGRect) -> Path {
-            let radius = min(18, rect.height * 0.34)
-            let notchDepth = min(11, rect.height * 0.24)
-            let notchWidth = min(116, rect.width * 0.52)
-            let notchCorner = min(12, notchDepth * 0.95)
-            let notchEnd = min(rect.width - radius - 24, notchWidth)
-
-            var path = Path()
-            path.move(to: CGPoint(x: radius, y: notchDepth))
-            path.addLine(to: CGPoint(x: notchEnd - notchCorner, y: notchDepth))
-            path.addCurve(
-                to: CGPoint(x: notchEnd, y: 0),
-                control1: CGPoint(x: notchEnd - notchCorner * 0.2, y: notchDepth),
-                control2: CGPoint(x: notchEnd - notchCorner * 0.2, y: 0)
-            )
-            path.addLine(to: CGPoint(x: rect.width - radius, y: 0))
-            path.addQuadCurve(
-                to: CGPoint(x: rect.width, y: radius),
-                control: CGPoint(x: rect.width, y: 0)
-            )
-            path.addLine(to: CGPoint(x: rect.width, y: rect.height - radius))
-            path.addQuadCurve(
-                to: CGPoint(x: rect.width - radius, y: rect.height),
-                control: CGPoint(x: rect.width, y: rect.height)
-            )
-            path.addLine(to: CGPoint(x: radius, y: rect.height))
-            path.addQuadCurve(
-                to: CGPoint(x: 0, y: rect.height - radius),
-                control: CGPoint(x: 0, y: rect.height)
-            )
-            path.addLine(to: CGPoint(x: 0, y: notchDepth + radius))
-            path.addQuadCurve(
-                to: CGPoint(x: radius, y: notchDepth),
-                control: CGPoint(x: 0, y: notchDepth)
-            )
-            path.closeSubpath()
-
-            return path
-        }
-    }
-
-    private let monthCalendarHeight: CGFloat = 500
     @EnvironmentObject private var appModel: AppModel
-    @Environment(\.openURL) private var openURL
-    @Environment(\.scenePhase) private var scenePhase
     @State private var deletingRecord: Record?
-    @State private var selectedDate = Calendar(identifier: .gregorian).startOfDay(for: Date())
-    @State private var visibleMonth = Calendar(identifier: .gregorian).startOfDay(for: Date())
-    @State private var activeScene: BrowseScene = {
-        if ProcessInfo.processInfo.environment["YIJI_START_SCENE"] == "calendar" {
-            return .calendar
-        }
-        return .storage
-    }()
     @State private var showingStorageContainerPicker = false
     @State private var selectedStorageGroupID: String?
-    @StateObject private var calendarWeatherModel = CalendarWeatherModel()
-
     var body: some View {
         List {
             if isSearchingRecords {
@@ -319,75 +240,6 @@ struct HomeView: View {
         AppTheme.canvas.ignoresSafeArea()
     }
 
-    private var sceneTabsSection: some View {
-        Section {
-            HStack(spacing: 0) {
-                sceneTabButton(for: .storage)
-                sceneTabButton(for: .calendar)
-            }
-            .padding(5)
-            .background(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(Color(red: 0.88, green: 0.91, blue: 0.96).opacity(0.94))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .stroke(Color.white.opacity(0.72), lineWidth: 1)
-            )
-        }
-        .listRowInsets(EdgeInsets(top: 16, leading: 16, bottom: 4, trailing: 16))
-        .listRowBackground(Color.clear)
-        .listRowSeparator(.hidden)
-        .listSectionSeparator(.hidden, edges: .all)
-    }
-
-    private var monthCalendarSection: some View {
-        Section {
-            VStack(alignment: .leading, spacing: 9) {
-                CalendarMonthView(
-                    selectedDate: selectedDate,
-                    visibleMonth: visibleMonth,
-                    eventDates: [],
-                    reminderDates: pendingReminderDateSet,
-                    notifiedDates: notifiedReminderDateSet,
-                    weatherByDate: calendarWeatherModel.weatherByDate,
-                    calendar: filterCalendar,
-                    onDateSelected: { date in
-                        selectedDate = filterCalendar.startOfDay(for: date)
-                    },
-                    onVisibleMonthChanged: { date in
-                        visibleMonth = filterCalendar.startOfDay(for: date)
-                    }
-                )
-                .frame(height: monthCalendarHeight)
-
-                calendarLegend
-
-                if let selectedDateWeather {
-                    selectedDateWeatherCard(selectedDateWeather)
-                }
-
-                calendarWeatherStatusRow
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
-            .padding(.bottom, 12)
-            .background(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(.white.opacity(0.92))
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .stroke(Color.white.opacity(0.62), lineWidth: 1)
-            )
-        }
-        .listRowInsets(EdgeInsets(top: 16, leading: 16, bottom: 6, trailing: 16))
-        .listRowBackground(Color.clear)
-        .listRowSeparator(.hidden)
-        .listSectionSeparator(.hidden, edges: .all)
-    }
-
     private func statusSection(_ statusMessage: String) -> some View {
         Section {
             Label(statusMessage, systemImage: "info.circle")
@@ -403,29 +255,6 @@ struct HomeView: View {
         }
         .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 2, trailing: 16))
         .listRowBackground(Color.clear)
-    }
-
-    @ViewBuilder
-    private var calendarContentSection: some View {
-        if selectedDateReminders.isEmpty {
-            Section {
-                Text("暂无提醒")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(14)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .fill(Color.white.opacity(0.86))
-                    )
-            }
-            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 10, trailing: 16))
-            .listRowBackground(Color.clear)
-        } else {
-            if !selectedDatePendingReminders.isEmpty || !selectedDateNotifiedReminders.isEmpty || !selectedDateArchivedReminders.isEmpty {
-                reminderSection(title: "提醒", reminders: selectedDateReminders)
-            }
-        }
     }
 
     private var storageContainersSection: some View {
@@ -478,33 +307,6 @@ struct HomeView: View {
             }
             .buttonStyle(.plain)
         }
-    }
-
-    private func reminderSection(title: String, reminders: [Reminder]) -> some View {
-        Section {
-            VStack(alignment: .leading, spacing: 8) {
-                sectionHeader(
-                    title: title,
-                    subtitle: reminderSectionSubtitle,
-                    countText: AppLocalization.format("reminder_count", reminders.count)
-                )
-
-                ForEach(Array(reminders.enumerated()), id: \.element.id) { index, reminder in
-                    if index > 0 {
-                        Divider()
-                    }
-
-                    reminderCard(for: reminder)
-                }
-            }
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(.white.opacity(0.92))
-            )
-        }
-        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-        .listRowBackground(Color.clear)
     }
 
     private var activeSearchSection: some View {
@@ -611,108 +413,6 @@ struct HomeView: View {
         )
     }
 
-    private var calendarLegend: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 18) {
-                calendarLegendItem(title: "待提醒", color: .orange)
-                calendarLegendItem(title: "已提醒", color: .green)
-            }
-
-            HStack(spacing: 6) {
-                Image(systemName: "cloud.sun.fill")
-                    .font(.caption)
-                    .foregroundStyle(.teal)
-
-                Text("天气")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 4)
-        .padding(.top, 0)
-        .padding(.bottom, 0)
-    }
-
-    private func calendarLegendItem(title: String, color: Color) -> some View {
-        HStack(spacing: 6) {
-            Circle()
-                .fill(color)
-                .frame(width: 6, height: 6)
-
-            Text(AppLocalization.text(title))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    private func selectedDateWeatherCard(_ weather: CalendarDayWeather) -> some View {
-        let accentColor = Color(uiColor: weather.accentColor)
-
-        return HStack(spacing: 10) {
-            Image(systemName: weather.symbolName)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(accentColor)
-                .frame(width: 24, height: 24)
-                .background(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(accentColor.opacity(0.10))
-                )
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(weather.summaryLine)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.primary)
-
-                Text(weather.temperatureLine)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer(minLength: 8)
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(accentColor.opacity(0.08))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(accentColor.opacity(0.14), lineWidth: 1)
-        )
-    }
-
-    private var calendarWeatherStatusRow: some View {
-        HStack(spacing: 8) {
-            Image(systemName: calendarWeatherModel.statusIconName)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            Text(calendarWeatherModel.statusText)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-
-            Spacer(minLength: 8)
-
-            if calendarWeatherModel.shouldOfferSettings {
-                Button("去设置") {
-                    openLocationSettings()
-                }
-                .buttonStyle(.plain)
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(AppTheme.accent)
-            } else if let actionTitle = calendarWeatherModel.actionTitle {
-                Button(actionTitle) {
-                    calendarWeatherModel.refresh()
-                }
-                .buttonStyle(.plain)
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(AppTheme.accent)
-            }
-        }
-        .padding(.horizontal, 4)
-    }
 
     private func storageContainerCard(for group: StorageContainerGroup) -> some View {
         let tint = storageContainerTint(for: group)
@@ -939,58 +639,6 @@ struct HomeView: View {
         .padding(.vertical, 8)
     }
 
-    private func reminderCard(for reminder: Reminder) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top, spacing: 10) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(reminder.title)
-                        .font(.footnote.weight(.semibold))
-
-                    if !reminder.body.isEmpty {
-                        Text(reminder.body)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(3)
-                    }
-                }
-
-                Spacer(minLength: 10)
-
-                HStack(spacing: 6) {
-                    Image(systemName: "alarm.fill")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(reminderStatusColor(reminder.status))
-
-                    Text(reminder.status.displayName)
-                        .font(.caption2.weight(.medium))
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 3)
-                        .background(
-                            Capsule()
-                                .fill(reminderStatusColor(reminder.status).opacity(0.14))
-                        )
-                        .foregroundStyle(reminderStatusColor(reminder.status))
-                }
-            }
-
-            HStack(spacing: 8) {
-                infoChip(YijiDateFormatter.timeFormatter.string(from: reminder.remindAt), icon: "clock")
-                infoChip(reminder.repeatRule.displayName, icon: "repeat")
-            }
-
-            if let record = appModel.record(for: reminder) {
-                NavigationLink {
-                    RecordDetailView(recordID: record.id)
-                } label: {
-                    Label("查看关联记录", systemImage: "doc.text")
-                        .font(.caption)
-                        .foregroundStyle(AppTheme.accent)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-    }
-
     private func recordCard(for record: Record) -> some View {
         let isFocused = appModel.focusedRecordID == record.id
 
@@ -1093,50 +741,6 @@ struct HomeView: View {
             )
     }
 
-    private func sceneTabButton(for scene: BrowseScene) -> some View {
-        let isActive = activeScene == scene
-
-        return Button {
-            withAnimation(.easeInOut(duration: 0.18)) {
-                activeScene = scene
-            }
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: scene.systemImage)
-                    .font(.subheadline.weight(.semibold))
-
-                Text(scene.title)
-                    .font(.subheadline.weight(.semibold))
-                    .lineLimit(1)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 13)
-            .background(
-                Group {
-                    if isActive {
-                        FolderTabShape()
-                            .fill(Color.white.opacity(0.98))
-                    } else {
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .fill(Color.clear)
-                    }
-                }
-            )
-            .overlay(
-                Group {
-                    if isActive {
-                        FolderTabShape()
-                            .stroke(Color.white.opacity(0.95), lineWidth: 1)
-                    }
-                }
-            )
-            .shadow(color: isActive ? Color.black.opacity(0.06) : .clear, radius: 10, y: 4)
-            .foregroundStyle(isActive ? Color(red: 0.20, green: 0.30, blue: 0.46) : .secondary)
-        }
-        .buttonStyle(.plain)
-    }
-
     private func storageContainerIcon(_ container: StorageContainer?) -> String {
         switch container {
         case .medicineKit:
@@ -1220,25 +824,6 @@ struct HomeView: View {
         }
     }
 
-    private func syncSelectedDateIfNeeded() {
-        if let focusedRecordID = appModel.focusedRecordID,
-           let record = appModel.records.first(where: { $0.id == focusedRecordID }) {
-            let recordDay = filterCalendar.startOfDay(for: record.recordDate)
-            selectedDate = recordDay
-            visibleMonth = recordDay
-            return
-        }
-
-        guard selectedDateRecords.isEmpty,
-              selectedDateReminders.isEmpty,
-              let firstDate = allTimelineDates.sorted(by: >).first else {
-            return
-        }
-
-        selectedDate = firstDate
-        visibleMonth = firstDate
-    }
-
     private var filterCalendar: Calendar {
         Calendar(identifier: .gregorian)
     }
@@ -1290,17 +875,6 @@ struct HomeView: View {
             trimmedSearchText,
             first.answerSummary
         )
-    }
-
-    private var selectedDateRecords: [Record] {
-        appModel.records
-            .filter { filterCalendar.isDate($0.recordDate, inSameDayAs: selectedDate) }
-            .sorted { lhs, rhs in
-                if lhs.recordDate == rhs.recordDate {
-                    return lhs.createdAt > rhs.createdAt
-                }
-                return lhs.recordDate > rhs.recordDate
-            }
     }
 
     private var allStorageRecords: [Record] {
@@ -1371,50 +945,6 @@ struct HomeView: View {
         return allStorageGroups.first { $0.id == selectedStorageGroupID }
     }
 
-    private var selectedDateReminders: [Reminder] {
-        appModel.reminders
-            .filter { filterCalendar.isDate($0.remindAt, inSameDayAs: selectedDate) }
-            .sorted { $0.remindAt < $1.remindAt }
-    }
-
-    private var selectedDatePendingReminders: [Reminder] {
-        selectedDateReminders.filter { $0.status == .pending }
-    }
-
-    private var selectedDateNotifiedReminders: [Reminder] {
-        selectedDateReminders.filter { $0.status == .notified }
-    }
-
-    private var selectedDateArchivedReminders: [Reminder] {
-        selectedDateReminders.filter { $0.status != .pending && $0.status != .notified }
-    }
-
-    private var pendingReminderDateSet: Set<Date> {
-        Set(
-            appModel.reminders
-                .filter { $0.status == .pending }
-                .map { filterCalendar.startOfDay(for: $0.remindAt) }
-        )
-    }
-
-    private var notifiedReminderDateSet: Set<Date> {
-        Set(
-            appModel.reminders
-                .filter { $0.status == .notified }
-                .map { filterCalendar.startOfDay(for: $0.remindAt) }
-        )
-    }
-
-    private var allTimelineDates: Set<Date> {
-        Set(appModel.records.map { filterCalendar.startOfDay(for: $0.recordDate) })
-            .union(pendingReminderDateSet)
-            .union(notifiedReminderDateSet)
-    }
-
-    private var reminderSectionSubtitle: String {
-        ""
-    }
-
     private func storageGroupIDs(for record: Record) -> [String] {
         var groupIDs = record.resolvedStorageContainers.map(\.rawValue)
 
@@ -1448,16 +978,6 @@ struct HomeView: View {
         appModel.clearActiveSearch()
     }
 
-    private func openLocationSettings() {
-        guard let settingsURL = URL(string: UIApplication.openSettingsURLString) else {
-            return
-        }
-        openURL(settingsURL)
-    }
-
-    private var selectedDateWeather: CalendarDayWeather? {
-        calendarWeatherModel.dayWeather(for: selectedDate)
-    }
 }
 
 struct CalendarView: View {
@@ -1482,8 +1002,6 @@ struct CalendarView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var selectedDate = Calendar(identifier: .gregorian).startOfDay(for: Date())
     @State private var visibleMonth = Calendar(identifier: .gregorian).startOfDay(for: Date())
-    @StateObject private var weatherModel = CalendarWeatherModel()
-
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 12) {
@@ -1508,14 +1026,14 @@ struct CalendarView: View {
         .background(screenBackground)
         .onAppear {
             syncSelectedDateIfNeeded()
-            weatherModel.activate()
+            appModel.calendarWeather.activate()
         }
         .onChange(of: appModel.focusedRecordID) { _ in
             syncSelectedDateIfNeeded()
         }
         .onChange(of: scenePhase) { newValue in
             if newValue == .active {
-                weatherModel.activate()
+                appModel.calendarWeather.activate()
             }
         }
     }
@@ -1528,7 +1046,7 @@ struct CalendarView: View {
                 eventDates: recordDateSet,
                 reminderDates: pendingReminderDateSet,
                 notifiedDates: notifiedReminderDateSet,
-                weatherByDate: weatherModel.weatherByDate,
+                weatherByDate: appModel.calendarWeather.weatherByDate,
                 calendar: filterCalendar,
                 inlineItems: calendarInlineItems,
                 onDateSelected: { date in
@@ -1726,26 +1244,26 @@ struct CalendarView: View {
 
     private var weatherStatusRow: some View {
         HStack(spacing: 8) {
-            Image(systemName: weatherModel.statusIconName)
+            Image(systemName: appModel.calendarWeather.statusIconName)
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            Text(weatherModel.statusText)
+            Text(appModel.calendarWeather.statusText)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
 
             Spacer(minLength: 8)
 
-            if weatherModel.shouldOfferSettings {
+            if appModel.calendarWeather.shouldOfferSettings {
                 Button("去设置") {
                     openLocationSettings()
                 }
                 .buttonStyle(.plain)
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(AppTheme.accent)
-            } else if let actionTitle = weatherModel.actionTitle {
+            } else if let actionTitle = appModel.calendarWeather.actionTitle {
                 Button(actionTitle) {
-                    weatherModel.refresh()
+                    appModel.calendarWeather.refresh()
                 }
                 .buttonStyle(.plain)
                 .font(.caption2.weight(.semibold))
@@ -1971,7 +1489,7 @@ struct CalendarView: View {
     }
 
     private var selectedDateWeather: CalendarDayWeather? {
-        weatherModel.dayWeather(for: selectedDate)
+        appModel.calendarWeather.dayWeather(for: selectedDate)
     }
 
     private var cardBackground: some View {

@@ -50,6 +50,9 @@ final class CalendarWeatherModel: NSObject, ObservableObject {
     private var authorizationRequestInFlight = false
     private var locationRequestInFlight = false
     private var weatherRequestRevision = 0
+    private var isWeatherRefreshInFlight: Bool {
+        refreshTask != nil
+    }
 
     init(
         calendar: Calendar = Calendar(identifier: .gregorian),
@@ -139,20 +142,7 @@ final class CalendarWeatherModel: NSObject, ObservableObject {
             emitDebugTrace("requesting when-in-use authorization")
             locationManager.requestWhenInUseAuthorization()
         case .authorizedAlways, .authorizedWhenInUse:
-            guard forceRefresh || shouldRefreshWeather else {
-                if !weatherByDate.isEmpty {
-                    state = .ready
-                }
-                return
-            }
-            guard !locationRequestInFlight else {
-                emitDebugTrace("location request already in flight")
-                return
-            }
-            state = .loading
-            locationRequestInFlight = true
-            emitDebugTrace("requesting location for weather refresh")
-            locationManager.requestLocation()
+            requestLocationIfNeeded(forceRefresh: forceRefresh, trigger: "requesting location for weather refresh")
         case .restricted, .denied:
             emitDebugTrace("location authorization denied or restricted")
             authorizationRequestInFlight = false
@@ -171,6 +161,31 @@ final class CalendarWeatherModel: NSObject, ObservableObject {
             return true
         }
         return Date().timeIntervalSince(lastRefreshDate) >= refreshInterval
+    }
+
+    private func requestLocationIfNeeded(forceRefresh: Bool, trigger: String) {
+        guard forceRefresh || shouldRefreshWeather else {
+            if !weatherByDate.isEmpty {
+                state = .ready
+            }
+            return
+        }
+
+        guard !locationRequestInFlight else {
+            emitDebugTrace("location request already in flight")
+            return
+        }
+
+        guard !isWeatherRefreshInFlight else {
+            emitDebugTrace("weather refresh already in flight")
+            state = .loading
+            return
+        }
+
+        state = .loading
+        locationRequestInFlight = true
+        emitDebugTrace(trigger)
+        locationManager.requestLocation()
     }
 
     private func loadWeather(for location: CLLocation) {
@@ -313,18 +328,13 @@ extension CalendarWeatherModel: CLLocationManagerDelegate {
             authorizationRequestInFlight = false
             emitDebugTrace("authorization changed status=\(authorizationStatus.rawValue)")
             if authorizationStatus == .authorizedAlways || authorizationStatus == .authorizedWhenInUse {
-                guard !locationRequestInFlight else {
-                    emitDebugTrace("authorization callback ignored because location request is already in flight")
-                    return
-                }
-                state = .loading
-                locationRequestInFlight = true
-                emitDebugTrace("authorization granted, requesting location")
-                locationManager.requestLocation()
+                requestLocationIfNeeded(forceRefresh: false, trigger: "authorization granted, requesting location")
             } else if authorizationStatus == .denied || authorizationStatus == .restricted {
                 emitDebugTrace("authorization rejected after prompt")
                 locationRequestInFlight = false
                 state = .denied
+            } else if authorizationStatus == .notDetermined {
+                state = .needsAuthorization
             }
         }
     }
