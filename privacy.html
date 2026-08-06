@@ -3,71 +3,55 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>易记 Yiji | 隐私政策</title>
+  <title>Mind U | 隐私政策</title>
   <link rel="stylesheet" href="./assets/styles.css">
 </head>
-<body>
+<body class="simple-page">
   <main class="page">
-    <section class="hero">
-      <p class="eyebrow">Privacy Policy</p>
-      <h1>易记隐私政策</h1>
-      <p>
-        本页面适用于易记当前首发阶段的本地优先 iOS 版本。
-        当前版本不提供账号系统、自动云同步或开发者自建数据服务器；记录保存在本机，备份只在用户主动操作后导出。
-      </p>
-      <div class="hero-meta">
-        <span class="pill">生效日期：2026-08-05</span>
-        <span class="pill">适用版本：Yiji iOS MVP</span>
+    <header class="doc-header">
+      <h1>Mind U 隐私政策</h1>
+      <p>本页面适用于 Mind U 当前公开发布的 iOS 版本。当前版本不提供账号系统、开发者自建数据服务器或自动云同步，记录默认保存在本机，备份由用户手动导出与导入。</p>
+      <div class="doc-meta">
+        生效日期：2026-08-06<br>
+        适用链接：Privacy Policy URL
       </div>
-      <div class="nav">
+      <nav class="doc-nav" aria-label="Page links">
         <a href="./index.html">返回入口</a>
-        <a href="./support.html">支持页面</a>
-      </div>
-      <div class="banner">
-        本政策与易记设置页使用相同的公开支持链接和联系邮箱。
-      </div>
-      <div class="toc" aria-label="Table of contents">
-        <a href="#zh">中文</a>
-        <a href="#en">English</a>
-      </div>
-    </section>
+        <a href="./support.html">在线支持</a>
+      </nav>
+    </header>
 
-    <section class="section" id="zh">
-      <span class="language-tag">中文</span>
-      <h2>1. 我们是谁</h2>
-      <p>易记是一款面向个人生活场景的本地优先记录应用，用于帮助用户记录物品位置、提醒事项和临时笔记。</p>
+    <section class="doc-section" id="zh">
+      <h2>中文</h2>
 
-      <h2>2. 应用处理与存储的信息</h2>
-      <p>当前版本不要求你创建账号，也不主动向开发者服务器上传你的个人记录内容。</p>
+      <h3>1. 我们是谁</h3>
+      <p>Mind U 是一款面向个人生活场景的本地优先记录应用，用于帮助用户记录物品位置、提醒事项和临时笔记。</p>
+
+      <h3>2. 应用处理与存储的信息</h3>
+      <p>当前版本不要求你创建账号，也不主动向开发者服务器上传你的记录内容。应用本地可能保存以下信息：</p>
       <ul>
         <li>你手动输入的记录内容</li>
         <li>你通过语音转写后确认保存的记录内容</li>
         <li>你创建的提醒事项与提醒时间</li>
         <li>最近搜索历史</li>
-        <li>你手动导出的本地备份文件内容</li>
+        <li>你主动导出的本地备份文件内容</li>
       </ul>
-      <p>这些信息保存在你的设备本地。当前首发版本不提供自动云同步；只有当你主动导出备份时，应用才会生成 JSON 文件，并由你决定是否保存到“文件”、iCloud Drive 或其他位置。</p>
+      <p>这些信息保存在你的设备本地。当前版本不提供自动云同步。只有当你主动导出备份时，应用才会生成 JSON 文件，并由你决定是否保存到“文件”、iCloud Drive 或其他位置。</p>
 
-      <h2>3. 语音与麦克风权限</h2>
-      <p>当你使用语音录入功能时，易记会请求麦克风权限和语音识别权限。</p>
-      <p>
-        这些权限仅用于将你的语音转换为文字并填入应用内的录入内容。当前版本不提供开发者自建语音服务器，
-        不会主动把你的语音录音上传到开发者控制的后端。
-      </p>
-      <p>iOS 语音识别能力可能由 Apple 提供或处理，你对该功能的使用也会受到 Apple 自身隐私政策和系统行为的约束。</p>
+      <h3>3. 麦克风与语音识别权限</h3>
+      <p>当你使用语音录入时，Mind U 会请求麦克风权限和语音识别权限。这些权限仅用于把你的语音转换为文字并填入应用内的录入内容。</p>
+      <p>Mind U 当前版本不提供开发者自建语音服务器，不会主动把你的语音录音上传到开发者控制的后端。iOS 语音识别能力可能由 Apple 提供或处理，你对该功能的使用也受到 Apple 自身隐私政策和系统行为约束。</p>
 
-      <h2>4. 定位与天气</h2>
-      <p>当你主动获取日历天气时，易记会请求“使用 App 时”定位权限，并使用约 3 公里精度的位置向 Apple WeatherKit 请求未来天气。定位只用于本次天气请求，不写入易记的记录、备份或 Release 日志。拒绝定位不会影响记录、搜索、提醒或备份。</p>
+      <h3>4. 定位与天气</h3>
+      <p>当你主动获取日历天气时，Mind U 会请求“使用 App 时”定位权限，并使用约 3 公里精度的位置向 Apple WeatherKit 请求天气。定位只用于本次天气请求，不写入 Mind U 记录、备份或 Release 日志。拒绝定位不会影响记录、搜索、提醒或备份功能。</p>
 
-      <h2>5. 通知权限</h2>
-      <p>当你使用提醒功能时，易记会请求通知权限，用于在提醒时间到达时，通过 iPhone 的本地通知向你发送提醒。</p>
-      <p>当前版本使用的是本地通知，不依赖开发者服务器推送。</p>
+      <h3>5. 通知权限</h3>
+      <p>当你使用提醒功能时，Mind U 会请求通知权限，用于在提醒时间到达时，通过 iPhone 的本地通知向你发送提醒。当前版本使用本地通知，不依赖开发者服务器推送。</p>
 
-      <h2>6. 文件访问与本地备份</h2>
-      <p>当你导入备份文件时，易记会通过系统文件选择器访问你主动选中的 JSON 文件。导出备份文件时，易记会在系统提供的分享与存储流程中生成备份文件。</p>
-      <p>易记不会在未获得你主动操作的情况下，浏览或读取你的其他文件。</p>
+      <h3>6. 文件访问与本地备份</h3>
+      <p>当你导入备份文件时，Mind U 只会通过系统文件选择器访问你主动选中的 JSON 文件。导出备份文件时，Mind U 会在系统提供的分享与存储流程中生成备份文件。Mind U 不会在未获得你主动操作的情况下浏览或读取其他文件。</p>
 
-      <h2>7. 数据共享</h2>
+      <h3>7. 数据共享</h3>
       <ul>
         <li>不提供账号系统</li>
         <li>不提供自动云同步</li>
@@ -77,28 +61,30 @@
         <li>不向开发者服务器发送你的记录正文、提醒内容或搜索历史</li>
       </ul>
 
-      <h2>8. 数据保留与删除</h2>
-      <p>你的记录、提醒和搜索历史默认保留在你的设备本地，直到你在应用内手动删除、用导入备份覆盖当前数据，或删除应用。</p>
-      <p>如果你导出了备份文件，该备份文件的保存、删除和转移由你自己控制。</p>
+      <h3>8. 数据保留与删除</h3>
+      <p>你的记录、提醒和搜索历史默认保留在你的设备本地，直到你在应用内手动删除、用导入备份覆盖当前数据，或删除应用。如果你导出了备份文件，该文件的保存、删除和转移由你自己控制。</p>
 
-      <h2>9. 儿童隐私</h2>
-      <p>当前版本不面向儿童进行定向画像、广告投放或社交运营。如果你是监护人，并认为未成年人在未经允许的情况下使用了本应用，请通过支持渠道联系开发者。</p>
+      <h3>9. 儿童隐私</h3>
+      <p>当前版本不面向儿童进行定向画像、广告投放或社交运营。如果你是监护人，并认为未成年人在未经允许的情况下使用了本应用，请通过支持邮箱联系开发者。</p>
 
-      <h2>10. 政策更新</h2>
-      <p>如果易记未来进一步引入账号、家庭 group、开发者服务器接口或第三方服务，本隐私政策将同步更新。</p>
+      <h3>10. 政策更新</h3>
+      <p>如果 Mind U 未来引入账号、服务器接口、自动云同步或第三方服务，本隐私政策会同步更新。</p>
 
-      <h2>11. 联系方式</h2>
-      <p>支持邮箱：<a href="mailto:zl.kenneth@gmail.com">zl.kenneth@gmail.com</a></p>
-      <p>支持页面：<strong>待替换为正式支持链接</strong></p>
+      <h3>11. 联系方式</h3>
+      <p>支持邮箱：<a href="mailto:zl.kenneth@gmail.com">zl.kenneth@gmail.com</a><br>
+      在线支持页面：<a href="./support.html">https://blizzard1311.github.io/EJ/support.html</a></p>
     </section>
 
-    <section class="section" id="en">
-      <span class="language-tag">English</span>
-      <h2>1. Who We Are</h2>
-      <p>Yiji is a local-first personal memory app designed to help users save everyday information such as where items are stored, what reminders they need, and quick notes.</p>
+    <div class="doc-divider"></div>
 
-      <h2>2. Information the App Processes and Stores</h2>
-      <p>In the current version, Yiji does not require account registration and does not actively upload your personal records to a developer-operated server.</p>
+    <section class="doc-section" id="en">
+      <h2>English</h2>
+
+      <h3>1. Who We Are</h3>
+      <p>Mind U is a local-first personal memory app designed to help users save everyday information such as where items are stored, what reminders they need, and quick notes.</p>
+
+      <h3>2. Information the App Processes and Stores</h3>
+      <p>The current version does not require account registration and does not actively upload your records to a developer-operated server. The app may store the following information locally on your device:</p>
       <ul>
         <li>Text that you manually enter</li>
         <li>Text saved after voice transcription</li>
@@ -108,23 +94,20 @@
       </ul>
       <p>This information is stored on your device. The current release does not provide automatic cloud sync. A JSON file is created only when you explicitly export a backup, and you choose whether to save it to Files, iCloud Drive, or another destination.</p>
 
-      <h2>3. Microphone and Speech Recognition Permissions</h2>
-      <p>When you use voice input, Yiji may request microphone permission and speech recognition permission.</p>
-      <p>These permissions are used only to convert your speech into text inside the app. Yiji does not currently operate its own speech-processing backend and does not intentionally upload your audio recordings to a developer-controlled server.</p>
-      <p>However, iOS speech recognition may rely on Apple-provided services or system processing, and your use of that functionality is also subject to Apple's own privacy policies and system behavior.</p>
+      <h3>3. Microphone and Speech Recognition Permissions</h3>
+      <p>When you use voice input, Mind U may request microphone permission and speech recognition permission. These permissions are used only to convert your speech into text inside the app.</p>
+      <p>Mind U does not currently operate its own speech-processing backend and does not intentionally upload your audio recordings to a developer-controlled server. iOS speech recognition may rely on Apple-provided services or system processing, and your use of that functionality is also subject to Apple's own privacy policies and system behavior.</p>
 
-      <h2>4. Location and Weather</h2>
-      <p>When you request calendar weather, Yiji asks for When In Use location permission and uses a location with approximately three-kilometer accuracy to request forecast data from Apple WeatherKit. Location is used only for the weather request and is not written to Yiji records, backups, or Release logs. Denying location does not affect capture, search, reminders, or backups.</p>
+      <h3>4. Location and Weather</h3>
+      <p>When you request calendar weather, Mind U asks for When In Use location permission and uses a location with approximately three-kilometer accuracy to request forecast data from Apple WeatherKit. Location is used only for the weather request and is not written to Mind U records, backups, or Release logs. Denying location does not affect capture, search, reminders, or backups.</p>
 
-      <h2>5. Notification Permission</h2>
-      <p>When you use reminders, Yiji may request notification permission so your iPhone can deliver local reminder notifications at the scheduled time.</p>
-      <p>The current version uses local notifications and does not rely on developer server push delivery.</p>
+      <h3>5. Notification Permission</h3>
+      <p>When you use reminders, Mind U may request notification permission so your iPhone can deliver local reminder notifications at the scheduled time. The current version uses local notifications and does not rely on developer server push delivery.</p>
 
-      <h2>6. File Access and Local Backups</h2>
-      <p>If you import a backup, Yiji accesses only the JSON file that you explicitly choose through the system file picker. If you export a backup, Yiji creates a backup file through the standard iOS share and save flow, which may include saving the file to Files or iCloud Drive if you choose.</p>
-      <p>Yiji does not browse or read unrelated files on your device without your direct action.</p>
+      <h3>6. File Access and Local Backups</h3>
+      <p>If you import a backup, Mind U accesses only the JSON file that you explicitly choose through the system file picker. If you export a backup, Mind U creates a backup file through the standard iOS share and save flow. Mind U does not browse or read unrelated files on your device without your direct action.</p>
 
-      <h2>7. Data Sharing</h2>
+      <h3>7. Data Sharing</h3>
       <ul>
         <li>No account registration</li>
         <li>No automatic cloud sync</li>
@@ -134,23 +117,22 @@
         <li>No record text, reminder text, or search history sent to a developer-operated backend</li>
       </ul>
 
-      <h2>8. Data Retention and Deletion</h2>
-      <p>Your data remains on your device until you delete it manually inside the app, overwrite it by importing a backup, or remove the app from your device.</p>
-      <p>If you export a backup file, storage and deletion of that file are under your control.</p>
+      <h3>8. Data Retention and Deletion</h3>
+      <p>Your data remains on your device until you delete it manually inside the app, overwrite it by importing a backup, or remove the app from your device. If you export a backup file, storage and deletion of that file are under your control.</p>
 
-      <h2>9. Children's Privacy</h2>
-      <p>The current version is not designed for profiling children, targeted advertising, or social interaction. If you are a parent or guardian and believe a minor used the app inappropriately, please contact the developer through the support channel.</p>
+      <h3>9. Children's Privacy</h3>
+      <p>The current version is not designed for profiling children, targeted advertising, or social interaction. If you are a parent or guardian and believe a minor used the app inappropriately, please contact the developer through the support email.</p>
 
-      <h2>10. Policy Updates</h2>
-      <p>If Yiji later introduces accounts, family groups, developer-operated server-side services, or third-party integrations, this Privacy Policy will be updated accordingly.</p>
+      <h3>10. Policy Updates</h3>
+      <p>If Mind U later introduces accounts, automatic cloud sync, server-side services, or third-party integrations, this Privacy Policy will be updated accordingly.</p>
 
-      <h2>11. Contact</h2>
-      <p>Support email: <a href="mailto:zl.kenneth@gmail.com">zl.kenneth@gmail.com</a></p>
-      <p>Support page: <a href="./support.html">https://blizzard1311.github.io/EJ/support.html</a></p>
+      <h3>11. Contact</h3>
+      <p>Support email: <a href="mailto:zl.kenneth@gmail.com">zl.kenneth@gmail.com</a><br>
+      Support page: <a href="./support.html">https://blizzard1311.github.io/EJ/support.html</a></p>
     </section>
 
     <footer class="footer">
-      Last updated: 2026-08-05
+      Last updated: 2026-08-06
     </footer>
   </main>
 </body>
