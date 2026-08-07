@@ -6,56 +6,47 @@
   <title>Mind U | 合规信息页</title>
   <link rel="stylesheet" href="./assets/styles.css">
 </head>
-<body>
+<body class="simple-page">
   <main class="page">
-    <section class="hero">
-      <p class="eyebrow">Mind U Compliance Pages</p>
+    <header class="doc-header">
       <h1>Mind U 公开信息页</h1>
-      <p>
-        这组页面用于 Mind U iOS App 的公开合规展示，供 App Store Connect 填写
-        <strong>Privacy Policy URL</strong> 和 <strong>Support URL</strong> 使用。
-        它不是新的 Web 应用，不提供账号、在线录入或开发者后台服务。
-      </p>
-      <div class="hero-meta">
-        <span class="pill">App 名称：Mind U</span>
-        <span class="pill">Bundle ID：com.blizzard1311.yiji</span>
-        <span class="pill">首发形态：本地优先 iOS MVP</span>
+      <p>本页用于提供 Mind U 的公开合规入口，供 App Store Connect 填写隐私政策和支持链接使用。</p>
+      <div class="doc-meta">
+        App 名称：Mind U<br>
+        Bundle ID：com.blizzard1311.yiji<br>
+        页面类型：公开说明页面
       </div>
-      <div class="banner">
-        本页面由 GitHub Pages 静态托管，不依赖开发者自有服务器、数据库或持续运行的后台服务。
-      </div>
-      <nav class="nav" aria-label="Primary">
-        <a class="primary" href="./privacy.html">隐私政策 / Privacy Policy</a>
-        <a href="./support.html">支持页面 / Support</a>
+      <nav class="doc-nav" aria-label="Primary">
+        <a href="./privacy.html">隐私政策 / Privacy Policy</a>
+        <a href="./support.html">在线支持 / Support</a>
       </nav>
+    </header>
+
+    <section class="doc-section">
+      <h2>页面用途</h2>
+      <p>本页只提供两个公开入口：</p>
+      <ul>
+        <li>隐私政策</li>
+        <li>在线支持</li>
+      </ul>
+      <p>页面通过 GitHub Pages 静态托管，不提供账号、在线录入、开发者后台、数据库或其他运行服务。</p>
     </section>
 
-    <section class="grid">
-      <article class="card span-6">
-        <h2>页面用途</h2>
-        <p>用于公开展示 App 的隐私说明、支持方式和基础产品信息，满足 App 审核和用户查看需要。</p>
-      </article>
-      <article class="card span-6">
-        <h2>托管方式</h2>
-        <p>静态 HTML 通过 GitHub Pages 默认 HTTPS 域名公开，不共享数据库，也不依赖开发者云服务器续费。</p>
-      </article>
-      <article class="card span-6">
-        <h2>建议提交链接</h2>
-        <p class="small">
-          Privacy Policy URL：<code>https://blizzard1311.github.io/EJ/privacy.html</code><br>
-          Support URL：<code>https://blizzard1311.github.io/EJ/support.html</code>
-        </p>
-      </article>
-      <article class="card span-6">
-        <h2>当前产品边界</h2>
-        <p class="small">
-          当前版本无账号、无 group、无付费订阅或自动云同步，核心能力为本地记录、语音录入、本地提醒和备份导入导出。
-        </p>
-      </article>
+    <section class="doc-section">
+      <h2>建议提交链接</h2>
+      <p>
+        Privacy Policy URL：<code>https://blizzard1311.github.io/EJ/privacy.html</code><br>
+        Support URL：<code>https://blizzard1311.github.io/EJ/support.html</code>
+      </p>
+    </section>
+
+    <section class="doc-section">
+      <h2>当前版本边界</h2>
+      <p>当前版本为本地优先 iOS 应用，不提供账号、群组、付费订阅或自动云同步。核心能力为本地记录、语音录入、本地提醒和备份导入导出。</p>
     </section>
 
     <footer class="footer">
-      Last updated: 2026-08-05
+      Last updated: 2026-08-07
     </footer>
   </main>
 </body>
