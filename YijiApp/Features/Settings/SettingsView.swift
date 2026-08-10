@@ -62,18 +62,18 @@ struct SettingsView: View {
             }
         }
         .confirmationDialog(
-            "导入会覆盖当前本地记录、提醒和通知安排。",
+            AppLocalization.text("导入会覆盖当前本地记录、提醒、账目和通知安排。"),
             isPresented: $showingImportConfirmation,
             titleVisibility: .visible
         ) {
-            Button("覆盖导入", role: .destructive) {
+            Button(AppLocalization.text("覆盖导入"), role: .destructive) {
                 guard let pendingImportURL else { return }
                 Task {
                     await appModel.importBackupFile(from: pendingImportURL)
                     self.pendingImportURL = nil
                 }
             }
-            Button("取消", role: .cancel) {
+            Button(AppLocalization.text("取消"), role: .cancel) {
                 pendingImportURL = nil
             }
         } message: {
@@ -87,7 +87,7 @@ struct SettingsView: View {
 
     private var pageTitleSection: some View {
         Section {
-            Text("设置")
+            Text(AppLocalization.text("设置"))
                 .font(.title2.weight(.bold))
                 .foregroundStyle(AppTheme.ink)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -104,6 +104,8 @@ struct SettingsView: View {
                     metricCard(title: "记录数量", value: "\(appModel.records.count)")
                     Divider()
                     metricCard(title: "提醒", value: "\(appModel.reminders.count)")
+                    Divider()
+                    metricCard(title: "帐目数量", value: "\(appModel.expenses.count)")
                 }
             }
         }

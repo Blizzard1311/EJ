@@ -12,7 +12,7 @@ struct HomeView: View {
         var body: some View {
             NavigationStack {
                 List {
-                    Section("容器") {
+                    Section(AppLocalization.text("容器")) {
                         ForEach(appModel.storageContainerDefinitions) { definition in
                             HStack(spacing: 12) {
                                 Image(systemName: storageContainerIcon(definition))
@@ -20,7 +20,7 @@ struct HomeView: View {
                                     .frame(width: 24, height: 24)
 
                                 TextField(
-                                    "容器名称",
+                                    AppLocalization.text("容器名称"),
                                     text: Binding(
                                         get: { definition.name },
                                         set: { appModel.updateStorageContainerName($0, for: definition.id) }
@@ -42,7 +42,7 @@ struct HomeView: View {
                     }
 
                     if !appModel.availableBuiltInStorageContainers.isEmpty {
-                        Section("添加内置容器") {
+                        Section(AppLocalization.text("添加内置容器")) {
                             ForEach(appModel.availableBuiltInStorageContainers, id: \.rawValue) { container in
                                 Button {
                                     appModel.addBuiltInStorageContainer(container)
@@ -66,39 +66,39 @@ struct HomeView: View {
                         }
                     }
                 }
-                .navigationTitle("管理容器")
+                .navigationTitle(AppLocalization.text("管理容器"))
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) {
-                        Button("恢复默认") {
+                        Button(AppLocalization.text("恢复默认")) {
                             appModel.resetStorageContainerDefinitions()
                         }
                     }
 
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button("新增") {
+                        Button(AppLocalization.text("新增")) {
                             newCustomContainerName = ""
                             showingAddCustomContainer = true
                         }
                     }
 
                     ToolbarItem(placement: .confirmationAction) {
-                        Button("完成") {
+                        Button(AppLocalization.text("完成")) {
                             dismiss()
                         }
                     }
                 }
-                .alert("新增容器", isPresented: $showingAddCustomContainer) {
-                    TextField("容器名称", text: $newCustomContainerName)
-                    Button("取消", role: .cancel) {
+                .alert(AppLocalization.text("新增容器"), isPresented: $showingAddCustomContainer) {
+                    TextField(AppLocalization.text("容器名称"), text: $newCustomContainerName)
+                    Button(AppLocalization.text("取消"), role: .cancel) {
                         newCustomContainerName = ""
                     }
-                    Button("新增") {
+                    Button(AppLocalization.text("新增")) {
                         appModel.addCustomStorageContainer(named: newCustomContainerName)
                         newCustomContainerName = ""
                     }
                 } message: {
-                    Text("输入新的容器名称")
+                    Text(AppLocalization.text("输入新的容器名称"))
                 }
             }
         }
@@ -219,14 +219,14 @@ struct HomeView: View {
             ),
             titleVisibility: .visible
         ) {
-            Button("删除记录", role: .destructive) {
+            Button(AppLocalization.text("删除记录"), role: .destructive) {
                 guard let record = deletingRecord else { return }
                 Task {
                     await appModel.deleteRecord(id: record.id)
                     deletingRecord = nil
                 }
             }
-            Button("取消", role: .cancel) {
+            Button(AppLocalization.text("取消"), role: .cancel) {
                 deletingRecord = nil
             }
         }
@@ -288,14 +288,14 @@ struct HomeView: View {
 
     private var storageContainersHeader: some View {
         HStack(spacing: 10) {
-            Text("收纳")
+            Text(AppLocalization.text("收纳"))
                 .font(.title2.weight(.bold))
             Spacer(minLength: 10)
 
             Button {
                 showingStorageContainerPicker = true
             } label: {
-                Label("管理", systemImage: "slider.horizontal.3")
+                Label(AppLocalization.text("管理"), systemImage: "slider.horizontal.3")
                     .font(.caption.weight(.semibold))
                     .padding(.horizontal, 12)
                     .padding(.vertical, 9)
@@ -319,7 +319,7 @@ struct HomeView: View {
 
                     Spacer(minLength: 8)
 
-                    Button("返回计划") {
+                    Button(AppLocalization.text("返回计划")) {
                         clearSearch()
                     }
                     .buttonStyle(.plain)
@@ -386,7 +386,7 @@ struct HomeView: View {
                     }
                     .buttonStyle(.plain)
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        Button("删除", role: .destructive) {
+                        Button(AppLocalization.text("删除"), role: .destructive) {
                             deletingRecord = record
                         }
                     }
@@ -399,9 +399,9 @@ struct HomeView: View {
 
     private var emptyQueryState: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("没有找到匹配内容")
+            Text(AppLocalization.text("没有找到匹配内容"))
                 .font(.footnote.weight(.semibold))
-            Text("换个关键词试试")
+            Text(AppLocalization.text("换个关键词试试"))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
@@ -448,7 +448,7 @@ struct HomeView: View {
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(tint)
 
-                            Text("暂无物品")
+                            Text(AppLocalization.text("暂无物品"))
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(.secondary)
                         }
@@ -509,7 +509,7 @@ struct HomeView: View {
 
                 if group.records.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {
-                        Label("暂无物品", systemImage: "square.dashed")
+                        Label(AppLocalization.text("暂无物品"), systemImage: "square.dashed")
                             .font(.headline)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -1005,7 +1005,7 @@ struct CalendarView: View {
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 12) {
-                Text("日历")
+                Text(AppLocalization.text("日历"))
                     .font(.title2.weight(.bold))
                     .foregroundStyle(AppTheme.ink)
 
@@ -1147,10 +1147,10 @@ struct CalendarView: View {
 
     private var emptyDayCard: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label("这一天还没有内容", systemImage: "calendar.badge.plus")
+            Label(AppLocalization.text("这一天还没有内容"), systemImage: "calendar.badge.plus")
                 .font(.headline)
 
-            Text("在“记录”页记录事项或设置提醒后，会自动显示在对应日期。")
+            Text(AppLocalization.text("在“记录”页记录事项或设置提醒后，会自动显示在对应日期。"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -1184,7 +1184,7 @@ struct CalendarView: View {
 
                 Spacer(minLength: 4)
 
-                Text("点击日期查看详情")
+                Text(AppLocalization.text("点击日期查看详情"))
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(AppTheme.accent)
                     .lineLimit(1)
@@ -1255,7 +1255,7 @@ struct CalendarView: View {
             Spacer(minLength: 8)
 
             if appModel.calendarWeather.shouldOfferSettings {
-                Button("去设置") {
+                Button(AppLocalization.text("去设置")) {
                     openLocationSettings()
                 }
                 .buttonStyle(.plain)

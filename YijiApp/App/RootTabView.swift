@@ -14,6 +14,14 @@ struct RootTabView: View {
             }
 
             NavigationStack {
+                ExpenseView()
+            }
+            .tag(AppTab.expenses)
+            .tabItem {
+                Label(AppTab.expenses.title, systemImage: AppTab.expenses.systemImage)
+            }
+
+            NavigationStack {
                 HomeView()
             }
             .tag(AppTab.capture)
@@ -46,6 +54,7 @@ struct RootTabView: View {
 
 enum AppTab: Hashable {
     case home
+    case expenses
     case capture
     case calendar
     case settings
@@ -54,6 +63,8 @@ enum AppTab: Hashable {
         switch self {
         case .home:
             AppLocalization.text("记录")
+        case .expenses:
+            AppLocalization.text("记账")
         case .capture:
             AppLocalization.text("收纳")
         case .calendar:
@@ -67,6 +78,8 @@ enum AppTab: Hashable {
         switch self {
         case .home:
             "mic"
+        case .expenses:
+            "chart.pie"
         case .capture:
             "square.stack.3d.up"
         case .calendar:

@@ -23,7 +23,7 @@ struct CaptureView: View {
                         microphoneStage
                         Spacer(minLength: 64)
 
-                        Label("记录优先保存在本机", systemImage: "lock")
+                        Label(AppLocalization.text("记录优先保存在本机"), systemImage: "lock")
                             .font(.caption2)
                             .foregroundStyle(AppTheme.muted)
                     }
@@ -50,15 +50,21 @@ struct CaptureView: View {
 
     private var microphoneStage: some View {
         VStack(spacing: 18) {
-            Text("想记什么、找什么，直接说出来")
+            Text(AppLocalization.text("提醒、记账、收纳备忘与查找直接说出来"))
                 .font(.subheadline)
                 .foregroundStyle(AppTheme.muted)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
 
             microphoneButton
-                .accessibilityLabel(appModel.speech.isRecording ? "松开结束录音" : "按住开始录音")
+                .accessibilityLabel(
+                    AppLocalization.text(
+                        appModel.speech.isRecording ? "松开结束录音" : "按住开始录音"
+                    )
+                )
 
             if !appModel.speech.isRecording {
-                Text(visibleVoiceText == nil ? "按住说话" : "编辑后保存")
+                Text(AppLocalization.text(visibleVoiceText == nil ? "按住说话" : "编辑后保存"))
                     .font(.title2.weight(.semibold))
                     .foregroundStyle(.primary)
             }
@@ -80,7 +86,7 @@ struct CaptureView: View {
             }
 
             if appModel.speech.authorizationStatus == .denied {
-                Button("前往系统设置开启语音权限") {
+                Button(AppLocalization.text("前往系统设置开启语音权限")) {
                     guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
                     openURL(url)
                 }
@@ -138,7 +144,7 @@ struct CaptureView: View {
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(appModel.speech.isRecording ? .red : AppTheme.accent)
 
-                Text(appModel.speech.isRecording ? "录音中" : "文字")
+                Text(AppLocalization.text(appModel.speech.isRecording ? "录音中" : "文字"))
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
 
@@ -148,7 +154,7 @@ struct CaptureView: View {
             if let visibleVoiceText {
                 editableVoiceDraft(text: visibleVoiceText)
             } else if appModel.speech.isRecording {
-                Text("正在录音")
+                Text(AppLocalization.text("正在录音"))
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -187,7 +193,7 @@ struct CaptureView: View {
                 Divider()
 
                 HStack(spacing: 10) {
-                    Button("清空") {
+                    Button(AppLocalization.text("清空")) {
                         clearVoiceDraft()
                     }
                     .buttonStyle(.plain)
@@ -195,7 +201,7 @@ struct CaptureView: View {
 
                     Spacer(minLength: 0)
 
-                    Button(searchIntentButtonTitle) {
+                    Button(captureActionButtonTitle) {
                         Task {
                             await appModel.submitCaptureDraft()
                         }
@@ -206,9 +212,9 @@ struct CaptureView: View {
                     .padding(.vertical, 10)
                     .background(
                         Capsule()
-                            .fill(searchIntentButtonColor.opacity(0.14))
+                            .fill(captureActionButtonColor.opacity(0.14))
                     )
-                    .foregroundStyle(searchIntentButtonColor)
+                    .foregroundStyle(captureActionButtonColor)
                 }
             }
         }
@@ -233,11 +239,11 @@ struct CaptureView: View {
     @ViewBuilder
     private func editableVoiceDraft(text: String) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("文字")
+            Text(AppLocalization.text("文字"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            TextField("输入内容", text: Binding(
+            TextField(AppLocalization.text("输入内容"), text: Binding(
                 get: { appModel.captureText },
                 set: { newValue in
                     appModel.updateCaptureDraftText(newValue)
@@ -277,42 +283,63 @@ struct CaptureView: View {
             return []
         }
 
-        if SearchIntentClassifier.isSearchQuery(visibleVoiceText) {
-            return [
-                ("类型", "搜索")
-            ]
-        }
-
-        guard let parsed = appModel.preview(for: visibleVoiceText) else {
+        guard let intent = appModel.globalCaptureIntent(for: visibleVoiceText) else {
             return []
         }
 
-        var rows: [(label: String, value: String)] = [
-            ("类型", parsed.record.displayCategoryName)
-        ]
+        switch intent {
+        case .search:
+            return [
+                (AppLocalization.text("类型"), AppLocalization.text("搜索"))
+            ]
 
-        if let warning = parsed.warnings.first {
-            rows.append(("提醒", warning))
-            return rows
+        case let .expense(expenseDraft):
+            return [
+                (AppLocalization.text("类型"), AppLocalization.text("记账")),
+                (AppLocalization.text("金额"), formattedExpenseAmount(expenseDraft)),
+                (
+                    AppLocalization.text("分类"),
+                    appModel.expenseCategory(for: expenseDraft.categoryID).displayName
+                )
+            ]
+
+        case let .record(parsed):
+            var rows: [(label: String, value: String)] = [
+                (AppLocalization.text("类型"), parsed.record.displayCategoryName)
+            ]
+
+            if let warning = parsed.warnings.first {
+                rows.append((AppLocalization.text("提醒"), warning))
+                return rows
+            }
+
+            if let reminder = parsed.reminder {
+                rows.append((
+                    AppLocalization.text("提醒时间"),
+                    YijiDateFormatter.dateTimeFormatter.string(from: reminder.remindAt)
+                ))
+            } else if let objectName = parsed.record.objectName, let location = parsed.record.location {
+                rows.append((
+                    AppLocalization.text("位置"),
+                    AppLocalization.format("object_at_location", objectName, location)
+                ))
+            } else if let eventTime = parsed.record.eventTime {
+                rows.append((AppLocalization.text("时间"), eventTime.displayText()))
+            }
+
+            if let storageContainer = parsed.record.resolvedStorageContainer {
+                rows.append((AppLocalization.text("收纳"), storageContainer.displayName))
+            }
+
+            if !parsed.record.sliceCategoryNames.isEmpty {
+                rows.append((
+                    AppLocalization.text("分类"),
+                    parsed.record.sliceCategoryNames.joined(separator: " / ")
+                ))
+            }
+
+            return Array(rows.prefix(3))
         }
-
-        if let reminder = parsed.reminder {
-            rows.append(("提醒时间", YijiDateFormatter.dateTimeFormatter.string(from: reminder.remindAt)))
-        } else if let objectName = parsed.record.objectName, let location = parsed.record.location {
-            rows.append(("位置", AppLocalization.format("object_at_location", objectName, location)))
-        } else if let eventTime = parsed.record.eventTime {
-            rows.append(("时间", eventTime.displayText()))
-        }
-
-        if let storageContainer = parsed.record.resolvedStorageContainer {
-            rows.append(("收纳", storageContainer.displayName))
-        }
-
-        if !parsed.record.sliceCategoryNames.isEmpty {
-            rows.append(("分类", parsed.record.sliceCategoryNames.joined(separator: " / ")))
-        }
-
-        return Array(rows.prefix(3))
     }
 
     private var feedbackStatusMessage: String? {
@@ -355,16 +382,40 @@ struct CaptureView: View {
         !appModel.speech.isRecording && visibleVoiceText != nil
     }
 
-    private var searchIntentButtonTitle: String {
-        guard let visibleVoiceText else { return AppLocalization.text("保存") }
-        return SearchIntentClassifier.isSearchQuery(visibleVoiceText)
-            ? AppLocalization.text("去搜索")
-            : AppLocalization.text("保存")
+    private var captureActionButtonTitle: String {
+        guard let visibleVoiceText,
+              let intent = appModel.globalCaptureIntent(for: visibleVoiceText) else {
+            return AppLocalization.text("保存")
+        }
+        switch intent {
+        case .search:
+            return AppLocalization.text("去搜索")
+        case .expense:
+            return AppLocalization.text("记账")
+        case .record:
+            return AppLocalization.text("保存")
+        }
     }
 
-    private var searchIntentButtonColor: Color {
-        guard let visibleVoiceText else { return AppTheme.accent }
-        return SearchIntentClassifier.isSearchQuery(visibleVoiceText) ? AppTheme.reminder : AppTheme.accent
+    private var captureActionButtonColor: Color {
+        guard let visibleVoiceText,
+              let intent = appModel.globalCaptureIntent(for: visibleVoiceText),
+              case .search = intent else {
+            return AppTheme.accent
+        }
+        return AppTheme.reminder
+    }
+
+    private func formattedExpenseAmount(_ draft: ExpenseDraft) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = draft.currency.rawValue
+        formatter.locale = Locale(identifier: AppLocalization.languageCode)
+        formatter.minimumFractionDigits = draft.currency.minorUnitDigits
+        formatter.maximumFractionDigits = draft.currency.minorUnitDigits
+        let amount = draft.currency.decimalAmount(from: draft.amountMinorUnits)
+        return formatter.string(from: NSDecimalNumber(decimal: amount))
+            ?? "\(draft.currency.rawValue) \(amount)"
     }
 
     private func syncPinnedVoiceText(from text: String) {

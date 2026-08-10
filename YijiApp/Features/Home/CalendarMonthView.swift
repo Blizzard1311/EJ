@@ -179,8 +179,9 @@ struct CalendarMonthView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .frame(maxWidth: .infinity)
         .accessibilityLabel(accessibilityDateFormatter.string(from: day))
-        .accessibilityValue(isExpanded ? "已展开" : "未展开")
+        .accessibilityValue(AppLocalization.text(isExpanded ? "已展开" : "未展开"))
     }
 
     private func statusDot(visible: Bool, color: Color) -> some View {
@@ -199,7 +200,7 @@ struct CalendarMonthView: View {
             }
 
             if inlineItems.isEmpty {
-                Text("当天暂无记录，可以按住语音添加")
+                Text(AppLocalization.text("当天暂无记录，可以按住语音添加"))
                     .font(.caption)
                     .foregroundStyle(AppTheme.muted)
                     .frame(maxWidth: .infinity, alignment: .leading)

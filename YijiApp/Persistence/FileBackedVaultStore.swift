@@ -3,16 +3,22 @@ import OSLog
 import YijiCore
 
 struct PersistedVault: Codable, Equatable, Sendable {
+    var schemaVersion: Int = 2
     var records: [Record] = []
     var reminders: [Reminder] = []
     var searchHistory: [String] = []
+    var expenses: [Expense] = []
+    var expenseCategories: [ExpenseCategoryDefinition] = []
     var modifiedAt: Date?
     var lastWriterDeviceID: String?
 
     private enum CodingKeys: String, CodingKey {
+        case schemaVersion
         case records
         case reminders
         case searchHistory
+        case expenses
+        case expenseCategories
         case modifiedAt
         case lastWriterDeviceID
     }
@@ -21,27 +27,41 @@ struct PersistedVault: Codable, Equatable, Sendable {
         records: [Record] = [],
         reminders: [Reminder] = [],
         searchHistory: [String] = [],
+        expenses: [Expense] = [],
+        expenseCategories: [ExpenseCategoryDefinition] = [],
         modifiedAt: Date? = nil,
         lastWriterDeviceID: String? = nil
     ) {
         self.records = records
         self.reminders = reminders
         self.searchHistory = searchHistory
+        self.expenses = expenses
+        self.expenseCategories = expenseCategories
         self.modifiedAt = modifiedAt
         self.lastWriterDeviceID = lastWriterDeviceID
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        schemaVersion = try container.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 1
         records = try container.decodeIfPresent([Record].self, forKey: .records) ?? []
         reminders = try container.decodeIfPresent([Reminder].self, forKey: .reminders) ?? []
         searchHistory = try container.decodeIfPresent([String].self, forKey: .searchHistory) ?? []
+        expenses = try container.decodeIfPresent([Expense].self, forKey: .expenses) ?? []
+        expenseCategories = try container.decodeIfPresent(
+            [ExpenseCategoryDefinition].self,
+            forKey: .expenseCategories
+        ) ?? []
         modifiedAt = try container.decodeIfPresent(Date.self, forKey: .modifiedAt)
         lastWriterDeviceID = try container.decodeIfPresent(String.self, forKey: .lastWriterDeviceID)
     }
 
     var hasUserContent: Bool {
-        !records.isEmpty || !reminders.isEmpty || !searchHistory.isEmpty
+        !records.isEmpty
+            || !reminders.isEmpty
+            || !searchHistory.isEmpty
+            || !expenses.isEmpty
+            || expenseCategories.contains { $0.builtInCategory == nil }
     }
 
     var resolvedModifiedAt: Date {
@@ -53,7 +73,7 @@ struct PersistedVault: Codable, Equatable, Sendable {
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         let timestamp = modifiedAt.map(formatter.string(from:)) ?? "nil"
         let deviceID = lastWriterDeviceID ?? "nil"
-        return "records=\(records.count), reminders=\(reminders.count), searches=\(searchHistory.count), hasContent=\(hasUserContent), modifiedAt=\(timestamp), device=\(deviceID)"
+        return "records=\(records.count), reminders=\(reminders.count), searches=\(searchHistory.count), expenses=\(expenses.count), customExpenseCategories=\(expenseCategories.count), hasContent=\(hasUserContent), modifiedAt=\(timestamp), device=\(deviceID)"
     }
 
     mutating func touch(now: Date = Date(), deviceID: String = SyncDeviceIdentity.current) {
@@ -161,7 +181,10 @@ actor FileBackedVaultStore {
     }
 
     func replace(records: [Record], reminders: [Reminder], searchHistory: [String] = []) async throws -> VaultSnapshot {
-        let vault = PersistedVault(records: records, reminders: reminders, searchHistory: searchHistory)
+        var vault = try readVault()
+        vault.records = records
+        vault.reminders = reminders
+        vault.searchHistory = searchHistory
         let syncedVault = try await persistAndSynchronize(vault)
         return snapshot(from: syncedVault)
     }
@@ -169,6 +192,29 @@ actor FileBackedVaultStore {
     func updateSearchHistory(_ searchHistory: [String]) async throws -> VaultSnapshot {
         var vault = try readVault()
         vault.searchHistory = searchHistory
+        let syncedVault = try await persistAndSynchronize(vault)
+        return snapshot(from: syncedVault)
+    }
+
+    func saveExpense(_ expense: Expense) async throws -> VaultSnapshot {
+        var vault = try readVault()
+        vault.expenses.removeAll { $0.id == expense.id }
+        vault.expenses.append(expense)
+        vault.expenses.sort(by: Self.expenseSort)
+        let syncedVault = try await persistAndSynchronize(vault)
+        return snapshot(from: syncedVault)
+    }
+
+    func deleteExpense(id: UUID) async throws -> VaultSnapshot {
+        var vault = try readVault()
+        vault.expenses.removeAll { $0.id == id }
+        let syncedVault = try await persistAndSynchronize(vault)
+        return snapshot(from: syncedVault)
+    }
+
+    func updateExpenseCategories(_ categories: [ExpenseCategoryDefinition]) async throws -> VaultSnapshot {
+        var vault = try readVault()
+        vault.expenseCategories = categories.filter { $0.builtInCategory == nil }
         let syncedVault = try await persistAndSynchronize(vault)
         return snapshot(from: syncedVault)
     }
@@ -278,6 +324,8 @@ actor FileBackedVaultStore {
 
         let data = try Data(contentsOf: fileURL)
         var vault = try decoder.decode(PersistedVault.self, from: data)
+        vault.schemaVersion = max(vault.schemaVersion, 2)
+        vault.expenseCategories = vault.expenseCategories.filter { $0.builtInCategory == nil }
 
         if vault.modifiedAt == nil {
             vault.modifiedAt = fallbackModifiedDate(for: vault)
@@ -307,7 +355,8 @@ actor FileBackedVaultStore {
 
         let recordDates = vault.records.flatMap { [$0.updatedAt, $0.createdAt, $0.recordDate] }
         let reminderDates = vault.reminders.flatMap { [$0.createdAt, $0.remindAt] }
-        return (recordDates + reminderDates).max()
+        let expenseDates = vault.expenses.flatMap { [$0.updatedAt, $0.createdAt, $0.spentAt] }
+        return (recordDates + reminderDates + expenseDates).max()
     }
 
     private func snapshot(from vault: PersistedVault) -> VaultSnapshot {
@@ -319,8 +368,18 @@ actor FileBackedVaultStore {
                 return lhs.recordDate > rhs.recordDate
             },
             reminders: vault.reminders.sorted { $0.remindAt < $1.remindAt },
-            searchHistory: vault.searchHistory
+            searchHistory: vault.searchHistory,
+            expenses: vault.expenses.sorted(by: Self.expenseSort),
+            expenseCategories: ExpenseCategoryDefinition.defaults
+                + vault.expenseCategories.filter { $0.builtInCategory == nil }
         )
+    }
+
+    private static func expenseSort(_ lhs: Expense, _ rhs: Expense) -> Bool {
+        if lhs.spentAt == rhs.spentAt {
+            return lhs.createdAt > rhs.createdAt
+        }
+        return lhs.spentAt > rhs.spentAt
     }
 
     private static func defaultFileURL(fileManager: FileManager) -> URL {

@@ -11,6 +11,7 @@
 		A11C4E9D4E9A4B4A9F2D1022 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A11C4E9D4E9A4B4A9F2D1024 /* Localizable.strings */; };
 		A11C4E9D4E9A4B4A9F2D1023 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = A11C4E9D4E9A4B4A9F2D1026 /* InfoPlist.strings */; };
 		184DA782A2346AB710E8FB4B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE74B6354ED6D3461850CD5 /* SettingsView.swift */; };
+		E70000000000000000000001 /* ExpenseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E70000000000000000000002 /* ExpenseView.swift */; };
 		1C830643861E223A614BEB7C /* SpeechTranscriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = B51FC9167409097E58FBBB2A /* SpeechTranscriber.swift */; };
 		28417EFC97D8DEECFFC44AAB /* YijiApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45C73C5C165EF7EF86D4E78B /* YijiApp.swift */; };
 		295F02AEE6CCD6C2784C5551 /* LocalNotificationScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 970EAA28B509C08E0551C5EF /* LocalNotificationScheduler.swift */; };
@@ -71,6 +72,7 @@
 		C62A017F2C61F3D7F4CEF198 /* RemindersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemindersView.swift; sourceTree = "<group>"; };
 		CCE74B6354ED6D3461850CD5 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		E05ED3A46E8682723638A5F2 /* PreviewSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewSupport.swift; sourceTree = "<group>"; };
+		E70000000000000000000002 /* ExpenseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseView.swift; sourceTree = "<group>"; };
 		F90000000000000000000011 /* WeatherKitProbeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherKitProbeApp.swift; sourceTree = "<group>"; };
 		F90000000000000000000012 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		F90000000000000000000013 /* WeatherKitProbe.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WeatherKitProbe.entitlements; sourceTree = "<group>"; };
@@ -175,6 +177,14 @@
 			);
 			sourceTree = "<group>";
 		};
+		E70000000000000000000003 /* Expenses */ = {
+			isa = PBXGroup;
+			children = (
+				E70000000000000000000002 /* ExpenseView.swift */,
+			);
+			path = Expenses;
+			sourceTree = "<group>";
+		};
 		A0DBD92C6BA862F68B4E3AAF /* Settings */ = {
 			isa = PBXGroup;
 			children = (
@@ -195,6 +205,7 @@
 			isa = PBXGroup;
 			children = (
 				DBA492A92CAD5B58ED5D6EA2 /* Capture */,
+				E70000000000000000000003 /* Expenses */,
 				92833A360E971CB295063642 /* Home */,
 				718698C531EB964EF66EE3D0 /* Records */,
 				63E88591CF6EAD625899D996 /* Reminders */,
@@ -364,6 +375,7 @@
 				3B9348217AB896011470879E /* CalendarMonthView.swift in Sources */,
 				3D4A91B27A3105F1D2D1A9C0 /* CloudKitVaultSyncCoordinator.swift in Sources */,
 				495D66A2945D9E230285D65E /* CaptureView.swift in Sources */,
+				E70000000000000000000001 /* ExpenseView.swift in Sources */,
 				BF214AC162A2BBCDEE18846D /* FileBackedVaultStore.swift in Sources */,
 				F65D59C6AD4A9F75185E9242 /* HomeView.swift in Sources */,
 				295F02AEE6CCD6C2784C5551 /* LocalNotificationScheduler.swift in Sources */,

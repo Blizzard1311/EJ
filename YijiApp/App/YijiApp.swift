@@ -20,9 +20,12 @@ struct YijiApp: App {
                     await appModel.load()
                 }
                 .onChange(of: scenePhase) { newPhase in
-                    guard newPhase == .active, AppReleaseConfiguration.cloudSyncEnabled else { return }
-                    Task {
-                        await appModel.refreshCloudSnapshot()
+                    if newPhase == .active, AppReleaseConfiguration.cloudSyncEnabled {
+                        Task {
+                            await appModel.refreshCloudSnapshot()
+                        }
+                    } else if newPhase != .active {
+                        appModel.stopAllVoiceActivity()
                     }
                 }
         }

@@ -49,4 +49,16 @@ struct BackupPayloadInspectorTests {
 
         #expect(BackupPayloadInspector.validate(data) == .valid)
     }
+
+    @Test
+    func acceptsExpenseBackupShape() throws {
+        let data = try #require("""
+        {
+          "expenses": [],
+          "expenseCategories": []
+        }
+        """.data(using: .utf8))
+
+        #expect(BackupPayloadInspector.validate(data) == .valid)
+    }
 }

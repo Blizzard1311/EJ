@@ -46,17 +46,25 @@ struct StorageContainerDefinition: Identifiable, Codable, Hashable, Sendable {
     }
 }
 
+enum GlobalCaptureIntent {
+    case search
+    case expense(ExpenseDraft)
+    case record(ParsedCapture)
+}
+
 @MainActor
 final class AppModel: ObservableObject {
     private static let lastBackupDateKey = "yiji.lastBackupDate"
     private static let visibleStorageContainersKey = "yiji.visibleStorageContainers"
     private static let storageContainerDefinitionsKey = "yiji.storageContainerDefinitions"
+    private static let expenseCurrencyKey = "yiji.expenseCurrency"
     private let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier ?? "com.blizzard1311.yiji",
         category: "AppModel"
     )
     private let repository: FileBackedVaultStore
     private let parser = RecordParser()
+    private let expenseParser = ExpenseParser()
     private let calendar = Calendar(identifier: .gregorian)
     private var cloudSyncDateFormatter: DateFormatter {
         YijiDateFormatter.dateTimeFormatter
@@ -67,13 +75,23 @@ final class AppModel: ObservableObject {
     private var focusClearTask: Task<Void, Never>?
     private var cancellables: Set<AnyCancellable> = []
     private var hasUserEditedVoiceDraft = false
+    private var hasUserEditedExpenseDraft = false
+    private var expenseDraftSource: CaptureSource = .text
 
     let speech = SpeechTranscriber()
+    let expenseSpeech = SpeechTranscriber()
     let notifications = LocalNotificationScheduler()
     let calendarWeather = CalendarWeatherModel()
 
     @Published var records: [YijiCore.Record] = []
     @Published var reminders: [Reminder] = []
+    @Published var expenses: [Expense] = []
+    @Published var expenseCategories: [ExpenseCategoryDefinition] = ExpenseCategoryDefinition.defaults
+    @Published var expenseDraftText = ""
+    @Published var expenseDraft: ExpenseDraft?
+    @Published var isExpenseEntryActive = false
+    @Published private(set) var isSavingExpense = false
+    @Published private(set) var selectedExpenseCurrency: ExpenseCurrency = AppModel.loadExpenseCurrency()
     @Published var captureText = ""
     @Published var draftSource: CaptureSource = .text
     @Published var selectedTab: AppTab = {
@@ -82,6 +100,8 @@ final class AppModel: ObservableObject {
             return .capture
         case "calendar":
             return .calendar
+        case "expenses":
+            return .expenses
         case "settings":
             return .settings
         default:
@@ -120,6 +140,17 @@ final class AppModel: ObservableObject {
             guard let self else { return }
             self.handleFinalVoiceTranscript(transcript)
         }
+
+        expenseSpeech.onTranscript = { [weak self] transcript in
+            guard let self else { return }
+            self.applyExpenseTranscript(transcript)
+        }
+
+        expenseSpeech.onFinalTranscript = { [weak self] transcript in
+            guard let self else { return }
+            self.applyExpenseTranscript(transcript)
+        }
+
     }
 
     func selectAppLanguage(_ language: AppLanguage) {
@@ -129,6 +160,7 @@ final class AppModel: ObservableObject {
         statusMessage = nil
         focusedRecordBadgeText = nil
         speech.refreshRecognitionLanguage()
+        expenseSpeech.refreshRecognitionLanguage()
         cloudSyncStatusDetail = AppLocalization.text(
             AppReleaseConfiguration.cloudSyncEnabled
                 ? "正在检查 iCloud 同步状态"
@@ -146,6 +178,7 @@ final class AppModel: ObservableObject {
         speechLanguage = language
         statusMessage = nil
         speech.refreshRecognitionLanguage()
+        expenseSpeech.refreshRecognitionLanguage()
     }
 
     func load() async {
@@ -154,6 +187,7 @@ final class AppModel: ObservableObject {
             records = snapshot.records
             reminders = snapshot.reminders
             searchHistory = snapshot.searchHistory
+            applyExpenseSnapshot(snapshot)
             let cleanedLegacyReminderCount = await cleanupLegacyFailedReminderArtifacts()
             if cleanedLegacyReminderCount > 0 {
                 showTransientStatus("已整理历史提醒。", seconds: 4.5)
@@ -165,6 +199,7 @@ final class AppModel: ObservableObject {
         }
 
         speech.refreshAuthorizationStatus()
+        expenseSpeech.refreshAuthorizationStatus()
         await refreshReminderStates()
         await refreshCloudSyncStatus()
     }
@@ -175,6 +210,7 @@ final class AppModel: ObservableObject {
             records = snapshot.records
             reminders = snapshot.reminders
             searchHistory = snapshot.searchHistory
+            applyExpenseSnapshot(snapshot)
             await notifications.sync(reminders: reminders)
         } catch {
             showPersistentStatus(AppLocalization.format("error.with_detail", AppLocalization.text("刷新 iCloud 数据失败"), error.localizedDescription))
@@ -187,6 +223,44 @@ final class AppModel: ObservableObject {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
         return parser.parse(content: trimmed, source: draftSource, now: Date(), calendar: calendar)
+    }
+
+    func expensePreview(for text: String) -> ExpenseDraft? {
+        expenseParser.parseGlobalCapture(
+            text,
+            categories: expenseCategories,
+            defaultCurrency: selectedExpenseCurrency,
+            localeIdentifier: AppLocalization.speechLocale.identifier
+        )
+    }
+
+    func globalCaptureIntent(for text: String) -> GlobalCaptureIntent? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+
+        if SearchIntentClassifier.isSearchQuery(trimmed) {
+            return .search
+        }
+
+        let recordDraft = preview(for: trimmed)
+        let preservesStructuredRecordIntent = recordDraft.map {
+            !$0.warnings.isEmpty
+                || $0.reminder != nil
+                || $0.record.resolvedStorageContainer != nil
+                || ($0.record.objectName != nil && $0.record.location != nil)
+        } ?? false
+
+        if preservesStructuredRecordIntent, let recordDraft {
+            return .record(recordDraft)
+        }
+        if let expenseDraft = expensePreview(for: trimmed) {
+            return .expense(expenseDraft)
+        }
+        return recordDraft.map(GlobalCaptureIntent.record)
+    }
+
+    var selectableExpenseCategories: [ExpenseCategoryDefinition] {
+        expenseCategories.filter(\.isSelectableDefault)
     }
 
     func saveCapture() async {
@@ -219,6 +293,7 @@ final class AppModel: ObservableObject {
     }
 
     func startVoiceCapture() {
+        expenseSpeech.stopRecording()
         draftSource = .voice
         hasUserEditedVoiceDraft = false
         lastRecognizedVoiceText = nil
@@ -236,15 +311,39 @@ final class AppModel: ObservableObject {
 
         draftSource = .voice
 
-        if SearchIntentClassifier.isSearchQuery(trimmed) {
+        switch globalCaptureIntent(for: trimmed) {
+        case .search:
             activateSearch(trimmed, navigateToRecords: true)
             captureText = ""
             lastRecognizedVoiceText = nil
             speech.resetTranscript()
             return
-        }
 
-        await saveCapture()
+        case let .expense(draft):
+            if draft.requiresConfirmation {
+                expenseDraftSource = .voice
+                expenseDraftText = trimmed
+                expenseDraft = draft
+                hasUserEditedExpenseDraft = false
+                isExpenseEntryActive = true
+                selectExpenseCurrency(draft.currency)
+
+                captureText = ""
+                hasUserEditedVoiceDraft = false
+                lastRecognizedVoiceText = nil
+                speech.resetTranscript()
+                selectedTab = .expenses
+                showTransientStatus("已识别为消费，请确认金额或分类后记账。", seconds: 4.5)
+                return
+            }
+            await saveGlobalExpenseDraft(draft, originalTranscript: trimmed)
+
+        case .record:
+            await saveCapture()
+
+        case nil:
+            return
+        }
     }
 
     func clearCaptureDraft() {
@@ -265,6 +364,247 @@ final class AppModel: ObservableObject {
         let normalizedRecognized = lastRecognizedVoiceText?
             .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         hasUserEditedVoiceDraft = normalizedDraft != normalizedRecognized
+    }
+
+    func selectExpenseCurrency(_ currency: ExpenseCurrency) {
+        guard selectedExpenseCurrency != currency else { return }
+        selectedExpenseCurrency = currency
+        UserDefaults.standard.set(currency.rawValue, forKey: Self.expenseCurrencyKey)
+    }
+
+    func beginManualExpenseEntry() {
+        expenseSpeech.stopRecording()
+        expenseDraftSource = .text
+        expenseDraftText = ""
+        expenseDraft = nil
+        hasUserEditedExpenseDraft = false
+        isExpenseEntryActive = true
+        clearStatusMessage()
+    }
+
+    func startExpenseVoiceCapture() {
+        speech.stopRecording()
+        expenseDraftSource = .voice
+        expenseDraftText = ""
+        expenseDraft = nil
+        hasUserEditedExpenseDraft = false
+        isExpenseEntryActive = true
+        clearStatusMessage()
+        expenseSpeech.startRecording()
+    }
+
+    func stopExpenseVoiceCapture() {
+        expenseSpeech.stopRecording()
+    }
+
+    func stopAllVoiceActivity() {
+        speech.stopRecording()
+        expenseSpeech.stopRecording()
+    }
+
+    func updateExpenseDraftText(_ text: String) {
+        expenseDraftText = text
+        if !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            isExpenseEntryActive = true
+        }
+
+        let parsed = expenseParser.parse(
+            text,
+            categories: expenseCategories,
+            defaultCurrency: selectedExpenseCurrency,
+            localeIdentifier: AppLocalization.speechLocale.identifier
+        )
+
+        if hasUserEditedExpenseDraft, var currentDraft = expenseDraft {
+            currentDraft.originalTranscript = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            expenseDraft = currentDraft
+        } else {
+            expenseDraft = parsed
+        }
+    }
+
+    func replaceExpenseDraft(_ draft: ExpenseDraft) {
+        expenseDraft = draft
+        hasUserEditedExpenseDraft = true
+    }
+
+    func updateExpenseDraft(_ update: (inout ExpenseDraft) -> Void) {
+        guard var draft = expenseDraft else { return }
+        update(&draft)
+        expenseDraft = draft
+        hasUserEditedExpenseDraft = true
+    }
+
+    func clearExpenseDraft() {
+        expenseSpeech.stopRecording()
+        expenseSpeech.resetTranscript()
+        expenseDraftText = ""
+        expenseDraft = nil
+        hasUserEditedExpenseDraft = false
+        expenseDraftSource = .text
+        isExpenseEntryActive = false
+        clearStatusMessage()
+    }
+
+    func saveExpenseDraft() async {
+        guard !isSavingExpense else { return }
+        guard let draft = expenseDraft else {
+            showTransientStatus("请先输入消费内容和金额。")
+            return
+        }
+
+        let title = draft.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty, draft.amountMinorUnits > 0 else {
+            showTransientStatus("请补充消费内容和金额。")
+            return
+        }
+
+        isSavingExpense = true
+        defer { isSavingExpense = false }
+
+        do {
+            let snapshot = try await persistExpense(
+                draft,
+                source: expenseDraftSource,
+                originalTranscript: draft.originalTranscript
+            )
+            applyExpenseSnapshot(snapshot)
+            selectExpenseCurrency(draft.currency)
+            clearExpenseDraft()
+            showTransientStatus("已记账。")
+            await refreshCloudSyncStatus()
+        } catch {
+            showPersistentStatus(
+                AppLocalization.format(
+                    "error.with_detail",
+                    AppLocalization.text("记账保存失败"),
+                    error.localizedDescription
+                )
+            )
+        }
+    }
+
+    func deleteExpense(id: UUID) async {
+        do {
+            let snapshot = try await repository.deleteExpense(id: id)
+            applyExpenseSnapshot(snapshot)
+            showTransientStatus("帐目已删除。")
+            await refreshCloudSyncStatus()
+        } catch {
+            showPersistentStatus(
+                AppLocalization.format(
+                    "error.with_detail",
+                    AppLocalization.text("删除帐目失败"),
+                    error.localizedDescription
+                )
+            )
+        }
+    }
+
+    @discardableResult
+    func addCustomExpenseCategory(named name: String, colorHex: String = "D9C9E8") async -> String? {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            showTransientStatus("请输入类别名称。")
+            return nil
+        }
+        guard !expenseCategories.contains(where: {
+            $0.displayName.caseInsensitiveCompare(trimmed) == .orderedSame
+        }) else {
+            showTransientStatus("这个类别已经存在。")
+            return nil
+        }
+
+        let definition = ExpenseCategoryDefinition(customName: trimmed, colorHex: colorHex)
+        do {
+            let snapshot = try await repository.updateExpenseCategories(expenseCategories + [definition])
+            applyExpenseSnapshot(snapshot)
+            await refreshCloudSyncStatus()
+            return definition.id
+        } catch {
+            showPersistentStatus(
+                AppLocalization.format(
+                    "error.with_detail",
+                    AppLocalization.text("新增类别失败"),
+                    error.localizedDescription
+                )
+            )
+            return nil
+        }
+    }
+
+    func expenseCategory(for categoryID: String) -> ExpenseCategoryDefinition {
+        expenseCategories.first(where: { $0.id == categoryID })
+            ?? ExpenseCategoryDefinition(builtIn: .uncategorized)
+    }
+
+    private func applyExpenseTranscript(_ transcript: String) {
+        let trimmed = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        updateExpenseDraftText(trimmed)
+    }
+
+    private func applyExpenseSnapshot(_ snapshot: VaultSnapshot) {
+        expenses = snapshot.expenses
+        expenseCategories = snapshot.expenseCategories
+    }
+
+    private func persistExpense(
+        _ draft: ExpenseDraft,
+        source: CaptureSource,
+        originalTranscript: String?
+    ) async throws -> VaultSnapshot {
+        let title = draft.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let expense = Expense(
+            title: title,
+            amountMinorUnits: draft.amountMinorUnits,
+            currency: draft.currency,
+            categoryID: draft.categoryID,
+            spentAt: draft.spentAt,
+            source: source,
+            originalTranscript: originalTranscript
+        )
+        return try await repository.saveExpense(expense)
+    }
+
+    private func saveGlobalExpenseDraft(
+        _ draft: ExpenseDraft,
+        originalTranscript: String
+    ) async {
+        guard !isSavingExpense else { return }
+
+        let title = draft.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty, draft.amountMinorUnits > 0 else {
+            showTransientStatus("请补充消费内容和金额。")
+            return
+        }
+
+        isSavingExpense = true
+        defer { isSavingExpense = false }
+
+        do {
+            let snapshot = try await persistExpense(
+                draft,
+                source: .voice,
+                originalTranscript: originalTranscript
+            )
+            applyExpenseSnapshot(snapshot)
+            selectExpenseCurrency(draft.currency)
+            captureText = ""
+            hasUserEditedVoiceDraft = false
+            lastRecognizedVoiceText = nil
+            speech.resetTranscript()
+            showTransientStatus("已记账。")
+            await refreshCloudSyncStatus()
+        } catch {
+            showPersistentStatus(
+                AppLocalization.format(
+                    "error.with_detail",
+                    AppLocalization.text("记账保存失败"),
+                    error.localizedDescription
+                )
+            )
+        }
     }
 
     func refreshReminderStates() async {
@@ -323,6 +663,7 @@ final class AppModel: ObservableObject {
             records = snapshot.records
             reminders = snapshot.reminders
             searchHistory = snapshot.searchHistory
+            applyExpenseSnapshot(snapshot)
             let cleanedLegacyReminderCount = await cleanupLegacyFailedReminderArtifacts()
             captureText = ""
             searchText = ""
@@ -336,7 +677,7 @@ final class AppModel: ObservableObject {
             }
             let message = cleanedLegacyReminderCount > 0
                 ? "备份已导入，历史提醒已整理。"
-                : "备份已导入，当前记录、提醒和本地通知已同步更新。"
+                : "备份已导入，当前记录、提醒、账目和本地通知已同步更新。"
             if statusMessage == nil {
                 showTransientStatus(message)
             }
@@ -823,6 +1164,12 @@ final class AppModel: ObservableObject {
             }
             .store(in: &cancellables)
 
+        expenseSpeech.objectWillChange
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
+
         notifications.objectWillChange
             .sink { [weak self] _ in
                 self?.objectWillChange.send()
@@ -844,6 +1191,22 @@ final class AppModel: ObservableObject {
             StorageContainerDefinition(builtIn: .wardrobe),
             StorageContainerDefinition(builtIn: .bag)
         ]
+    }
+
+    private static func loadExpenseCurrency() -> ExpenseCurrency {
+        if let rawValue = UserDefaults.standard.string(forKey: expenseCurrencyKey),
+           let currency = ExpenseCurrency(rawValue: rawValue) {
+            return currency
+        }
+
+        let languageCode = AppLocalization.languageCode.lowercased()
+        if languageCode.hasPrefix("ja") {
+            return .jpy
+        }
+        if languageCode.hasPrefix("zh") {
+            return .cny
+        }
+        return .usd
     }
 
     private static func loadStorageContainerDefinitions() -> [StorageContainerDefinition] {
