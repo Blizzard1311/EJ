@@ -778,7 +778,7 @@ public struct ExpenseParser: Sendable {
             if let custom = preferredCustomCategory(in: customCategories, aliases: petCategoryAliases) {
                 return ClassificationResult(categoryID: custom.id, confidence: .high)
             }
-            return ClassificationResult(categoryID: BuiltInExpenseCategory.uncategorized.rawValue, confidence: .low)
+            return ClassificationResult(categoryID: BuiltInExpenseCategory.pets.rawValue, confidence: .high)
         }
 
         if containsAny(lowered, childcareSignals) {
@@ -951,9 +951,43 @@ public struct ExpenseParser: Sendable {
             result = expression.stringByReplacingMatches(in: result, range: range, withTemplate: "")
         }
 
+        result = stripLeadingPurchaseAction(from: result)
+        result = stripTrailingPurchaseConnector(from: result)
+
         return result
             .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
             .trimmingCharacters(in: CharacterSet.whitespacesAndNewlines.union(.punctuationCharacters))
+    }
+
+    private func stripLeadingPurchaseAction(from text: String) -> String {
+        let patterns = [
+            #"^(?:我)?(?:又)?(?:买了|买|购买了|购买|购入了|购入|下单了|下单|入手了|入手)\s*"#,
+            #"(?i)^(?:i\s+)?(?:bought|buy|purchased|purchase|ordered|order)\s+"#
+        ]
+
+        var result = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        for pattern in patterns {
+            guard let expression = try? NSRegularExpression(pattern: pattern) else { continue }
+            let range = NSRange(result.startIndex..<result.endIndex, in: result)
+            result = expression.stringByReplacingMatches(in: result, range: range, withTemplate: "")
+        }
+
+        return result
+    }
+
+    private func stripTrailingPurchaseConnector(from text: String) -> String {
+        let patterns = [
+            #"(?i)\s+for\s*$"#
+        ]
+
+        var result = text
+        for pattern in patterns {
+            guard let expression = try? NSRegularExpression(pattern: pattern) else { continue }
+            let range = NSRange(result.startIndex..<result.endIndex, in: result)
+            result = expression.stringByReplacingMatches(in: result, range: range, withTemplate: "")
+        }
+
+        return result
     }
 
     private func containsAny(_ text: String, _ keywords: [String]) -> Bool {

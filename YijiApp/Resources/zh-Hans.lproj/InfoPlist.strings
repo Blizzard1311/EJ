@@ -1,4 +1,4 @@
-"CFBundleDisplayName" = "Mind U";
-"NSLocationWhenInUseUsageDescription" = "Mind U 需要使用你当前的位置，为日历显示未来 10 天的天气提示。";
-"NSMicrophoneUsageDescription" = "Mind U 需要麦克风权限来录入语音内容。";
-"NSSpeechRecognitionUsageDescription" = "Mind U 需要语音识别来快速记录生活信息。";
+"CFBundleDisplayName" = "Mind Talk";
+"NSLocationWhenInUseUsageDescription" = "Mind Talk 需要使用你当前的位置，为日历显示未来 10 天的天气提示。";
+"NSMicrophoneUsageDescription" = "Mind Talk 需要麦克风权限来录入语音内容。";
+"NSSpeechRecognitionUsageDescription" = "Mind Talk 需要语音识别来快速记录生活信息。";

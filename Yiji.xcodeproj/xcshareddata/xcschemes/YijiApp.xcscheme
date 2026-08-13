@@ -83,5 +83,23 @@
    <ArchiveAction
       buildConfiguration = "Release"
       revealArchiveInOrganizer = "YES">
+      <PreActions>
+         <ExecutionAction
+            ActionType = "Xcode.IDEStandardExecutionActionsCore.ExecutionActionType.ShellScriptAction">
+            <ActionContent
+               title = "Increment Build Number Before Archive"
+               scriptText = "&quot;$SRCROOT/tools/bump_yiji_build_number.py&quot; --apply&#10;">
+               <EnvironmentBuildable>
+                  <BuildableReference
+                     BuildableIdentifier = "primary"
+                     BlueprintIdentifier = "5CAC776C7280087C6C59565E"
+                     BuildableName = "YijiApp.app"
+                     BlueprintName = "YijiApp"
+                     ReferencedContainer = "container:Yiji.xcodeproj">
+                  </BuildableReference>
+               </EnvironmentBuildable>
+            </ActionContent>
+         </ExecutionAction>
+      </PreActions>
    </ArchiveAction>
 </Scheme>

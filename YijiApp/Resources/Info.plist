@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Mind U</string>
+	<string>Mind Talk</string>
 	<key>CFBundleLocalizations</key>
 	<array>
 		<string>zh-Hans</string>
@@ -21,7 +21,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>$(PRODUCT_NAME)</string>
+	<string>Mind Talk</string>
 	<key>CFBundlePackageType</key>
 	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 	<key>CFBundleShortVersionString</key>
@@ -35,11 +35,11 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Mind U 需要麦克风权限来录入语音内容。</string>
+	<string>Mind Talk 需要麦克风权限来录入语音内容。</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Mind U 需要使用你当前的位置，为日历显示未来 10 天的天气提示。</string>
+	<string>Mind Talk 需要使用你当前的位置，为日历显示未来 10 天的天气提示。</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Mind U 需要语音识别来快速记录生活信息。</string>
+	<string>Mind Talk 需要语音识别来快速记录生活信息。</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

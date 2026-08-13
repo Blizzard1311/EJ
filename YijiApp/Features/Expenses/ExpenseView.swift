@@ -409,12 +409,16 @@ struct ExpenseView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 26)
             } else {
-                ForEach(Array(appModel.expenses.prefix(5).enumerated()), id: \.element.id) { index, expense in
-                    if index > 0 { Divider() }
-                    RecentExpenseSwipeRow(expense: expense) {
-                        Task { await appModel.deleteExpense(id: expense.id) }
-                    }
+                List(Array(appModel.expenses.prefix(5))) { expense in
+                    ExpenseRow(expense: expense)
+                    .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+                    .listRowBackground(Color.clear)
+                    .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
                 }
+                .listStyle(.plain)
+                .scrollDisabled(true)
+                .scrollContentBackground(.hidden)
+                .frame(height: CGFloat(min(appModel.expenses.count, 5)) * 60 + 16)
             }
         }
         .padding(18)
@@ -607,11 +611,17 @@ private struct ExpenseDraftEditorView: View {
     @State private var amountText: String
     @State private var showingCategoryPicker = false
     @State private var amountIsInvalid = false
+    let onDelete: (() -> Void)?
     let onSave: (ExpenseDraft) -> Void
 
-    init(draft: ExpenseDraft, onSave: @escaping (ExpenseDraft) -> Void) {
+    init(
+        draft: ExpenseDraft,
+        onDelete: (() -> Void)? = nil,
+        onSave: @escaping (ExpenseDraft) -> Void
+    ) {
         _workingDraft = State(initialValue: draft)
         _amountText = State(initialValue: expenseDecimalText(draft.decimalAmount, currency: draft.currency))
+        self.onDelete = onDelete
         self.onSave = onSave
     }
 
@@ -654,6 +664,15 @@ private struct ExpenseDraftEditorView: View {
                         selection: $workingDraft.spentAt,
                         displayedComponents: .date
                     )
+                }
+
+                if let onDelete {
+                    Section {
+                        Button(AppLocalization.text("删除帐目"), role: .destructive) {
+                            onDelete()
+                            dismiss()
+                        }
+                    }
                 }
             }
             .navigationTitle(AppLocalization.text("修改帐目"))
@@ -808,9 +827,7 @@ private struct ExpenseLedgerView: View {
         NavigationStack {
             List {
                 ForEach(appModel.expenses) { expense in
-                    ExpenseRow(expense: expense) {
-                        Task { await appModel.deleteExpense(id: expense.id) }
-                    }
+                    ExpenseRow(expense: expense)
                 }
             }
             .overlay {
@@ -837,8 +854,8 @@ private struct ExpenseLedgerView: View {
 
 private struct ExpenseRow: View {
     @EnvironmentObject private var appModel: AppModel
+    @State private var showingEditor = false
     let expense: Expense
-    var onDelete: (() -> Void)? = nil
     var showsSwipeActions = true
 
     var body: some View {
@@ -872,80 +889,25 @@ private struct ExpenseRow: View {
         .padding(.vertical, 4)
         .contentShape(Rectangle())
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-            if showsSwipeActions, let onDelete {
-                Button(AppLocalization.text("删除"), role: .destructive) {
-                    onDelete()
+            if showsSwipeActions {
+                Button(AppLocalization.text("编辑")) {
+                    showingEditor = true
                 }
+                .tint(AppTheme.accent)
             }
         }
-    }
-}
-
-private struct RecentExpenseSwipeRow: View {
-    let expense: Expense
-    let onDelete: () -> Void
-
-    @State private var revealedWidth: CGFloat = 0
-    @GestureState private var dragTranslation: CGFloat = 0
-
-    private let actionWidth: CGFloat = 56
-
-    var body: some View {
-        ZStack(alignment: .trailing) {
-            Button(role: .destructive, action: onDelete) {
-                Text(AppLocalization.text("删除"))
-                    .font(.caption.weight(.medium))
-                .foregroundStyle(.white)
-                .frame(width: actionWidth, height: 48)
-                .background(Color.red, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-            }
-            .buttonStyle(.plain)
-            .opacity(currentOffset < -8 ? 1 : 0)
-
-            ExpenseRow(
-                expense: expense,
-                onDelete: onDelete,
-                showsSwipeActions: false
+        .sheet(isPresented: $showingEditor) {
+            ExpenseDraftEditorView(
+                draft: expenseDraft(from: expense),
+                onDelete: {
+                    Task { await appModel.deleteExpense(id: expense.id) }
+                },
+                onSave: { draft in
+                    Task { await appModel.updateExpense(expense, with: draft) }
+                }
             )
-                .offset(x: currentOffset)
-                .contentShape(Rectangle())
-                .highPriorityGesture(
-                    DragGesture(minimumDistance: 12)
-                        .updating($dragTranslation) { value, state, _ in
-                            let horizontal = value.translation.width
-                            guard abs(horizontal) > abs(value.translation.height) else { return }
-                            state = horizontal
-                        }
-                        .onEnded { value in
-                            let horizontal = value.translation.width
-                            guard abs(horizontal) > abs(value.translation.height) else { return }
-
-                            if horizontal < -40 {
-                                revealedWidth = actionWidth
-                            } else if horizontal > 24 {
-                                revealedWidth = 0
-                            } else if revealedWidth > 0 {
-                                revealedWidth = actionWidth
-                            } else {
-                                revealedWidth = 0
-                            }
-                        }
-                )
-                .onTapGesture {
-                    if revealedWidth > 0 {
-                        withAnimation(.spring(response: 0.24, dampingFraction: 0.9)) {
-                            revealedWidth = 0
-                        }
-                    }
-                }
+            .environmentObject(appModel)
         }
-        .animation(.spring(response: 0.24, dampingFraction: 0.9), value: revealedWidth)
-        .clipped()
-    }
-
-    private var currentOffset: CGFloat {
-        let proposed = -revealedWidth + dragTranslation
-        return min(0, max(-actionWidth, proposed))
     }
 }
 
@@ -993,6 +955,17 @@ private func expenseRelativeDate(_ date: Date) -> String {
     formatter.locale = Locale(identifier: AppLocalization.languageCode)
     formatter.setLocalizedDateFormatFromTemplate("MMMd")
     return formatter.string(from: date)
+}
+
+private func expenseDraft(from expense: Expense) -> ExpenseDraft {
+    ExpenseDraft(
+        title: expense.title,
+        amountMinorUnits: expense.amountMinorUnits,
+        currency: expense.currency,
+        categoryID: expense.categoryID,
+        spentAt: expense.spentAt,
+        originalTranscript: expense.originalTranscript ?? expense.title
+    )
 }
 
 @MainActor

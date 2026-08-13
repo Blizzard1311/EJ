@@ -32,6 +32,7 @@ public struct Record: Identifiable, Hashable, Codable, Sendable {
     public var objectName: String?
     public var location: String?
     public var storageContainer: StorageContainer?
+    public var customStorageContainerName: String?
     public var recordDate: Date
     public var eventTime: EventTimeRange?
     public var category: RecordCategory
@@ -46,6 +47,7 @@ public struct Record: Identifiable, Hashable, Codable, Sendable {
         objectName: String? = nil,
         location: String? = nil,
         storageContainer: StorageContainer? = nil,
+        customStorageContainerName: String? = nil,
         recordDate: Date,
         eventTime: EventTimeRange? = nil,
         category: RecordCategory,
@@ -59,6 +61,7 @@ public struct Record: Identifiable, Hashable, Codable, Sendable {
         self.objectName = objectName
         self.location = location
         self.storageContainer = storageContainer
+        self.customStorageContainerName = customStorageContainerName
         self.recordDate = recordDate
         self.eventTime = eventTime
         self.category = category
@@ -98,6 +101,62 @@ public extension Record {
         }
 
         return containers
+    }
+
+    var explicitCustomStorageContainerName: String? {
+        guard category == .storage else {
+            return nil
+        }
+
+        let trimmed = customStorageContainerName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    var normalizedStorageObjectName: String? {
+        guard category == .storage else {
+            return nil
+        }
+
+        let trimmed = objectName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !trimmed.isEmpty else {
+            return nil
+        }
+
+        return trimmed.lowercased()
+    }
+
+    var displayStorageLocation: String? {
+        let trimmedLocation = location?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let normalizedLocation = trimmedLocation.isEmpty ? nil : trimmedLocation
+
+        guard category == .storage else {
+            return normalizedLocation
+        }
+
+        if let storageContainer {
+            guard let normalizedLocation else {
+                return storageContainer.displayName
+            }
+
+            let locationContainers = StorageContainerClassifier.classifyAll(
+                content: "",
+                objectName: nil,
+                location: normalizedLocation,
+                tags: []
+            )
+
+            if !locationContainers.isEmpty, !locationContainers.contains(storageContainer) {
+                return storageContainer.displayName
+            }
+
+            return normalizedLocation
+        }
+
+        if let explicitCustomStorageContainerName {
+            return normalizedLocation ?? explicitCustomStorageContainerName
+        }
+
+        return normalizedLocation
     }
 
     var sliceCategories: [RecordSliceCategory] {

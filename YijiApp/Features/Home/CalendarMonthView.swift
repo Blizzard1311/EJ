@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct CalendarInlineItem: Identifiable, Equatable {
     enum Tone {
@@ -23,10 +24,19 @@ struct CalendarMonthView: View {
     let weatherByDate: [Date: CalendarDayWeather]
     let calendar: Calendar
     let inlineItems: [CalendarInlineItem]
+    let isVoiceRecording: Bool
+    let isVoiceSaving: Bool
+    let voiceTranscript: String
+    let voiceErrorMessage: String?
+    let isVoicePermissionDenied: Bool
     let onDateSelected: (Date) -> Void
     let onVisibleMonthChanged: (Date) -> Void
+    let onVoicePressStarted: (Date) -> Void
+    let onVoicePressEnded: () -> Void
+    let onVoicePermissionHelp: () -> Void
 
     @State private var expandedDate: Date?
+    @State private var isPressingVoice = false
 
     init(
         selectedDate: Date,
@@ -37,8 +47,16 @@ struct CalendarMonthView: View {
         weatherByDate: [Date: CalendarDayWeather],
         calendar: Calendar,
         inlineItems: [CalendarInlineItem] = [],
+        isVoiceRecording: Bool = false,
+        isVoiceSaving: Bool = false,
+        voiceTranscript: String = "",
+        voiceErrorMessage: String? = nil,
+        isVoicePermissionDenied: Bool = false,
         onDateSelected: @escaping (Date) -> Void,
-        onVisibleMonthChanged: @escaping (Date) -> Void
+        onVisibleMonthChanged: @escaping (Date) -> Void,
+        onVoicePressStarted: @escaping (Date) -> Void = { _ in },
+        onVoicePressEnded: @escaping () -> Void = {},
+        onVoicePermissionHelp: @escaping () -> Void = {}
     ) {
         self.selectedDate = selectedDate
         self.visibleMonth = visibleMonth
@@ -48,8 +66,16 @@ struct CalendarMonthView: View {
         self.weatherByDate = weatherByDate
         self.calendar = calendar
         self.inlineItems = inlineItems
+        self.isVoiceRecording = isVoiceRecording
+        self.isVoiceSaving = isVoiceSaving
+        self.voiceTranscript = voiceTranscript
+        self.voiceErrorMessage = voiceErrorMessage
+        self.isVoicePermissionDenied = isVoicePermissionDenied
         self.onDateSelected = onDateSelected
         self.onVisibleMonthChanged = onVisibleMonthChanged
+        self.onVoicePressStarted = onVoicePressStarted
+        self.onVoicePressEnded = onVoicePressEnded
+        self.onVoicePermissionHelp = onVoicePermissionHelp
         _expandedDate = State(initialValue: calendar.startOfDay(for: selectedDate))
     }
 
@@ -199,13 +225,7 @@ struct CalendarMonthView: View {
                     .lineLimit(1)
             }
 
-            if inlineItems.isEmpty {
-                Text(AppLocalization.text("当天暂无记录，可以按住语音添加"))
-                    .font(.caption)
-                    .foregroundStyle(AppTheme.muted)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, 8)
-            } else {
+            if !inlineItems.isEmpty {
                 LazyVGrid(
                     columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)],
                     spacing: 8
@@ -234,6 +254,23 @@ struct CalendarMonthView: View {
                     }
                 }
             }
+
+            voiceEntryAction(for: date)
+
+            if let voiceErrorMessage, !voiceErrorMessage.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    Label(voiceErrorMessage, systemImage: "exclamationmark.circle")
+                        .font(.caption2)
+                        .foregroundStyle(.red)
+
+                    if isVoicePermissionDenied {
+                        Button(AppLocalization.text("前往系统设置开启语音权限"), action: onVoicePermissionHelp)
+                            .font(.caption2.weight(.semibold))
+                            .buttonStyle(.plain)
+                            .foregroundStyle(AppTheme.accent)
+                    }
+                }
+            }
         }
         .padding(13)
         .background(
@@ -245,6 +282,82 @@ struct CalendarMonthView: View {
                 .stroke(AppTheme.line, lineWidth: 1)
         )
         .padding(.vertical, 6)
+    }
+
+    private func voiceEntryAction(for date: Date) -> some View {
+        let isActive = isVoiceRecording || isPressingVoice
+        let trimmedTranscript = voiceTranscript.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        return HStack(spacing: 10) {
+            if isVoiceSaving {
+                ProgressView()
+                    .controlSize(.small)
+                    .tint(AppTheme.accent)
+                    .frame(width: 24, height: 24)
+            } else {
+                Image(systemName: isActive ? "waveform" : "mic.fill")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(isActive ? Color.white : AppTheme.accent)
+                    .frame(width: 24, height: 24)
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(voiceActionTitle(isActive: isActive))
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(isActive ? Color.white : AppTheme.ink)
+
+                Text(isActive && !trimmedTranscript.isEmpty
+                     ? trimmedTranscript
+                     : accessibilityDateFormatter.string(from: date))
+                    .font(.caption2)
+                    .foregroundStyle(isActive ? Color.white.opacity(0.82) : AppTheme.muted)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(isActive ? AppTheme.accent : AppTheme.surface.opacity(0.86))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(isActive ? AppTheme.accent : AppTheme.line, lineWidth: 1)
+        )
+        .contentShape(Rectangle())
+        .gesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    guard !isPressingVoice, !isVoiceSaving else { return }
+                    isPressingVoice = true
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    onVoicePressStarted(date)
+                }
+                .onEnded { _ in
+                    guard isPressingVoice else { return }
+                    isPressingVoice = false
+                    onVoicePressEnded()
+                }
+        )
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityLabel(voiceActionTitle(isActive: isActive))
+    }
+
+    private func voiceActionTitle(isActive: Bool) -> String {
+        if isVoiceSaving {
+            return AppLocalization.text("保存中...")
+        }
+        if isActive {
+            return AppLocalization.text("松开结束录音")
+        }
+        if inlineItems.isEmpty {
+            return AppLocalization.text("当天暂无记录，可以按住语音添加")
+        }
+        return AppLocalization.text("按住开始录音")
     }
 
     private func toneColor(_ tone: CalendarInlineItem.Tone) -> Color {

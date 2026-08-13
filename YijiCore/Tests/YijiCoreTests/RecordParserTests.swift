@@ -597,6 +597,42 @@ struct RecordParserTests {
     }
 
     @Test
+    func prefersExplicitStorageSceneWhenStoredLocationConflicts() {
+        let record = Record(
+            content: "身份证放在抽屉里",
+            objectName: "身份证",
+            location: "抽屉里",
+            storageContainer: .medicineKit,
+            recordDate: now,
+            category: .storage,
+            tags: ["证件"],
+            source: .text,
+            createdAt: now,
+            updatedAt: now
+        )
+
+        #expect(record.displayStorageLocation == "医药箱")
+    }
+
+    @Test
+    func preservesDetailedStorageLocationWhenItMatchesExplicitScene() {
+        let record = Record(
+            content: "身份证放在医药箱上层",
+            objectName: "身份证",
+            location: "医药箱上层",
+            storageContainer: .medicineKit,
+            recordDate: now,
+            category: .storage,
+            tags: ["证件"],
+            source: .text,
+            createdAt: now,
+            updatedAt: now
+        )
+
+        #expect(record.displayStorageLocation == "医药箱上层")
+    }
+
+    @Test
     func parsesRelativeDayPlans() {
         let dayBeforeYesterday = parser.parse(
             content: "前天处理退款",

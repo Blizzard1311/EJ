@@ -1,8 +1,8 @@
-# Mind U App Store Connect 分发页填写说明
+# Mind Talk App Store Connect 分发页填写说明
 
 更新日期：2026-08-09
 
-本文档用于填写 App Store Connect 分发页面中与公开链接和特殊物料相关的字段，基于当前 `Mind U` 项目仓库与已上线公开页面的实际状态整理。
+本文档用于填写 App Store Connect 分发页面中与公开链接和特殊物料相关的字段，基于当前 `Mind Talk` 项目仓库与已上线公开页面的实际状态整理。
 
 ## 1. 技术支持 URL
 
@@ -41,7 +41,7 @@
 
 原因：
 
-- `Mind U` 不是 Routing App，不提供面向其他 App 的点到点路线导航能力。
+- `Mind Talk` 不是 Routing App，不提供面向其他 App 的点到点路线导航能力。
 - 当前仓库中也不存在 routing coverage / geographic coverage 相关文件。
 - Apple 的该项要求仅适用于 Routing App。
 
@@ -85,13 +85,13 @@
 
 不建议当前写法：
 
-- 仅写品牌名，例如 `Mind U`
+- 仅写品牌名，例如 `Mind Talk`
 
 原因：
 
 - `Copyright` 更稳妥的写法是实际权利主体名称。
 - 对个人开发者来说，通常应写自然人真实姓名。
-- `Mind U` 是品牌名，不一定等于法律意义上的权利主体名称。
+- `Mind Talk` 是品牌名，不一定等于法律意义上的权利主体名称。
 
 补充说明：
 
