@@ -3,7 +3,7 @@ import OSLog
 import YijiCore
 
 struct PersistedVault: Codable, Equatable, Sendable {
-    var schemaVersion: Int = 2
+    var schemaVersion: Int = 3
     var records: [Record] = []
     var reminders: [Reminder] = []
     var searchHistory: [String] = []
@@ -105,9 +105,9 @@ actor FileBackedVaultStore {
         var errorDescription: String? {
             switch self {
             case .emptyBackupFile:
-                AppLocalization.text("备份文件是空的，请选择 Mind U 导出的 JSON 备份文件。")
+                AppLocalization.text("备份文件是空的，请选择 Mind Talk 导出的 JSON 备份文件。")
             case .invalidBackupFormat:
-                AppLocalization.text("备份文件格式不正确，请确认选择的是 Mind U 导出的 JSON 备份文件。")
+                AppLocalization.text("备份文件格式不正确，请确认选择的是 Mind Talk 导出的 JSON 备份文件。")
             case .unreadableBackupFile:
                 AppLocalization.text("备份文件无法读取，请重新选择文件或检查文件权限。")
             }
@@ -324,14 +324,21 @@ actor FileBackedVaultStore {
 
         let data = try Data(contentsOf: fileURL)
         var vault = try decoder.decode(PersistedVault.self, from: data)
-        vault.schemaVersion = max(vault.schemaVersion, 2)
+        let originalVault = vault
+        vault.schemaVersion = max(vault.schemaVersion, 3)
         vault.expenseCategories = vault.expenseCategories.filter { $0.builtInCategory == nil }
+        normalizeStorageRecords(in: &vault)
 
         if vault.modifiedAt == nil {
             vault.modifiedAt = fallbackModifiedDate(for: vault)
             if vault.lastWriterDeviceID == nil, vault.modifiedAt != nil {
                 vault.lastWriterDeviceID = SyncDeviceIdentity.current
             }
+        }
+
+        if vault != originalVault {
+            vault.touch()
+            try writeVault(vault)
         }
 
         return vault
@@ -388,6 +395,60 @@ actor FileBackedVaultStore {
         return baseURL
             .appendingPathComponent("Yiji", isDirectory: true)
             .appendingPathComponent("vault.json", isDirectory: false)
+    }
+
+    private func normalizeStorageRecords(in vault: inout PersistedVault) {
+        var latestRecordByObjectName: [String: Record] = [:]
+        var duplicateRecordIDs = Set<UUID>()
+        var replacementRecordIDs: [UUID: UUID] = [:]
+
+        for record in vault.records where record.category == .storage {
+            guard let normalizedObjectName = record.normalizedStorageObjectName else {
+                continue
+            }
+
+            guard let existing = latestRecordByObjectName[normalizedObjectName] else {
+                latestRecordByObjectName[normalizedObjectName] = record
+                continue
+            }
+
+            if isMoreRecentStorageRecord(record, than: existing) {
+                duplicateRecordIDs.insert(existing.id)
+                replacementRecordIDs[existing.id] = record.id
+                latestRecordByObjectName[normalizedObjectName] = record
+            } else {
+                duplicateRecordIDs.insert(record.id)
+                replacementRecordIDs[record.id] = existing.id
+            }
+        }
+
+        guard !duplicateRecordIDs.isEmpty else {
+            return
+        }
+
+        vault.records.removeAll { duplicateRecordIDs.contains($0.id) }
+
+        for index in vault.reminders.indices {
+            guard let linkedRecordID = vault.reminders[index].recordID,
+                  duplicateRecordIDs.contains(linkedRecordID) else {
+                continue
+            }
+
+            if let keptRecordID = replacementRecordIDs[linkedRecordID] {
+                vault.reminders[index].recordID = keptRecordID
+            }
+        }
+    }
+
+    private func isMoreRecentStorageRecord(_ lhs: Record, than rhs: Record) -> Bool {
+        if lhs.updatedAt == rhs.updatedAt {
+            if lhs.recordDate == rhs.recordDate {
+                return lhs.createdAt > rhs.createdAt
+            }
+            return lhs.recordDate > rhs.recordDate
+        }
+
+        return lhs.updatedAt > rhs.updatedAt
     }
 
     private var exportFilename: String {

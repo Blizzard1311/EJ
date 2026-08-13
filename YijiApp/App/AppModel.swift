@@ -149,6 +149,9 @@ final class AppModel: ObservableObject {
         expenseSpeech.onFinalTranscript = { [weak self] transcript in
             guard let self else { return }
             self.applyExpenseTranscript(transcript)
+            Task { [weak self] in
+                await self?.saveExpenseDraft()
+            }
         }
 
     }
@@ -270,12 +273,10 @@ final class AppModel: ObservableObject {
             return
         }
         do {
-            let snapshot = try await repository.save(parsed)
-            records = snapshot.records
-            reminders = snapshot.reminders
+            let savedRecordID = try await persistCapture(parsed)
             captureText = ""
             lastRecognizedVoiceText = nil
-            focusRecord(parsed.record.id, badgeText: "刚保存")
+            focusRecord(savedRecordID, badgeText: "刚保存")
             if draftSource == .voice {
                 speech.resetTranscript()
             }
@@ -289,6 +290,51 @@ final class AppModel: ObservableObject {
             await refreshCloudSyncStatus()
         } catch {
             showPersistentStatus(AppLocalization.format("error.with_detail", AppLocalization.text("保存失败"), error.localizedDescription))
+        }
+    }
+
+    func saveCalendarVoiceCapture(_ transcript: String, on targetDate: Date) async {
+        let trimmed = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            showTransientStatus("没有识别到内容，请按住重新说。")
+            return
+        }
+
+        let savedAt = Date()
+        let parsingDate = date(savedAt, anchoredTo: targetDate)
+        var parsed = parser.parse(
+            content: trimmed,
+            source: .voice,
+            now: parsingDate,
+            calendar: calendar
+        )
+
+        if let warning = parsed.warnings.first {
+            showPersistentStatus(warning)
+            return
+        }
+
+        parsed = calendarCapture(parsed, anchoredTo: targetDate, savedAt: savedAt)
+
+        do {
+            let savedRecordID = try await persistCapture(parsed)
+            focusRecord(savedRecordID, badgeText: "刚保存")
+
+            if let reminder = parsed.reminder {
+                await scheduleNotification(for: reminder, successMessage: "已记录")
+            } else {
+                showTransientStatus("已记录")
+            }
+
+            await refreshCloudSyncStatus()
+        } catch {
+            showPersistentStatus(
+                AppLocalization.format(
+                    "error.with_detail",
+                    AppLocalization.text("保存失败"),
+                    error.localizedDescription
+                )
+            )
         }
     }
 
@@ -320,22 +366,6 @@ final class AppModel: ObservableObject {
             return
 
         case let .expense(draft):
-            if draft.requiresConfirmation {
-                expenseDraftSource = .voice
-                expenseDraftText = trimmed
-                expenseDraft = draft
-                hasUserEditedExpenseDraft = false
-                isExpenseEntryActive = true
-                selectExpenseCurrency(draft.currency)
-
-                captureText = ""
-                hasUserEditedVoiceDraft = false
-                lastRecognizedVoiceText = nil
-                speech.resetTranscript()
-                selectedTab = .expenses
-                showTransientStatus("已识别为消费，请确认金额或分类后记账。", seconds: 4.5)
-                return
-            }
             await saveGlobalExpenseDraft(draft, originalTranscript: trimmed)
 
         case .record:
@@ -501,6 +531,43 @@ final class AppModel: ObservableObject {
         }
     }
 
+    func updateExpense(_ expense: Expense, with draft: ExpenseDraft) async {
+        let title = draft.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty, draft.amountMinorUnits > 0 else {
+            showTransientStatus("请补充消费内容和金额。")
+            return
+        }
+
+        let updatedExpense = Expense(
+            id: expense.id,
+            title: title,
+            amountMinorUnits: draft.amountMinorUnits,
+            currency: draft.currency,
+            categoryID: draft.categoryID,
+            spentAt: draft.spentAt,
+            source: expense.source,
+            originalTranscript: expense.originalTranscript,
+            createdAt: expense.createdAt,
+            updatedAt: Date()
+        )
+
+        do {
+            let snapshot = try await repository.saveExpense(updatedExpense)
+            applyExpenseSnapshot(snapshot)
+            selectExpenseCurrency(updatedExpense.currency)
+            showTransientStatus("帐目已更新。")
+            await refreshCloudSyncStatus()
+        } catch {
+            showPersistentStatus(
+                AppLocalization.format(
+                    "error.with_detail",
+                    AppLocalization.text("修改帐目失败"),
+                    error.localizedDescription
+                )
+            )
+        }
+    }
+
     @discardableResult
     func addCustomExpenseCategory(named name: String, colorHex: String = "D9C9E8") async -> String? {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -629,6 +696,59 @@ final class AppModel: ObservableObject {
         captureText = trimmed
     }
 
+    private func calendarCapture(
+        _ parsed: ParsedCapture,
+        anchoredTo targetDate: Date,
+        savedAt: Date
+    ) -> ParsedCapture {
+        var result = parsed
+        result.record.createdAt = savedAt
+        result.record.updatedAt = savedAt
+
+        if var reminder = result.reminder {
+            reminder.remindAt = date(reminder.remindAt, anchoredTo: targetDate)
+            reminder.createdAt = savedAt
+            result.reminder = reminder
+            result.record.recordDate = reminder.remindAt
+            result.record.eventTime = EventTimeRange(
+                start: reminder.remindAt,
+                end: reminder.remindAt,
+                granularity: .exactTime
+            )
+            return result
+        }
+
+        if var eventTime = result.record.eventTime {
+            eventTime.start = date(eventTime.start, anchoredTo: targetDate)
+            eventTime.end = date(eventTime.end, anchoredTo: targetDate)
+            if eventTime.end < eventTime.start {
+                eventTime.end = eventTime.start
+            }
+            result.record.eventTime = eventTime
+            result.record.recordDate = eventTime.start
+            return result
+        }
+
+        result.record.recordDate = date(savedAt, anchoredTo: targetDate)
+        return result
+    }
+
+    private func date(_ sourceDate: Date, anchoredTo targetDate: Date) -> Date {
+        let day = calendar.dateComponents([.year, .month, .day], from: targetDate)
+        let time = calendar.dateComponents([.hour, .minute, .second, .nanosecond], from: sourceDate)
+        var components = DateComponents()
+        components.calendar = calendar
+        components.timeZone = calendar.timeZone
+        components.year = day.year
+        components.month = day.month
+        components.day = day.day
+        components.hour = time.hour
+        components.minute = time.minute
+        components.second = time.second
+        components.nanosecond = time.nanosecond
+        return calendar.date(from: components) ?? calendar.startOfDay(for: targetDate)
+    }
+
     func requestNotificationAccess() async {
         do {
             try await notifications.ensureAuthorization()
@@ -746,6 +866,69 @@ final class AppModel: ObservableObject {
             await refreshCloudSyncStatus()
         } catch {
             showPersistentStatus(AppLocalization.format("error.with_detail", AppLocalization.text("删除记录失败"), error.localizedDescription))
+        }
+    }
+
+    func updateRecord(_ record: YijiCore.Record) async -> Bool {
+        guard records.contains(where: { $0.id == record.id }) else {
+            showTransientStatus("这条记录已不存在。")
+            return false
+        }
+
+        var updatedRecords = records
+        var updatedReminders = reminders
+
+        if let normalizedObjectName = record.normalizedStorageObjectName {
+            let duplicateRecordIDs = Set(
+                records
+                    .filter {
+                        $0.id != record.id
+                            && $0.category == .storage
+                            && $0.normalizedStorageObjectName == normalizedObjectName
+                    }
+                    .map(\.id)
+            )
+
+            if !duplicateRecordIDs.isEmpty {
+                updatedRecords.removeAll { duplicateRecordIDs.contains($0.id) }
+
+                for index in updatedReminders.indices {
+                    guard let linkedRecordID = updatedReminders[index].recordID,
+                          duplicateRecordIDs.contains(linkedRecordID) else {
+                        continue
+                    }
+                    updatedReminders[index].recordID = record.id
+                }
+            }
+        }
+
+        guard let updatedIndex = updatedRecords.firstIndex(where: { $0.id == record.id }) else {
+            showTransientStatus("这条记录已不存在。")
+            return false
+        }
+        updatedRecords[updatedIndex] = record
+
+        do {
+            let snapshot = try await repository.replace(
+                records: updatedRecords,
+                reminders: updatedReminders,
+                searchHistory: searchHistory
+            )
+            records = snapshot.records
+            reminders = snapshot.reminders
+            searchHistory = snapshot.searchHistory
+            showTransientStatus("记录已更新。")
+            await refreshCloudSyncStatus()
+            return true
+        } catch {
+            showPersistentStatus(
+                AppLocalization.format(
+                    "error.with_detail",
+                    AppLocalization.text("更新记录失败"),
+                    error.localizedDescription
+                )
+            )
+            return false
         }
     }
 
@@ -895,10 +1078,24 @@ final class AppModel: ObservableObject {
             return nil
         }
 
+        if let explicitName = record.customStorageContainerName?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased(),
+           !explicitName.isEmpty {
+            if let directMatch = customDefinitions.first(where: {
+                let displayName = $0.displayName.lowercased()
+                let rawName = $0.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                return explicitName == displayName || explicitName == rawName
+            }) {
+                return directMatch
+            }
+        }
+
         let haystack = [
             record.objectName,
             record.location,
-            Optional(record.content)
+            Optional(record.content),
+            Optional(record.tags.joined(separator: " "))
         ]
         .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
         .joined(separator: " ")
@@ -1155,6 +1352,94 @@ final class AppModel: ObservableObject {
     private func clearFocusedRecordIfCurrent(_ recordID: UUID, revision: Int) {
         guard focusedRecordID == recordID, focusRevision == revision else { return }
         clearFocusedRecord()
+    }
+
+    private func persistCapture(_ parsed: ParsedCapture) async throws -> UUID {
+        if let mergedPlan = storageReplacementPlan(for: parsed) {
+            let snapshot = try await repository.replace(
+                records: mergedPlan.records,
+                reminders: mergedPlan.reminders,
+                searchHistory: searchHistory
+            )
+            records = snapshot.records
+            reminders = snapshot.reminders
+            searchHistory = snapshot.searchHistory
+            return mergedPlan.savedRecordID
+        }
+
+        let snapshot = try await repository.save(parsed)
+        records = snapshot.records
+        reminders = snapshot.reminders
+        searchHistory = snapshot.searchHistory
+        return parsed.record.id
+    }
+
+    private func storageReplacementPlan(for parsed: ParsedCapture) -> (
+        records: [YijiCore.Record],
+        reminders: [Reminder],
+        savedRecordID: UUID
+    )? {
+        guard parsed.record.category == .storage,
+              let normalizedObjectName = parsed.record.normalizedStorageObjectName else {
+            return nil
+        }
+
+        let matchingRecords = records.filter {
+            $0.category == .storage
+                && $0.normalizedStorageObjectName == normalizedObjectName
+        }
+
+        guard !matchingRecords.isEmpty else {
+            return nil
+        }
+
+        let preservedRecord = matchingRecords.max { lhs, rhs in
+            if lhs.updatedAt == rhs.updatedAt {
+                return lhs.createdAt < rhs.createdAt
+            }
+            return lhs.updatedAt < rhs.updatedAt
+        } ?? matchingRecords[0]
+
+        let matchingRecordIDs = Set(matchingRecords.map(\.id))
+        let updatedRecord = YijiCore.Record(
+            id: preservedRecord.id,
+            content: parsed.record.content,
+            objectName: parsed.record.objectName,
+            location: parsed.record.location,
+            storageContainer: parsed.record.storageContainer,
+            customStorageContainerName: parsed.record.customStorageContainerName,
+            recordDate: parsed.record.recordDate,
+            eventTime: parsed.record.eventTime,
+            category: parsed.record.category,
+            tags: parsed.record.tags,
+            source: parsed.record.source,
+            createdAt: parsed.record.createdAt,
+            updatedAt: parsed.record.updatedAt
+        )
+
+        var updatedRecords = records.filter { !matchingRecordIDs.contains($0.id) }
+        updatedRecords.insert(updatedRecord, at: 0)
+        updatedRecords.sort { lhs, rhs in
+            if lhs.recordDate == rhs.recordDate {
+                return lhs.createdAt > rhs.createdAt
+            }
+            return lhs.recordDate > rhs.recordDate
+        }
+
+        var updatedReminders = reminders
+        for index in updatedReminders.indices {
+            guard let linkedRecordID = updatedReminders[index].recordID,
+                  matchingRecordIDs.contains(linkedRecordID) else {
+                continue
+            }
+            updatedReminders[index].recordID = updatedRecord.id
+        }
+
+        return (
+            records: updatedRecords,
+            reminders: updatedReminders,
+            savedRecordID: updatedRecord.id
+        )
     }
 
     private func bindChildObjects() {

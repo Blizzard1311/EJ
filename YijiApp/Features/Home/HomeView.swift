@@ -469,7 +469,7 @@ struct HomeView: View {
                                     .foregroundStyle(.primary)
                                     .lineLimit(1)
 
-                                if let location = record.location {
+                                if let location = record.displayStorageLocation {
                                     Text(location)
                                         .font(.caption2)
                                         .foregroundStyle(.secondary)
@@ -592,51 +592,57 @@ struct HomeView: View {
         let reminder = appModel.reminder(for: record)
         let tint = storageContainerTint(record.resolvedStorageContainer)
 
-        return VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .top, spacing: 10) {
-                Image(systemName: storageContainerIcon(record.resolvedStorageContainer))
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(tint)
-                    .frame(width: 30, height: 30)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(tint.opacity(0.12))
-                    )
+        return NavigationLink {
+            RecordDetailView(recordID: record.id)
+        } label: {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: storageContainerIcon(record.resolvedStorageContainer))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(tint)
+                        .frame(width: 30, height: 30)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .fill(tint.opacity(0.12))
+                        )
 
-                VStack(alignment: .leading, spacing: 5) {
-                    HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        Text(record.objectName ?? record.content)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.primary)
-                            .lineLimit(2)
+                    VStack(alignment: .leading, spacing: 5) {
+                        HStack(alignment: .firstTextBaseline, spacing: 6) {
+                            Text(record.objectName ?? record.content)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.primary)
+                                .lineLimit(2)
 
-                        if let reminder {
-                            Image(systemName: reminder.status == .pending ? "bell.fill" : "bell")
-                                .font(.caption2.weight(.semibold))
-                                .foregroundStyle(reminderStatusColor(reminder.status))
-                                .accessibilityLabel(
-                                    AppLocalization.format("record.related_reminder", reminder.status.displayName)
-                                )
+                            if let reminder {
+                                Image(systemName: reminder.status == .pending ? "bell.fill" : "bell")
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(reminderStatusColor(reminder.status))
+                                    .accessibilityLabel(
+                                        AppLocalization.format("record.related_reminder", reminder.status.displayName)
+                                    )
+                            }
+                        }
+
+                        if let location = record.displayStorageLocation {
+                            Text(location)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(2)
                         }
                     }
 
-                    if let location = record.location {
-                        Text(location)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(2)
-                    }
+                    Spacer(minLength: 8)
                 }
 
-                Spacer(minLength: 8)
+                HStack(spacing: 8) {
+                    infoChip(YijiDateFormatter.dayFormatter.string(from: record.createdAt), icon: "calendar")
+                    infoChip(quantityText(for: record) ?? "数量未填写", icon: "number")
+                }
             }
-
-            HStack(spacing: 8) {
-                infoChip(YijiDateFormatter.dayFormatter.string(from: record.createdAt), icon: "calendar")
-                infoChip(quantityText(for: record) ?? "数量未填写", icon: "number")
-            }
+            .padding(.vertical, 8)
+            .contentShape(Rectangle())
         }
-        .padding(.vertical, 8)
+        .buttonStyle(.plain)
     }
 
     private func recordCard(for record: Record) -> some View {
@@ -946,7 +952,25 @@ struct HomeView: View {
     }
 
     private func storageGroupIDs(for record: Record) -> [String] {
-        var groupIDs = record.resolvedStorageContainers.map(\.rawValue)
+        if let explicitCustomStorageContainerName = record.explicitCustomStorageContainerName,
+           let customDefinition = appModel.matchingCustomStorageContainerDefinition(for: record),
+           (
+               customDefinition.displayName.caseInsensitiveCompare(explicitCustomStorageContainerName) == .orderedSame
+                   || customDefinition.name.caseInsensitiveCompare(explicitCustomStorageContainerName) == .orderedSame
+           ) {
+            return [customDefinition.id]
+        }
+
+        if let storageContainer = record.storageContainer {
+            return [storageContainer.rawValue]
+        }
+
+        var groupIDs = StorageContainerClassifier.classifyAll(
+            content: "",
+            objectName: nil,
+            location: record.location,
+            tags: []
+        ).map(\.rawValue)
 
         if let customDefinition = appModel.matchingCustomStorageContainerDefinition(for: record),
            !groupIDs.contains(customDefinition.id) {
@@ -1000,8 +1024,12 @@ struct CalendarView: View {
     @EnvironmentObject private var appModel: AppModel
     @Environment(\.openURL) private var openURL
     @Environment(\.scenePhase) private var scenePhase
+    @StateObject private var calendarSpeech = SpeechTranscriber()
     @State private var selectedDate = Calendar(identifier: .gregorian).startOfDay(for: Date())
     @State private var visibleMonth = Calendar(identifier: .gregorian).startOfDay(for: Date())
+    @State private var calendarVoiceTargetDate: Date?
+    @State private var isSavingCalendarVoice = false
+
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 12) {
@@ -1027,6 +1055,8 @@ struct CalendarView: View {
         .onAppear {
             syncSelectedDateIfNeeded()
             appModel.calendarWeather.activate()
+            configureCalendarVoiceCapture()
+            calendarSpeech.refreshAuthorizationStatus()
         }
         .onChange(of: appModel.focusedRecordID) { _ in
             syncSelectedDateIfNeeded()
@@ -1034,6 +1064,14 @@ struct CalendarView: View {
         .onChange(of: scenePhase) { newValue in
             if newValue == .active {
                 appModel.calendarWeather.activate()
+                calendarSpeech.refreshAuthorizationStatus()
+            }
+        }
+        .onDisappear {
+            if calendarSpeech.isRecording {
+                calendarSpeech.stopRecording()
+            } else if !isSavingCalendarVoice {
+                calendarVoiceTargetDate = nil
             }
         }
     }
@@ -1049,11 +1087,25 @@ struct CalendarView: View {
                 weatherByDate: appModel.calendarWeather.weatherByDate,
                 calendar: filterCalendar,
                 inlineItems: calendarInlineItems,
+                isVoiceRecording: calendarSpeech.isRecording,
+                isVoiceSaving: isSavingCalendarVoice,
+                voiceTranscript: calendarSpeech.transcript,
+                voiceErrorMessage: calendarSpeech.errorMessage,
+                isVoicePermissionDenied: calendarSpeech.authorizationStatus == .denied,
                 onDateSelected: { date in
                     selectedDate = filterCalendar.startOfDay(for: date)
                 },
                 onVisibleMonthChanged: { date in
                     visibleMonth = filterCalendar.startOfDay(for: date)
+                },
+                onVoicePressStarted: { date in
+                    startCalendarVoiceCapture(for: date)
+                },
+                onVoicePressEnded: {
+                    calendarSpeech.stopRecording()
+                },
+                onVoicePermissionHelp: {
+                    openAppSettings()
                 }
             )
 
@@ -1256,7 +1308,7 @@ struct CalendarView: View {
 
             if appModel.calendarWeather.shouldOfferSettings {
                 Button(AppLocalization.text("去设置")) {
-                    openLocationSettings()
+                    openAppSettings()
                 }
                 .buttonStyle(.plain)
                 .font(.caption2.weight(.semibold))
@@ -1338,7 +1390,30 @@ struct CalendarView: View {
         visibleMonth = firstDate
     }
 
-    private func openLocationSettings() {
+    private func configureCalendarVoiceCapture() {
+        calendarSpeech.onFinalTranscript = { [weak calendarSpeech] transcript in
+            guard let targetDate = calendarVoiceTargetDate,
+                  !isSavingCalendarVoice else {
+                return
+            }
+
+            isSavingCalendarVoice = true
+            Task { @MainActor in
+                await appModel.saveCalendarVoiceCapture(transcript, on: targetDate)
+                calendarVoiceTargetDate = nil
+                isSavingCalendarVoice = false
+                calendarSpeech?.resetTranscript()
+            }
+        }
+    }
+
+    private func startCalendarVoiceCapture(for date: Date) {
+        guard !isSavingCalendarVoice else { return }
+        calendarVoiceTargetDate = filterCalendar.startOfDay(for: date)
+        calendarSpeech.startRecording()
+    }
+
+    private func openAppSettings() {
         guard let settingsURL = URL(string: UIApplication.openSettingsURLString) else {
             return
         }

@@ -5,6 +5,12 @@ import UniformTypeIdentifiers
 import YijiCore
 
 struct SettingsView: View {
+    private enum LocalDataCategory {
+        case records
+        case reminders
+        case expenses
+    }
+
     @EnvironmentObject private var appModel: AppModel
     @Environment(\.openURL) private var openURL
     @State private var showingImportPicker = false
@@ -13,6 +19,7 @@ struct SettingsView: View {
     @State private var showingLanguageSettings = false
     @State private var showingPrivacySettings = false
     @State private var showingBackupSettings = false
+    @State private var selectedLocalDataCategory: LocalDataCategory?
     private let locationManager = CLLocationManager()
     private var backupDateFormatter: DateFormatter {
         YijiDateFormatter.dateTimeFormatter
@@ -40,6 +47,27 @@ struct SettingsView: View {
         }
         .navigationDestination(isPresented: $showingBackupSettings) {
             backupSettingsView
+        }
+        .navigationDestination(
+            isPresented: Binding(
+                get: { selectedLocalDataCategory != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        selectedLocalDataCategory = nil
+                    }
+                }
+            )
+        ) {
+            switch selectedLocalDataCategory {
+            case .records:
+                LocalRecordsDataView()
+            case .reminders:
+                LocalRemindersDataView()
+            case .expenses:
+                LocalExpensesDataView()
+            case .none:
+                EmptyView()
+            }
         }
         .task {
             appModel.speech.refreshAuthorizationStatus()
@@ -101,11 +129,30 @@ struct SettingsView: View {
         Section {
             settingsCardSection(title: "本机数据") {
                 HStack(spacing: 0) {
-                    metricCard(title: "记录数量", value: "\(appModel.records.count)")
+                    Button {
+                        selectedLocalDataCategory = .records
+                    } label: {
+                        metricCard(title: "记录数量", value: "\(appModel.records.count)")
+                    }
+                    .buttonStyle(.plain)
+
                     Divider()
-                    metricCard(title: "提醒", value: "\(appModel.reminders.count)")
+
+                    Button {
+                        selectedLocalDataCategory = .reminders
+                    } label: {
+                        metricCard(title: "提醒", value: "\(appModel.reminders.count)")
+                    }
+                    .buttonStyle(.plain)
+
                     Divider()
-                    metricCard(title: "帐目数量", value: "\(appModel.expenses.count)")
+
+                    Button {
+                        selectedLocalDataCategory = .expenses
+                    } label: {
+                        metricCard(title: "帐目数量", value: "\(appModel.expenses.count)")
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -419,8 +466,18 @@ struct SettingsView: View {
 
     private func metricCard(title: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(value)
-                .font(.title3.weight(.semibold))
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(value)
+                    .font(.title3.weight(.semibold))
+
+                Spacer(minLength: 0)
+
+                Image(systemName: "chevron.right")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+                    .accessibilityHidden(true)
+            }
+
             Text(AppLocalization.text(title))
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -428,6 +485,11 @@ struct SettingsView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(AppLocalization.text(title))
+        .accessibilityValue(value)
+        .accessibilityAddTraits(.isButton)
     }
 
     private func settingsSummaryRow(
@@ -710,6 +772,473 @@ struct SettingsView: View {
             AppTheme.reminder
         }
     }
+}
+
+private struct LocalRecordsDataView: View {
+    @EnvironmentObject private var appModel: AppModel
+    @State private var deletingRecord: Record?
+
+    var body: some View {
+        List {
+            if appModel.records.isEmpty {
+                localDataEmptyRow(title: "暂无记录", systemImage: "doc.text")
+            } else {
+                Section {
+                    ForEach(appModel.records) { record in
+                        NavigationLink {
+                            RecordDetailView(recordID: record.id)
+                        } label: {
+                            RecordRowView(
+                                record: record,
+                                reminder: appModel.reminder(for: record)
+                            )
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(AppLocalization.text("删除"), role: .destructive) {
+                                deletingRecord = record
+                            }
+                        }
+                    }
+                } header: {
+                    Text(AppLocalization.format("record_count", appModel.records.count))
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .background(AppTheme.canvas.ignoresSafeArea())
+        .navigationTitle(Text(AppLocalization.text("记录数量")))
+        .navigationBarTitleDisplayMode(.inline)
+        .confirmationDialog(
+            AppLocalization.text("删除后将同时移除关联提醒。"),
+            isPresented: Binding(
+                get: { deletingRecord != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        deletingRecord = nil
+                    }
+                }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button(AppLocalization.text("删除记录"), role: .destructive) {
+                guard let record = deletingRecord else { return }
+                Task {
+                    await appModel.deleteRecord(id: record.id)
+                    deletingRecord = nil
+                }
+            }
+            Button(AppLocalization.text("取消"), role: .cancel) {
+                deletingRecord = nil
+            }
+        }
+    }
+}
+
+private struct LocalRemindersDataView: View {
+    @EnvironmentObject private var appModel: AppModel
+    @State private var deletingReminder: Reminder?
+
+    var body: some View {
+        List {
+            if appModel.reminders.isEmpty {
+                localDataEmptyRow(title: "暂无提醒", systemImage: "bell")
+            } else {
+                Section {
+                    ForEach(appModel.reminders) { reminder in
+                        NavigationLink {
+                            LocalReminderDataDetailView(reminderID: reminder.id)
+                        } label: {
+                            LocalReminderDataRow(reminder: reminder)
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(AppLocalization.text("删除"), role: .destructive) {
+                                deletingReminder = reminder
+                            }
+                        }
+                    }
+                } header: {
+                    Text(AppLocalization.format("reminder_count", appModel.reminders.count))
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .background(AppTheme.canvas.ignoresSafeArea())
+        .navigationTitle(Text(AppLocalization.text("提醒")))
+        .navigationBarTitleDisplayMode(.inline)
+        .confirmationDialog(
+            AppLocalization.text("删除"),
+            isPresented: Binding(
+                get: { deletingReminder != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        deletingReminder = nil
+                    }
+                }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button(AppLocalization.text("删除"), role: .destructive) {
+                guard let reminder = deletingReminder else { return }
+                Task {
+                    await appModel.deleteReminder(id: reminder.id)
+                    deletingReminder = nil
+                }
+            }
+            Button(AppLocalization.text("取消"), role: .cancel) {
+                deletingReminder = nil
+            }
+        }
+    }
+}
+
+private struct LocalReminderDataRow: View {
+    let reminder: Reminder
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: reminder.status == .pending ? "bell.fill" : "bell")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(statusColor)
+                .frame(width: 36, height: 36)
+                .background(statusColor.opacity(0.14), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(reminder.title)
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.primary)
+
+                if !reminder.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Text(reminder.body)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
+
+                Text(YijiDateFormatter.dateTimeFormatter.string(from: reminder.remindAt))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 8)
+
+            Text(reminder.status.displayName)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(statusColor)
+                .padding(.horizontal, 7)
+                .padding(.vertical, 4)
+                .background(statusColor.opacity(0.12), in: Capsule())
+        }
+        .padding(.vertical, 3)
+    }
+
+    private var statusColor: Color {
+        switch reminder.status {
+        case .pending:
+            AppTheme.reminder
+        case .notified:
+            AppTheme.accent
+        case .done:
+            AppTheme.completed
+        case .cancelled:
+            .gray
+        case .failed:
+            .red
+        }
+    }
+}
+
+private struct LocalReminderDataDetailView: View {
+    @EnvironmentObject private var appModel: AppModel
+    @Environment(\.dismiss) private var dismiss
+    @State private var editingReminder: Reminder?
+    @State private var showingDeleteConfirmation = false
+
+    let reminderID: UUID
+
+    var body: some View {
+        List {
+            if let reminder {
+                Section(AppLocalization.text("提醒内容")) {
+                    localDataValueRow(title: "标题", value: reminder.title)
+
+                    if !reminder.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        localDataValueRow(title: "备注", value: reminder.body)
+                    }
+                }
+
+                Section(AppLocalization.text("提醒时间")) {
+                    localDataValueRow(
+                        title: "提醒时间",
+                        value: YijiDateFormatter.dateTimeFormatter.string(from: reminder.remindAt)
+                    )
+                    localDataValueRow(title: "重复规则", value: reminder.repeatRule.displayName)
+                    localDataValueRow(title: "状态", value: reminder.status.displayName)
+                }
+
+                if let record = appModel.record(for: reminder) {
+                    Section {
+                        NavigationLink {
+                            RecordDetailView(recordID: record.id)
+                        } label: {
+                            Label(AppLocalization.text("查看关联记录"), systemImage: "doc.text")
+                        }
+                    }
+                }
+            } else {
+                localDataEmptyRow(title: "暂无提醒", systemImage: "bell.slash")
+            }
+        }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .background(AppTheme.canvas.ignoresSafeArea())
+        .navigationTitle(Text(AppLocalization.text("提醒")))
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if let reminder {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    Button(AppLocalization.text("编辑")) {
+                        editingReminder = reminder
+                    }
+
+                    Button(role: .destructive) {
+                        showingDeleteConfirmation = true
+                    } label: {
+                        Image(systemName: "trash")
+                    }
+                    .accessibilityLabel(AppLocalization.text("删除"))
+                }
+            }
+        }
+        .sheet(item: $editingReminder) { reminder in
+            ReminderEditorView(reminder: reminder) { updated in
+                await appModel.updateReminder(updated)
+            }
+            .environmentObject(appModel)
+        }
+        .confirmationDialog(
+            AppLocalization.text("删除"),
+            isPresented: $showingDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button(AppLocalization.text("删除"), role: .destructive) {
+                Task {
+                    await appModel.deleteReminder(id: reminderID)
+                    dismiss()
+                }
+            }
+            Button(AppLocalization.text("取消"), role: .cancel) {}
+        }
+    }
+
+    private var reminder: Reminder? {
+        appModel.reminders.first(where: { $0.id == reminderID })
+    }
+}
+
+private struct LocalExpensesDataView: View {
+    @EnvironmentObject private var appModel: AppModel
+    @State private var deletingExpense: Expense?
+
+    var body: some View {
+        List {
+            if appModel.expenses.isEmpty {
+                localDataEmptyRow(title: "暂无帐目", systemImage: "receipt")
+            } else {
+                Section {
+                    ForEach(appModel.expenses) { expense in
+                        NavigationLink {
+                            LocalExpenseDataDetailView(expenseID: expense.id)
+                        } label: {
+                            LocalExpenseDataRow(expense: expense)
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(AppLocalization.text("删除"), role: .destructive) {
+                                deletingExpense = expense
+                            }
+                        }
+                    }
+                } header: {
+                    Text(AppLocalization.format("共 %d 笔", appModel.expenses.count))
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .background(AppTheme.canvas.ignoresSafeArea())
+        .navigationTitle(Text(AppLocalization.text("全部帐目")))
+        .navigationBarTitleDisplayMode(.inline)
+        .confirmationDialog(
+            AppLocalization.text("删除"),
+            isPresented: Binding(
+                get: { deletingExpense != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        deletingExpense = nil
+                    }
+                }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button(AppLocalization.text("删除"), role: .destructive) {
+                guard let expense = deletingExpense else { return }
+                Task {
+                    await appModel.deleteExpense(id: expense.id)
+                    deletingExpense = nil
+                }
+            }
+            Button(AppLocalization.text("取消"), role: .cancel) {
+                deletingExpense = nil
+            }
+        }
+    }
+}
+
+private struct LocalExpenseDataRow: View {
+    @EnvironmentObject private var appModel: AppModel
+    let expense: Expense
+
+    var body: some View {
+        let category = appModel.expenseCategory(for: expense.categoryID)
+
+        HStack(spacing: 12) {
+            Image(systemName: category.systemImage)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(AppTheme.accent)
+                .frame(width: 36, height: 36)
+                .background(AppTheme.surfaceMuted, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(expense.title)
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.primary)
+                    .lineLimit(2)
+                Text("\(category.displayName) · \(YijiDateFormatter.dayFormatter.string(from: expense.spentAt))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 8)
+
+            Text(localExpenseCurrencyText(expense))
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.primary)
+                .minimumScaleFactor(0.72)
+                .lineLimit(1)
+        }
+        .padding(.vertical, 3)
+    }
+}
+
+private struct LocalExpenseDataDetailView: View {
+    @EnvironmentObject private var appModel: AppModel
+    @Environment(\.dismiss) private var dismiss
+    @State private var showingDeleteConfirmation = false
+
+    let expenseID: UUID
+
+    var body: some View {
+        List {
+            if let expense {
+                let category = appModel.expenseCategory(for: expense.categoryID)
+
+                Section(AppLocalization.text("消费内容")) {
+                    localDataValueRow(title: "消费内容", value: expense.title)
+                    localDataValueRow(title: "金额", value: localExpenseCurrencyText(expense))
+                    localDataValueRow(title: "类别", value: category.displayName)
+                    localDataValueRow(
+                        title: "日期",
+                        value: YijiDateFormatter.dateTimeFormatter.string(from: expense.spentAt)
+                    )
+                }
+
+                if let originalTranscript = expense.originalTranscript?.trimmingCharacters(in: .whitespacesAndNewlines),
+                   !originalTranscript.isEmpty,
+                   originalTranscript != expense.title {
+                    Section(AppLocalization.text("消费描述")) {
+                        Text(originalTranscript)
+                            .font(.body)
+                            .textSelection(.enabled)
+                    }
+                }
+            } else {
+                localDataEmptyRow(title: "暂无帐目", systemImage: "receipt")
+            }
+        }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .background(AppTheme.canvas.ignoresSafeArea())
+        .navigationTitle(Text(AppLocalization.text("全部帐目")))
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if expense != nil {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(role: .destructive) {
+                        showingDeleteConfirmation = true
+                    } label: {
+                        Image(systemName: "trash")
+                    }
+                    .accessibilityLabel(AppLocalization.text("删除"))
+                }
+            }
+        }
+        .confirmationDialog(
+            AppLocalization.text("删除"),
+            isPresented: $showingDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button(AppLocalization.text("删除"), role: .destructive) {
+                Task {
+                    await appModel.deleteExpense(id: expenseID)
+                    dismiss()
+                }
+            }
+            Button(AppLocalization.text("取消"), role: .cancel) {}
+        }
+    }
+
+    private var expense: Expense? {
+        appModel.expenses.first(where: { $0.id == expenseID })
+    }
+}
+
+private func localDataValueRow(title: String, value: String) -> some View {
+    LabeledContent {
+        Text(value)
+            .foregroundStyle(.primary)
+            .multilineTextAlignment(.trailing)
+            .textSelection(.enabled)
+    } label: {
+        Text(AppLocalization.text(title))
+            .foregroundStyle(.secondary)
+    }
+}
+
+private func localDataEmptyRow(title: String, systemImage: String) -> some View {
+    VStack(spacing: 10) {
+        Image(systemName: systemImage)
+            .font(.system(size: 30, weight: .light))
+            .foregroundStyle(.tertiary)
+        Text(AppLocalization.text(title))
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+    }
+    .frame(maxWidth: .infinity)
+    .padding(.vertical, 36)
+    .listRowBackground(Color.clear)
+}
+
+private func localExpenseCurrencyText(_ expense: Expense) -> String {
+    let formatter = NumberFormatter()
+    formatter.numberStyle = .currency
+    formatter.currencyCode = expense.currency.rawValue
+    formatter.locale = Locale(identifier: AppLocalization.languageCode)
+    formatter.minimumFractionDigits = expense.currency.minorUnitDigits
+    formatter.maximumFractionDigits = expense.currency.minorUnitDigits
+    let amount = expense.currency.decimalAmount(from: expense.amountMinorUnits)
+    return formatter.string(from: NSDecimalNumber(decimal: amount))
+        ?? "\(expense.currency.rawValue) \(amount)"
 }
 
 #Preview("我的页 - iPhone 16 Pro") {

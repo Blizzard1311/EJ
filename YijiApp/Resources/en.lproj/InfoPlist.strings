@@ -1,4 +1,4 @@
-"CFBundleDisplayName" = "Mind U";
-"NSLocationWhenInUseUsageDescription" = "Mind U uses your current location to show a 10-day weather outlook in the calendar.";
-"NSMicrophoneUsageDescription" = "Mind U needs microphone access for voice capture.";
-"NSSpeechRecognitionUsageDescription" = "Mind U uses speech recognition to help you capture information quickly.";
+"CFBundleDisplayName" = "Mind Talk";
+"NSLocationWhenInUseUsageDescription" = "Mind Talk uses your current location to show a 10-day weather outlook in the calendar.";
+"NSMicrophoneUsageDescription" = "Mind Talk needs microphone access for voice capture.";
+"NSSpeechRecognitionUsageDescription" = "Mind Talk uses speech recognition to help you capture information quickly.";

@@ -10,6 +10,7 @@ struct RecordDetailView: View {
     private let previewRecord: Record?
     @State private var showingDeleteConfirmation = false
     @State private var showingOriginalContent = false
+    @State private var editingStorageRecord: Record?
 
     init(recordID: UUID, previewRecord: Record? = nil) {
         self.recordID = recordID
@@ -34,13 +35,32 @@ struct RecordDetailView: View {
         .navigationTitle(currentRecord == nil ? "记录已移除" : "记录详情")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            if currentRecord != nil {
+            if let record = currentRecord {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("删除", role: .destructive) {
-                        showingDeleteConfirmation = true
+                    if record.category == .storage {
+                        Button("编辑") {
+                            editingStorageRecord = record
+                        }
+                    } else {
+                        Button("删除", role: .destructive) {
+                            showingDeleteConfirmation = true
+                        }
                     }
                 }
             }
+        }
+        .sheet(item: $editingStorageRecord) { record in
+            RecordEditorView(
+                record: record,
+                initialStorageSceneID: initialStorageSceneID(for: record),
+                onSave: { updated in
+                    await appModel.updateRecord(updated)
+                },
+                onDelete: {
+                    await appModel.deleteRecord(id: record.id)
+                }
+            )
+            .environmentObject(appModel)
         }
         .confirmationDialog("删除后将同时移除关联提醒。", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
             Button("删除记录", role: .destructive) {
@@ -120,12 +140,15 @@ struct RecordDetailView: View {
                             ForEach(record.resolvedStorageContainers, id: \.rawValue) { storageContainer in
                                 chip(storageContainer.displayName, color: storageContainerColor(storageContainer))
                             }
+                            if let customStorageScene = customStorageScene(for: record) {
+                                chip(customStorageScene, color: Color(red: 0.45, green: 0.58, blue: 0.41))
+                            }
                         }
                     }
                 }
             }
 
-            if let location = record.location {
+            if let location = record.displayStorageLocation {
                 infoLine("位置", value: location, systemImage: "mappin.and.ellipse")
             }
 
@@ -389,6 +412,28 @@ struct RecordDetailView: View {
 
     private var currentRecord: Record? {
         appModel.records.first(where: { $0.id == recordID }) ?? previewRecord
+    }
+
+    private func initialStorageSceneID(for record: Record) -> String? {
+        if let storageContainer = record.storageContainer {
+            return storageContainer.rawValue
+        }
+
+        if let matchedDefinition = appModel.matchingCustomStorageContainerDefinition(for: record) {
+            return matchedDefinition.id
+        }
+
+        let trimmed = record.customStorageContainerName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty ? nil : "custom:\(trimmed)"
+    }
+
+    private func customStorageScene(for record: Record) -> String? {
+        if let matchedDefinition = appModel.matchingCustomStorageContainerDefinition(for: record) {
+            return matchedDefinition.displayName
+        }
+
+        let trimmed = record.customStorageContainerName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty ? nil : trimmed
     }
 }
 

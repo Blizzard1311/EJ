@@ -1,5 +1,5 @@
 /* Aplicación y navegación */
-"易记" = "Mind U";
+"易记" = "Mind Talk";
 "记录" = "Registrar";
 "收纳" = "Almacenamiento";
 "日历" = "Calendario";
@@ -253,15 +253,15 @@
 "已连接 iCloud · 等待首次同步" = "iCloud conectado · Esperando la primera sincronización";
 "未登录 iCloud，当前仅保留本机数据" = "No has iniciado sesión en iCloud · Los datos permanecen en este dispositivo";
 "当前设备无法使用 iCloud，当前仅保留本机数据" = "iCloud no está disponible en este dispositivo · Los datos permanecen aquí";
-"iCloud 暂时不可用，稍后会自动重试" = "iCloud no está disponible temporalmente · Mind U volverá a intentarlo";
+"iCloud 暂时不可用，稍后会自动重试" = "iCloud no está disponible temporalmente · Mind Talk volverá a intentarlo";
 "iCloud 同步状态暂时不可用" = "El estado de sincronización con iCloud no está disponible";
 "iCloud 存储空间不足，云端备份暂时失败。请清理 iCloud 空间后再试。" = "Tu almacenamiento de iCloud está lleno. Libera espacio y vuelve a intentar la copia en la nube.";
 "网络连接不稳定，暂时无法完成 iCloud 备份。请检查网络后再试。" = "La conexión de red es inestable. Comprueba la conexión y vuelve a intentar la copia en iCloud.";
 "当前未登录 iCloud，无法进行云端备份。请先登录 iCloud。" = "No has iniciado sesión en iCloud. Inicia sesión antes de usar la copia en la nube.";
-"iCloud 服务暂时繁忙，稍后会自动重试。" = "iCloud está ocupado temporalmente. Mind U volverá a intentarlo.";
+"iCloud 服务暂时繁忙，稍后会自动重试。" = "iCloud está ocupado temporalmente. Mind Talk volverá a intentarlo.";
 "云端备份暂时失败，请稍后重试。" = "La copia en la nube ha fallado temporalmente. Inténtalo más tarde.";
-"备份文件是空的，请选择 Mind U 导出的 JSON 备份文件。" = "La copia está vacía. Selecciona una copia JSON exportada por Mind U.";
-"备份文件格式不正确，请确认选择的是 Mind U 导出的 JSON 备份文件。" = "El formato de la copia no es válido. Selecciona una copia JSON exportada por Mind U.";
+"备份文件是空的，请选择 Mind Talk 导出的 JSON 备份文件。" = "La copia está vacía. Selecciona una copia JSON exportada por Mind Talk.";
+"备份文件格式不正确，请确认选择的是 Mind Talk 导出的 JSON 备份文件。" = "El formato de la copia no es válido. Selecciona una copia JSON exportada por Mind Talk.";
 "备份文件无法读取，请重新选择文件或检查文件权限。" = "No se puede leer la copia. Selecciónala de nuevo o comprueba el acceso al archivo.";
 "天气权限状态异常，请稍后重试。" = "El estado del permiso del tiempo no está disponible. Inténtalo más tarde.";
 "WeatherKit 认证失败，请确认开发者后台的 WeatherKit 能力和描述文件已生效。" = "Falló la autenticación de WeatherKit. Comprueba la capacidad de WeatherKit y el perfil de aprovisionamiento.";

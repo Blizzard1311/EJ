@@ -85,6 +85,10 @@ struct RecordRowView: View {
                     infoChip(storageContainer.displayName, icon: storageContainerIcon(storageContainer))
                 }
 
+                if let customStorageContainerName = customStorageContainerName {
+                    infoChip(customStorageContainerName, icon: "shippingbox")
+                }
+
                 if !record.sliceCategoryNames.isEmpty {
                     infoChip(record.sliceCategoryNames.joined(separator: " / "), icon: "line.3.horizontal.decrease.circle")
                 }
@@ -129,7 +133,7 @@ struct RecordRowView: View {
     }
 
     private var detailedPrimaryDescription: String? {
-        if let location = record.location, record.category == .storage {
+        if let location = record.displayStorageLocation, record.category == .storage {
             return AppLocalization.format("location.value", location)
         }
 
@@ -141,7 +145,7 @@ struct RecordRowView: View {
     }
 
     private var streamPrimaryDescription: String? {
-        if let location = record.location, record.category == .storage {
+        if let location = record.displayStorageLocation, record.category == .storage {
             return AppLocalization.format("stored_at.value", location)
         }
 
@@ -174,11 +178,25 @@ struct RecordRowView: View {
             return (eventTimeSummary, "calendar")
         }
 
-        if style == .detailed, let location = record.location {
+        if style == .detailed, let location = record.displayStorageLocation {
             return (location, "mappin.and.ellipse")
         }
 
         return nil
+    }
+
+    private var customStorageContainerName: String? {
+        let trimmed = record.customStorageContainerName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !trimmed.isEmpty else {
+            return nil
+        }
+
+        if let storageContainer = record.resolvedStorageContainer,
+           storageContainer.displayName == trimmed {
+            return nil
+        }
+
+        return trimmed
     }
 
     private var categoryChip: some View {

@@ -15,7 +15,7 @@ final class ExpenseParserTests: XCTestCase {
             now: now
         ))
 
-        XCTAssertEqual(draft.title, "买洗面奶")
+        XCTAssertEqual(draft.title, "洗面奶")
         XCTAssertEqual(draft.amountMinorUnits, 12_950)
         XCTAssertEqual(draft.currency, .cny)
         XCTAssertEqual(draft.categoryID, BuiltInExpenseCategory.beautyCare.rawValue)
@@ -33,6 +33,7 @@ final class ExpenseParserTests: XCTestCase {
 
         XCTAssertEqual(draft.amountMinorUnits, 1_250)
         XCTAssertEqual(draft.currency, .usd)
+        XCTAssertEqual(draft.title, "coffee")
         XCTAssertEqual(draft.categoryID, BuiltInExpenseCategory.dining.rawValue)
         let yesterday = try XCTUnwrap(calendar.date(byAdding: .day, value: -1, to: now))
         XCTAssertTrue(calendar.isDate(draft.spentAt, inSameDayAs: yesterday))
@@ -153,6 +154,7 @@ final class ExpenseParserTests: XCTestCase {
         ))
 
         XCTAssertEqual(purchase.amountMinorUnits, 3_800)
+        XCTAssertEqual(purchase.title, "午餐")
         XCTAssertEqual(purchase.categoryID, BuiltInExpenseCategory.dining.rawValue)
         XCTAssertEqual(explicitCurrency.currency, .usd)
         XCTAssertEqual(explicitCurrency.amountMinorUnits, 450)
@@ -187,9 +189,9 @@ final class ExpenseParserTests: XCTestCase {
 
         XCTAssertEqual(draft.amountMinorUnits, 5_000)
         XCTAssertEqual(draft.currency, .cny)
-        XCTAssertEqual(draft.categoryID, BuiltInExpenseCategory.uncategorized.rawValue)
-        XCTAssertEqual(draft.title, "买猫窝")
-        XCTAssertTrue(draft.requiresConfirmation)
+        XCTAssertEqual(draft.categoryID, BuiltInExpenseCategory.pets.rawValue)
+        XCTAssertEqual(draft.title, "猫窝")
+        XCTAssertFalse(draft.requiresConfirmation)
         XCTAssertEqual(calendar.component(.year, from: draft.spentAt), 2026)
         XCTAssertEqual(calendar.component(.month, from: draft.spentAt), 8)
         XCTAssertEqual(calendar.component(.day, from: draft.spentAt), 5)
@@ -269,6 +271,8 @@ final class ExpenseParserTests: XCTestCase {
             defaultCurrency: .cny,
             localeIdentifier: "zh-Hans"
         ))
+
+        XCTAssertEqual(colloquial.title, "桌子")
 
         XCTAssertEqual(colloquial.amountMinorUnits, 25_000)
         XCTAssertEqual(decimal.amountMinorUnits, 3_260)
