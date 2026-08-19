@@ -1232,7 +1232,6 @@ struct CalendarView: View {
                 legendItem(title: "记录", color: AppTheme.accent)
                 legendItem(title: "待提醒", color: AppTheme.reminder)
                 legendItem(title: "已提醒", color: AppTheme.completed)
-                legendItem(title: "天气", color: Color(red: 0.40, green: 0.54, blue: 0.60))
 
                 Spacer(minLength: 4)
 
@@ -1374,7 +1373,8 @@ struct CalendarView: View {
 
     private func syncSelectedDateIfNeeded() {
         if let focusedRecordID = appModel.focusedRecordID,
-           let record = appModel.records.first(where: { $0.id == focusedRecordID }) {
+           let record = appModel.records.first(where: { $0.id == focusedRecordID }),
+           record.showsRecordDateInCalendar {
             let recordDay = filterCalendar.startOfDay(for: record.recordDate)
             selectedDate = recordDay
             visibleMonth = recordDay
@@ -1444,6 +1444,10 @@ struct CalendarView: View {
 
         for record in appModel.records {
             let remindersOnSelectedDate = remindersByRecordID[record.id] ?? []
+            guard record.showsRecordDateInCalendar || !remindersOnSelectedDate.isEmpty else {
+                continue
+            }
+
             let hasLinkedReminder = appModel.reminders.contains { $0.recordID == record.id }
             let recordIsOnSelectedDate = filterCalendar.isDate(record.recordDate, inSameDayAs: selectedDate)
             let shouldShowRecordDate = record.category != .reminder || !hasLinkedReminder
@@ -1526,6 +1530,10 @@ struct CalendarView: View {
     private var recordDateSet: Set<Date> {
         Set(
             appModel.records.compactMap { record in
+                guard record.showsRecordDateInCalendar else {
+                    return nil
+                }
+
                 guard record.category == .reminder,
                       let linkedReminder = appModel.reminders.first(where: { $0.recordID == record.id }) else {
                     return filterCalendar.startOfDay(for: record.recordDate)

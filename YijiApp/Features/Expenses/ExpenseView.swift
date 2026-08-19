@@ -30,6 +30,9 @@ struct ExpenseView: View {
     @EnvironmentObject private var appModel: AppModel
     @Environment(\.openURL) private var openURL
     @State private var period: SummaryPeriod = .month
+    @State private var selectedMonth = Calendar(identifier: .gregorian).component(.month, from: Date())
+    @State private var selectedQuarter = (Calendar(identifier: .gregorian).component(.month, from: Date()) - 1) / 3 + 1
+    @State private var selectedYear = Calendar(identifier: .gregorian).component(.year, from: Date())
     @State private var editingDraft: ExpenseDraft?
     @State private var showingDraftEditor = false
     @State private var showingCategoryPicker = false
@@ -305,7 +308,7 @@ struct ExpenseView: View {
 
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(periodTitle)
+                    Text(AppLocalization.text("总支出"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Text(expenseCurrencyText(periodTotal, currency: appModel.selectedExpenseCurrency))
@@ -317,9 +320,7 @@ struct ExpenseView: View {
 
                 Spacer(minLength: 12)
 
-                Text(AppLocalization.format("共 %d 笔", periodExpenses.count))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                periodSelectionMenu
             }
 
             if categoryTotals.isEmpty {
@@ -453,18 +454,19 @@ struct ExpenseView: View {
     private var periodExpenses: [Expense] {
         let calendar = Calendar(identifier: .gregorian)
         let now = Date()
+        let currentYear = calendar.component(.year, from: now)
         return appModel.expenses.filter { expense in
             guard expense.currency == appModel.selectedExpenseCurrency else { return false }
             switch period {
             case .month:
-                return calendar.isDate(expense.spentAt, equalTo: now, toGranularity: .month)
+                return calendar.component(.year, from: expense.spentAt) == currentYear
+                    && calendar.component(.month, from: expense.spentAt) == selectedMonth
             case .quarter:
                 let expenseQuarter = (calendar.component(.month, from: expense.spentAt) - 1) / 3
-                let currentQuarter = (calendar.component(.month, from: now) - 1) / 3
-                return calendar.component(.year, from: expense.spentAt) == calendar.component(.year, from: now)
-                    && expenseQuarter == currentQuarter
+                return calendar.component(.year, from: expense.spentAt) == currentYear
+                    && expenseQuarter + 1 == selectedQuarter
             case .year:
-                return calendar.isDate(expense.spentAt, equalTo: now, toGranularity: .year)
+                return calendar.component(.year, from: expense.spentAt) == selectedYear
             }
         }
     }
@@ -491,22 +493,105 @@ struct ExpenseView: View {
             .sorted { $0.amountMinorUnits > $1.amountMinorUnits }
     }
 
-    private var periodTitle: String {
-        let calendar = Calendar(identifier: .gregorian)
-        let now = Date()
-        let year = calendar.component(.year, from: now)
+    private var periodSelectionTitle: String {
         switch period {
         case .month:
-            return AppLocalization.format("第 %d 月总支出", calendar.component(.month, from: now))
+            return monthTitle(selectedMonth)
         case .quarter:
-            return AppLocalization.format(
-                "%d 年第 %d 季度",
-                year,
-                (calendar.component(.month, from: now) - 1) / 3 + 1
-            )
+            return quarterTitle(selectedQuarter)
         case .year:
-            return AppLocalization.format("%d 年总支出", year)
+            return yearTitle(selectedYear)
         }
+    }
+
+    @ViewBuilder
+    private var periodSelectionMenu: some View {
+        switch period {
+        case .month:
+            Menu {
+                ForEach(1...12, id: \.self) { month in
+                    Button {
+                        selectedMonth = month
+                    } label: {
+                        if selectedMonth == month {
+                            Label(monthTitle(month), systemImage: "checkmark")
+                        } else {
+                            Text(monthTitle(month))
+                        }
+                    }
+                }
+            } label: {
+                periodSelectorLabel
+            }
+            .accessibilityLabel(AppLocalization.text("选择月份"))
+            .accessibilityValue(monthTitle(selectedMonth))
+        case .quarter:
+            Menu {
+                ForEach(1...4, id: \.self) { quarter in
+                    Button {
+                        selectedQuarter = quarter
+                    } label: {
+                        if selectedQuarter == quarter {
+                            Label(quarterTitle(quarter), systemImage: "checkmark")
+                        } else {
+                            Text(quarterTitle(quarter))
+                        }
+                    }
+                }
+            } label: {
+                periodSelectorLabel
+            }
+            .accessibilityLabel(AppLocalization.text("选择季度"))
+            .accessibilityValue(quarterTitle(selectedQuarter))
+        case .year:
+            Menu {
+                ForEach(availableExpenseYears, id: \.self) { year in
+                    Button {
+                        selectedYear = year
+                    } label: {
+                        if selectedYear == year {
+                            Label(yearTitle(year), systemImage: "checkmark")
+                        } else {
+                            Text(yearTitle(year))
+                        }
+                    }
+                }
+            } label: {
+                periodSelectorLabel
+            }
+            .accessibilityLabel(AppLocalization.text("选择年份"))
+            .accessibilityValue(yearTitle(selectedYear))
+        }
+    }
+
+    private var periodSelectorLabel: some View {
+        HStack(spacing: 4) {
+            Text(periodSelectionTitle)
+            Image(systemName: "chevron.down")
+                .font(.caption2.weight(.semibold))
+        }
+        .font(.caption.weight(.bold))
+        .foregroundStyle(Color.black)
+    }
+
+    private var availableExpenseYears: [Int] {
+        let calendar = Calendar(identifier: .gregorian)
+        let currentYear = calendar.component(.year, from: Date())
+        let expenseYears = appModel.expenses.map { calendar.component(.year, from: $0.spentAt) }
+        let selectableYears = Array((currentYear - 9)...(currentYear + 10))
+        return Array(Set(expenseYears + selectableYears + [selectedYear])).sorted(by: >)
+    }
+
+    private func monthTitle(_ month: Int) -> String {
+        AppLocalization.format("%d 月", month)
+    }
+
+    private func quarterTitle(_ quarter: Int) -> String {
+        AppLocalization.format("第 %d 季度", quarter)
+    }
+
+    private func yearTitle(_ year: Int) -> String {
+        AppLocalization.format("%d 年", year)
     }
 
     private func toggleVoiceCapture() {

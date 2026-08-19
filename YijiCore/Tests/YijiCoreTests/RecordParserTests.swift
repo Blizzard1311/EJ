@@ -20,6 +20,7 @@ struct RecordParserTests {
         #expect(parsed.record.objectName == "户口本")
         #expect(parsed.record.location == "红抽屉最上面")
         #expect(parsed.record.resolvedStorageContainer == .drawer)
+        #expect(!parsed.record.showsRecordDateInCalendar)
         #expect(parsed.reminder == nil)
     }
 
@@ -74,6 +75,7 @@ struct RecordParserTests {
         )
 
         #expect(parsed.record.category == .reminder)
+        #expect(parsed.record.showsRecordDateInCalendar)
         #expect(parsed.reminder?.title == "交物业费")
         #expect(parsed.reminder?.repeatRule == ReminderRepeatRule.none)
         #expect(YijiDateFormatter.dateTimeFormatter.string(from: parsed.reminder?.remindAt ?? now) == "6 月 8 日 15:00")
