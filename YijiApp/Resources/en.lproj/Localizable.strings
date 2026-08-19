@@ -376,7 +376,14 @@
 "年度" = "Year";
 "汇总周期" = "Summary period";
 "共 %d 笔" = "%ld expenses";
-"第 %d 月总支出" = "Month %ld spending";
+"总支出" = "Total spending";
+"%d 月总支出" = "Month %ld spending";
+"%d 月" = "Month %ld";
+"选择月份" = "Choose month";
+"第 %d 季度" = "Q%ld";
+"选择季度" = "Choose quarter";
+"%d 年" = "%ld";
+"选择年份" = "Choose year";
 "%d 年第 %d 季度" = "Q%2$ld %1$ld spending";
 "%d 年总支出" = "%ld spending";
 "这个周期还没有该币种的支出" = "No spending in this currency for this period";

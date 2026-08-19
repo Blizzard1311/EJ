@@ -197,7 +197,6 @@ struct CalendarMonthView: View {
                     statusDot(visible: eventDates.contains(day), color: AppTheme.accent)
                     statusDot(visible: reminderDates.contains(day), color: AppTheme.reminder)
                     statusDot(visible: notifiedDates.contains(day), color: AppTheme.completed)
-                    statusDot(visible: weatherByDate[day] != nil, color: Color(red: 0.40, green: 0.54, blue: 0.60))
                 }
                 .frame(height: 3)
             }

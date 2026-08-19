@@ -73,6 +73,10 @@ public struct Record: Identifiable, Hashable, Codable, Sendable {
 }
 
 public extension Record {
+    var showsRecordDateInCalendar: Bool {
+        category != .storage
+    }
+
     var displayCategoryName: String {
         if category == .note, eventTime != nil {
             return YijiLocalization.text("时间安排")
